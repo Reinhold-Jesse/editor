@@ -49,14 +49,16 @@ export const BLOCK_TYPES = {
         tag: 'div',
         placeholder: '',
         classes: 'grid grid-cols-2 gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]',
-        isContainer: true
+        isContainer: true,
+        columnCount: 2
     },
     threeColumn: {
         label: '📊 Drei Spalten',
         tag: 'div',
         placeholder: '',
         classes: 'grid grid-cols-3 gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]',
-        isContainer: true
+        isContainer: true,
+        columnCount: 3
     },
     table: {
         label: '📋 Tabelle',
@@ -64,13 +66,6 @@ export const BLOCK_TYPES = {
         placeholder: '',
         classes: 'w-full border-collapse border border-gray-300',
         isContainer: true
-    },
-    link: {
-        label: '🔗 Link',
-        tag: 'a',
-        placeholder: 'Link-Text...',
-        classes: 'block-placeholder text-blue-600 underline hover:text-blue-800 min-h-[1.5rem]',
-        hasLinkData: true
     },
     image: {
         label: '🖼️ Bild',
@@ -82,77 +77,19 @@ export const BLOCK_TYPES = {
     }
 };
 
-export const CHILD_BLOCK_TYPES = {
-    paragraph: {
-        label: '📝 Paragraph',
-        tag: 'div',
-        placeholder: 'Child Absatz...',
-        classes: 'block-placeholder min-h-[1.5rem] text-sm'
-    },
-    heading1: {
-        label: 'H1 Überschrift',
-        tag: 'h1',
-        placeholder: 'Child Überschrift 1...',
-        classes: 'block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]'
-    },
-    heading2: {
-        label: 'H2 Überschrift',
-        tag: 'h2',
-        placeholder: 'Child Überschrift 2...',
-        classes: 'block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]'
-    },
-    heading3: {
-        label: 'H3 Überschrift',
-        tag: 'h3',
-        placeholder: 'Child Überschrift 3...',
-        classes: 'block-placeholder text-lg font-bold mb-2 min-h-[1.5rem]'
-    },
-    code: {
-        label: '💻 Code Block',
-        tag: 'pre',
-        placeholder: 'Child Code...',
-        classes: 'block-placeholder bg-gray-900 text-green-400 p-3 rounded font-mono text-xs min-h-[3rem] whitespace-pre-wrap',
-        isTextContent: true
-    },
-    quote: {
-        label: '💬 Zitat',
-        tag: 'blockquote',
-        placeholder: 'Child Zitat...',
-        classes: 'block-placeholder border-l-4 border-blue-500 pl-3 italic text-gray-700 min-h-[1.5rem] text-sm'
-    },
-    image: {
-        label: '🖼️ Bild',
-        tag: 'img',
-        placeholder: '',
-        classes: 'w-full h-auto rounded',
-        isVoid: true,
-        hasImageData: true
-    },
-    twoColumn: {
-        label: '📊 Zwei Spalten',
-        tag: 'div',
-        placeholder: '',
-        classes: 'grid grid-cols-2 gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]',
-        isContainer: true
-    },
-    threeColumn: {
-        label: '📊 Drei Spalten',
-        tag: 'div',
-        placeholder: '',
-        classes: 'grid grid-cols-3 gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]',
-        isContainer: true
-    },
-    table: {
-        label: '📋 Tabelle',
-        tag: 'table',
-        placeholder: '',
-        classes: 'w-full border-collapse border border-gray-300',
-        isContainer: true
-    }
-};
+export function getBlockTypeConfig(type) {
+    return BLOCK_TYPES[type] || BLOCK_TYPES.paragraph;
+}
 
-export function getBlockTypeConfig(type, isChild = false) {
-    const types = isChild ? CHILD_BLOCK_TYPES : BLOCK_TYPES;
-    return types[type] || types.paragraph;
+// Gibt die Anzahl der Spalten für einen Block-Typ zurück
+export function getColumnCount(blockType) {
+    const config = getBlockTypeConfig(blockType);
+    return config.columnCount || 0;
+}
+
+// Prüft ob ein Block-Typ ein Container ist
+export function isContainerBlock(blockType) {
+    const config = getBlockTypeConfig(blockType);
+    return config.isContainer === true;
 }
 

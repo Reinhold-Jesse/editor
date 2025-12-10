@@ -16,11 +16,10 @@ import {
     updateBlockClasses as updateBlockClassesUtil,
     clearBlockClasses as clearBlockClassesUtil,
     moveBlock as moveBlockUtil,
-    updateLinkText as updateLinkTextUtil,
-    updateLinkUrl as updateLinkUrlUtil,
     updateImageUrl as updateImageUrlUtil,
     updateImageAlt as updateImageAltUtil,
-    updateImageTitle as updateImageTitleUtil
+    updateImageTitle as updateImageTitleUtil,
+    ensureColumnStructure
 } from './components/block-management.js';
 import {
     addChild as addChildUtil,
@@ -58,7 +57,7 @@ import {
     toggleTableHeader,
     toggleTableFooter
 } from './components/table-management.js';
-import { CHILD_BLOCK_TYPES } from './components/block-types.js';
+import { BLOCK_TYPES, getColumnCount } from './components/block-types.js';
 
 function blockEditor() {
     return {
@@ -84,15 +83,12 @@ function blockEditor() {
         showSaveThemeModal: false,
         showEditThemeModal: false,
         showImportThemeModal: false,
-        showLinkSettingsModal: false,
-        linkSettingsBlockId: null,
-        linkSettingsText: '',
-        linkSettingsUrl: '',
         showImageSettingsModal: false,
         imageSettingsBlockId: null,
         imageSettingsUrl: '',
         imageSettingsAlt: '',
         imageSettingsTitle: '',
+        imageSettingsActiveTab: 'upload', // 'upload' oder 'url'
         showFloatingToolbar: false,
         floatingToolbarPosition: { top: 0, left: 0 },
         selectedText: '',
@@ -108,7 +104,7 @@ function blockEditor() {
         saveThemeError: null,
         editThemeError: null,
         themes: [],
-        childBlockTypes: CHILD_BLOCK_TYPES,
+        childBlockTypes: BLOCK_TYPES,
         notification: {
             show: false,
             message: '',
@@ -116,14 +112,21 @@ function blockEditor() {
             duration: 3000 // Automatisches Ausblenden in Millisekunden (0 = kein automatisches Ausblenden)
         },
         notificationTimeout: null, // Timeout-Referenz für automatisches Ausblenden
+        showConfirmModal: false,
+        confirmModal: {
+            title: '',
+            message: '',
+            onConfirm: null,
+            onCancel: null
+        },
 
         init() {
             // Start mit einem leeren Paragraph
             if (this.blocks.length === 0) {
                 this.addBlock('paragraph');
             }
-            // Lade Themes beim Initialisieren
-            this.loadThemes();
+            // Lade Themes beim Initialisieren (async, aber ohne await)
+            this.loadThemes().catch(err => console.error('Fehler beim Laden der Themes:', err));
             // Initialisiere Block-Inhalte nach dem Rendering
             this.$nextTick(() => {
                 this.initAllBlockContents();
@@ -169,7 +172,7 @@ function blockEditor() {
                             const { block } = this.findBlockById(blockId);
                             
                             // Zeige Toolbar nur für Text-Blöcke
-                            if (block && block.type !== 'code' && block.type !== 'table' && block.type !== 'divider' && block.type !== 'link') {
+                            if (block && block.type !== 'code' && block.type !== 'table' && block.type !== 'divider') {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 
@@ -267,6 +270,9 @@ function blockEditor() {
             this.selectedBlockId = block.id;
             this.showToolbar = false;
             this.showThemeDropdown = false;
+            
+            // Stelle sicher, dass Column-Blöcke die richtige Anzahl von Spalten haben
+            ensureColumnStructure(this.blocks);
             
             // Focus auf den neuen Block
             this.$nextTick(() => {
@@ -480,9 +486,13 @@ function blockEditor() {
         changeBlockType(blockId, newType) {
             changeBlockTypeUtil(this.blocks, blockId, newType, this.blockIdCounter);
             // Increment blockIdCounter if columns were created
-            if (newType === 'twoColumn' || newType === 'threeColumn') {
-                this.blockIdCounter += (newType === 'twoColumn' ? 2 : 3);
+            const columnCount = getColumnCount(newType);
+            if (columnCount > 0) {
+                this.blockIdCounter += columnCount;
             }
+            
+            // Stelle sicher, dass Column-Blöcke die richtige Anzahl von Spalten haben
+            ensureColumnStructure(this.blocks);
             
             // Focus auf den Block nach Typ-Änderung
             this.$nextTick(() => {
@@ -491,6 +501,11 @@ function blockEditor() {
                     element.focus();
                 }
             });
+        },
+        
+        // Helper-Funktion für x-init in HTML
+        getColumnCountForBlock(blockType) {
+            return getColumnCount(blockType);
         },
 
         updateBlockStyle(blockId, style) {
@@ -551,9 +566,9 @@ function blockEditor() {
             moveChildBlockUtil(this.blocks, parentBlockId, childIndex, direction);
         },
 
-        addChildToColumn(parentBlockId, childType, columnIndex, totalColumns) {
+        addChildToColumn(parentBlockId, childType, columnIndex) {
             this.blockIdCounter++;
-            const childBlock = addChildToColumnUtil(this.blocks, parentBlockId, this.blockIdCounter, childType, columnIndex, totalColumns);
+            const childBlock = addChildToColumnUtil(this.blocks, parentBlockId, this.blockIdCounter, childType, columnIndex);
             if (!childBlock) {
                 this.blockIdCounter--; // Rollback if failed
                 return;
@@ -580,6 +595,7 @@ function blockEditor() {
 
         saveToJSON() {
             saveToJSONUtil(this.blocks);
+            this.showNotification('Daten erfolgreich gespeichert!', 'success');
         },
 
         loadFromJSON() {
@@ -657,16 +673,23 @@ function blockEditor() {
                 this.blockIdCounter = newCounter;
             };
             
-            importJSONUtil(
-                this.importJSONText,
-                this.blocks,
-                this.blockIdCounter,
-                this.$nextTick.bind(this),
-                initAllBlockContents,
-                updateCounter
-            );
-            
-            this.closeImportModal();
+            try {
+                importJSONUtil(
+                    this.importJSONText,
+                    this.blocks,
+                    this.blockIdCounter,
+                    this.$nextTick.bind(this),
+                    initAllBlockContents,
+                    updateCounter
+                );
+                
+                const blockCount = this.importJSONPreview?.blockCount || 0;
+                this.showNotification(`Erfolgreich ${blockCount} Block(s) importiert!`, 'success');
+                this.closeImportModal();
+            } catch (error) {
+                this.importJSONError = error.message || 'Fehler beim Importieren der Daten.';
+                this.showNotification('Fehler beim Importieren: ' + error.message, 'error');
+            }
         },
 
         exportJSON() {
@@ -702,7 +725,7 @@ function blockEditor() {
                 }, 2000);
             } catch (err) {
                 console.error('Fehler beim Kopieren:', err);
-                alert('Fehler beim Kopieren. Bitte manuell kopieren.');
+                this.showNotification('Fehler beim Kopieren. Bitte manuell kopieren.', 'error');
             }
         },
 
@@ -773,8 +796,8 @@ function blockEditor() {
         },
 
         // Theme Management Functions
-        loadThemes() {
-            this.themes = getAllThemesUtil();
+        async loadThemes() {
+            this.themes = await getAllThemesUtil();
         },
 
         openSaveThemeModal() {
@@ -789,20 +812,28 @@ function blockEditor() {
             this.saveThemeError = null;
         },
 
-        saveTheme() {
+        async saveTheme() {
             if (!this.newThemeName || !this.newThemeName.trim()) {
                 this.saveThemeError = 'Bitte gib einen Theme-Namen ein.';
                 return;
             }
 
             try {
-                saveThemeUtil(this.newThemeName.trim(), this.blocks);
-                this.loadThemes(); // Aktualisiere Themes-Liste
+                const sanitizedName = this.newThemeName.trim().replace(/[^a-z0-9äöüß_-]/gi, '_').toLowerCase();
+                const filename = `${sanitizedName}.json`;
+                await saveThemeUtil(this.newThemeName.trim(), this.blocks);
+                await this.loadThemes(); // Aktualisiere Themes-Liste
                 this.closeSaveThemeModal();
-                this.showNotification(`Theme "${this.newThemeName.trim()}" erfolgreich gespeichert!`, 'success');
+                
+                // Prüfe ob File System Access API verfügbar ist
+                if ('showDirectoryPicker' in window) {
+                    this.showNotification(`Theme "${this.newThemeName.trim()}" erfolgreich im themes Ordner gespeichert!`, 'success');
+                } else {
+                    this.showNotification(`Theme "${this.newThemeName.trim()}" erfolgreich gespeichert!<br><small>Bitte verschieben Sie die heruntergeladene Datei "${filename}" in den Ordner "themes".</small>`, 'success', 5000);
+                }
             } catch (error) {
                 this.saveThemeError = error.message || 'Fehler beim Speichern des Themes.';
-                this.showNotification('Fehler beim Speichern des Themes.', 'error');
+                this.showNotification('Fehler beim Speichern des Themes: ' + error.message, 'error');
             }
         },
 
@@ -835,15 +866,23 @@ function blockEditor() {
             }
         },
 
-        deleteTheme(themeName) {
-            if (!confirm(`Möchten Sie das Theme "${themeName}" wirklich löschen?\n\nHinweis: Die JSON-Datei im themes Ordner muss manuell gelöscht werden.`)) {
-                return;
-            }
+        showDeleteThemeConfirm(themeName) {
+            this.confirmModal = {
+                title: 'Theme löschen',
+                message: `Möchten Sie das Theme "${themeName}" wirklich löschen?`,
+                onConfirm: () => this.deleteTheme(themeName),
+                onCancel: () => this.closeConfirmModal()
+            };
+            this.showConfirmModal = true;
+        },
 
+        async deleteTheme(themeName) {
+            this.closeConfirmModal();
+            
             try {
-                const deleted = deleteThemeUtil(themeName);
+                const deleted = await deleteThemeUtil(themeName);
                 if (deleted) {
-                    this.loadThemes(); // Aktualisiere Themes-Liste
+                    await this.loadThemes(); // Aktualisiere Themes-Liste
                     this.showNotification(`Theme "${themeName}" erfolgreich gelöscht!`, 'success');
                 } else {
                     this.showNotification(`Theme "${themeName}" konnte nicht gefunden werden.`, 'error');
@@ -867,7 +906,7 @@ function blockEditor() {
             this.editThemeError = null;
         },
 
-        updateTheme() {
+        async updateTheme() {
             if (!this.editThemeName || !this.editThemeName.trim()) {
                 this.editThemeError = 'Bitte gib einen Theme-Namen ein.';
                 return;
@@ -879,8 +918,8 @@ function blockEditor() {
             }
 
             try {
-                updateThemeUtil(this.editThemeOriginalName, this.editThemeName.trim());
-                this.loadThemes(); // Aktualisiere Themes-Liste
+                await updateThemeUtil(this.editThemeOriginalName, this.editThemeName.trim());
+                await this.loadThemes(); // Aktualisiere Themes-Liste
                 this.closeEditThemeModal();
                 this.showNotification(`Theme erfolgreich umbenannt zu "${this.editThemeName.trim()}"!`, 'success');
             } catch (error) {
@@ -904,19 +943,24 @@ function blockEditor() {
             }
 
             if (!file.name.endsWith('.json')) {
-                alert('Bitte wählen Sie eine JSON-Datei aus.');
+                this.showNotification('Bitte wählen Sie eine JSON-Datei aus.', 'warning');
                 return;
             }
 
             try {
                 const { themeData, blocks } = await importThemeFromFileUtil(file);
-                this.loadThemes(); // Aktualisiere Themes-Liste
+                await this.loadThemes(); // Aktualisiere Themes-Liste
                 this.closeImportThemeModal();
                 this.showNotification(`Theme "${themeData.name}" erfolgreich importiert!`, 'success');
                 
-                if (confirm('Theme jetzt laden?')) {
-                    await this.loadTheme(themeData.name);
-                }
+                // Frage ob Theme geladen werden soll
+                this.confirmModal = {
+                    title: 'Theme laden',
+                    message: `Theme "${themeData.name}" erfolgreich importiert. Möchten Sie es jetzt laden?`,
+                    onConfirm: () => this.loadTheme(themeData.name),
+                    onCancel: () => this.closeConfirmModal()
+                };
+                this.showConfirmModal = true;
             } catch (error) {
                 this.showNotification('Fehler beim Importieren des Themes: ' + error.message, 'error');
             }
@@ -938,6 +982,22 @@ function blockEditor() {
          * this.showNotification('Information: Neue Version verfügbar', 'info');
          * this.showNotification('<strong>Wichtig:</strong> Bitte prüfen Sie die Einstellungen', 'warning', 0); // Kein automatisches Ausblenden
          */
+        closeConfirmModal() {
+            this.showConfirmModal = false;
+            this.confirmModal = {
+                title: '',
+                message: '',
+                onConfirm: null,
+                onCancel: null
+            };
+        },
+
+        confirmAction() {
+            if (this.confirmModal.onConfirm) {
+                this.confirmModal.onConfirm();
+            }
+        },
+
         showNotification(message, type = 'success', duration = 3000) {
             // Validiere Typ
             const validTypes = ['success', 'error', 'info', 'warning'];
@@ -975,41 +1035,6 @@ function blockEditor() {
             this.notification.show = false;
         },
 
-        updateLinkText(blockId, linkText) {
-            updateLinkTextUtil(this.blocks, blockId, linkText);
-        },
-
-        updateLinkUrl(blockId, linkUrl) {
-            updateLinkUrlUtil(this.blocks, blockId, linkUrl);
-        },
-
-        openLinkSettingsModal(blockId) {
-            const { block } = this.findBlockById(blockId);
-            if (block && block.type === 'link') {
-                this.linkSettingsBlockId = blockId;
-                this.linkSettingsText = block.linkText || '';
-                this.linkSettingsUrl = block.linkUrl || '';
-                this.showLinkSettingsModal = true;
-            }
-        },
-
-        closeLinkSettingsModal() {
-            this.showLinkSettingsModal = false;
-            this.linkSettingsBlockId = null;
-            this.linkSettingsText = '';
-            this.linkSettingsUrl = '';
-        },
-
-        saveLinkSettings() {
-            if (!this.linkSettingsBlockId) return;
-            
-            updateLinkTextUtil(this.blocks, this.linkSettingsBlockId, this.linkSettingsText);
-            updateLinkUrlUtil(this.blocks, this.linkSettingsBlockId, this.linkSettingsUrl);
-            
-            this.showNotification('Link-Einstellungen erfolgreich gespeichert!', 'success');
-            this.closeLinkSettingsModal();
-        },
-
         updateImageUrl(blockId, imageUrl) {
             updateImageUrlUtil(this.blocks, blockId, imageUrl);
         },
@@ -1029,6 +1054,7 @@ function blockEditor() {
                 this.imageSettingsUrl = block.imageUrl || '';
                 this.imageSettingsAlt = block.imageAlt || '';
                 this.imageSettingsTitle = block.imageTitle || '';
+                this.imageSettingsActiveTab = 'upload';
                 this.showImageSettingsModal = true;
             }
         },
@@ -1039,6 +1065,7 @@ function blockEditor() {
             this.imageSettingsUrl = '';
             this.imageSettingsAlt = '';
             this.imageSettingsTitle = '';
+            this.imageSettingsActiveTab = 'upload';
         },
 
         saveImageSettings() {
@@ -1067,6 +1094,10 @@ function blockEditor() {
                     const reader = new FileReader();
                     reader.onload = (event) => {
                         const imageUrl = event.target.result;
+                        // Aktualisiere auch die Modal-Vorschau, wenn das Modal geöffnet ist
+                        if (this.showImageSettingsModal && this.imageSettingsBlockId === blockId) {
+                            this.imageSettingsUrl = imageUrl;
+                        }
                         updateImageUrlUtil(this.blocks, blockId, imageUrl);
                         
                         // Aktualisiere auch die Modal-Felder, falls das Modal geöffnet ist
@@ -1134,7 +1165,7 @@ function blockEditor() {
             const { block } = this.findBlockById(blockId);
             
             // Zeige Toolbar nur für Text-Blöcke (nicht Code, Table, Divider, Link)
-            if (!block || block.type === 'code' || block.type === 'table' || block.type === 'divider' || block.type === 'link') {
+            if (!block || block.type === 'code' || block.type === 'table' || block.type === 'divider') {
                 this.showFloatingToolbar = false;
                 return;
             }

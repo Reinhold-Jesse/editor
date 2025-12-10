@@ -58,11 +58,6 @@ export function initBlockContent(element, block, isTextContent = false) {
     if (!element.textContent) {
         let content = block.content;
         
-        // Für Link-Blöcke verwende linkText
-        if (block.type === 'link' && block.linkText) {
-            content = block.linkText;
-        }
-        
         if (content) {
             if (isTextContent) {
                 element.textContent = content;
@@ -78,11 +73,6 @@ export function initAllBlockContents(blocks) {
         const element = document.querySelector(`[data-block-id="${block.id}"]`);
         if (element && !element.textContent) {
             let content = block.content;
-            
-            // Für Link-Blöcke verwende linkText
-            if (block.type === 'link' && block.linkText) {
-                content = block.linkText;
-            }
             
             if (content) {
                 if (block.type === 'code') {
@@ -111,11 +101,6 @@ export function initAllBlockContents(blocks) {
                 const childElement = document.querySelector(`[data-block-id="${child.id}"]`);
                 if (childElement && !childElement.textContent) {
                     let content = child.content;
-                    
-                    // Für Link-Blöcke verwende linkText
-                    if (child.type === 'link' && child.linkText) {
-                        content = child.linkText;
-                    }
                     
                     if (content) {
                         if (child.type === 'code') {

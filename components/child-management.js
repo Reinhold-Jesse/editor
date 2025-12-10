@@ -1,5 +1,6 @@
 // Child Block Management Functions
 import { generateId } from './utils.js';
+import { getColumnCount, isContainerBlock } from './block-types.js';
 
 export function addChild(blocks, parentBlockId, blockIdCounter, childType) {
     const parentBlock = blocks.find(b => b.id === parentBlockId);
@@ -14,7 +15,6 @@ export function addChild(blocks, parentBlockId, blockIdCounter, childType) {
             content: '',
             style: '',
             classes: '',
-            children: [],
             createdAt: new Date().toISOString()
         };
         
@@ -24,6 +24,30 @@ export function addChild(blocks, parentBlockId, blockIdCounter, childType) {
             childBlock.imageAlt = '';
             childBlock.imageTitle = '';
         }
+        
+        // Initialize children array ONLY for container blocks
+        if (isContainerBlock(childType)) {
+            if (childType === 'table') {
+                childBlock.children = [];
+            } else if (childType === 'twoColumn' || childType === 'threeColumn') {
+                const childColumnCount = getColumnCount(childType);
+                childBlock.children = [];
+                for (let i = 0; i < childColumnCount; i++) {
+                    childBlock.children.push({
+                        id: generateId(blockIdCounter + i + 1),
+                        type: 'column',
+                        content: '',
+                        style: '',
+                        classes: '',
+                        children: [],
+                        createdAt: new Date().toISOString()
+                    });
+                }
+            } else {
+                childBlock.children = [];
+            }
+        }
+        // Non-container blocks should NOT have children array
         
         parentBlock.children.push(childBlock);
         parentBlock.updatedAt = new Date().toISOString();
@@ -41,7 +65,6 @@ export function addChildAfter(blocks, parentBlockId, childIndex, blockIdCounter,
             content: '',
             style: '',
             classes: '',
-            children: [],
             createdAt: new Date().toISOString()
         };
         
@@ -51,6 +74,30 @@ export function addChildAfter(blocks, parentBlockId, childIndex, blockIdCounter,
             childBlock.imageAlt = '';
             childBlock.imageTitle = '';
         }
+        
+        // Initialize children array ONLY for container blocks
+        if (isContainerBlock(childType)) {
+            if (childType === 'table') {
+                childBlock.children = [];
+            } else if (childType === 'twoColumn' || childType === 'threeColumn') {
+                const childColumnCount = getColumnCount(childType);
+                childBlock.children = [];
+                for (let i = 0; i < childColumnCount; i++) {
+                    childBlock.children.push({
+                        id: generateId(blockIdCounter + i + 1),
+                        type: 'column',
+                        content: '',
+                        style: '',
+                        classes: '',
+                        children: [],
+                        createdAt: new Date().toISOString()
+                    });
+                }
+            } else {
+                childBlock.children = [];
+            }
+        }
+        // Non-container blocks should NOT have children array
         
         parentBlock.children.splice(childIndex + 1, 0, childBlock);
         parentBlock.updatedAt = new Date().toISOString();
@@ -97,14 +144,17 @@ export function moveChildBlock(blocks, parentBlockId, childIndex, direction) {
     }
 }
 
-export function addChildToColumn(blocks, parentBlockId, blockIdCounter, childType, columnIndex, totalColumns) {
+export function addChildToColumn(blocks, parentBlockId, blockIdCounter, childType, columnIndex) {
     const parentBlock = blocks.find(b => b.id === parentBlockId);
     if (parentBlock && (parentBlock.type === 'twoColumn' || parentBlock.type === 'threeColumn')) {
+        // Get the correct column count from the block type
+        const requiredColumnCount = getColumnCount(parentBlock.type);
+        
         // Ensure children array exists and has column blocks
         if (!parentBlock.children || parentBlock.children.length === 0) {
             // Initialize column blocks if they don't exist
             parentBlock.children = [];
-            for (let i = 0; i < totalColumns; i++) {
+            for (let i = 0; i < requiredColumnCount; i++) {
                 parentBlock.children.push({
                     id: generateId(blockIdCounter + i),
                     type: 'column',
@@ -114,6 +164,27 @@ export function addChildToColumn(blocks, parentBlockId, blockIdCounter, childTyp
                     children: [],
                     createdAt: new Date().toISOString()
                 });
+            }
+        } else {
+            // Only fix column count if it's wrong - don't modify if correct
+            if (parentBlock.children.length !== requiredColumnCount) {
+                // Add missing columns
+                while (parentBlock.children.length < requiredColumnCount) {
+                    const idx = parentBlock.children.length;
+                    parentBlock.children.push({
+                        id: generateId(blockIdCounter + idx),
+                        type: 'column',
+                        content: '',
+                        style: '',
+                        classes: '',
+                        children: [],
+                        createdAt: new Date().toISOString()
+                    });
+                }
+                // Remove excess columns (only if there are too many)
+                if (parentBlock.children.length > requiredColumnCount) {
+                    parentBlock.children = parentBlock.children.slice(0, requiredColumnCount);
+                }
             }
         }
         
@@ -135,7 +206,6 @@ export function addChildToColumn(blocks, parentBlockId, blockIdCounter, childTyp
             content: '',
             style: '',
             classes: '',
-            children: [],
             createdAt: new Date().toISOString()
         };
         
@@ -146,10 +216,31 @@ export function addChildToColumn(blocks, parentBlockId, blockIdCounter, childTyp
             childBlock.imageTitle = '';
         }
         
-        // Initialize children array for container blocks
-        if (childType === 'twoColumn' || childType === 'threeColumn' || childType === 'table') {
-            childBlock.children = [];
+        // Initialize children array ONLY for container blocks
+        if (isContainerBlock(childType)) {
+            if (childType === 'table') {
+                childBlock.children = [];
+            } else if (childType === 'twoColumn' || childType === 'threeColumn') {
+                // Initialize column structure for twoColumn and threeColumn
+                const childColumnCount = getColumnCount(childType);
+                childBlock.children = [];
+                for (let i = 0; i < childColumnCount; i++) {
+                    childBlock.children.push({
+                        id: generateId(blockIdCounter + i + 1), // Increment counter for each column
+                        type: 'column',
+                        content: '',
+                        style: '',
+                        classes: '',
+                        children: [],
+                        createdAt: new Date().toISOString()
+                    });
+                }
+            } else {
+                // Other container blocks (like future container types)
+                childBlock.children = [];
+            }
         }
+        // Non-container blocks should NOT have children array
         
         // Add the child block to the column's children
         columnBlock.children.push(childBlock);

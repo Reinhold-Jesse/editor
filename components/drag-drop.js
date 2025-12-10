@@ -1,4 +1,6 @@
 // Drag and Drop Functions
+import { getColumnCount } from './block-types.js';
+
 export function handleDragStart(event, blocks, index, childIndex = null) {
     let dragStartIndex;
     let draggingBlockId;
@@ -33,7 +35,7 @@ export function handleDragOver(event, index, childIndex = null) {
     return dragOverIndex;
 }
 
-export function handleDrop(event, blocks, dragStartIndex, dropIndex, dropChildIndex = null, targetColumnIndex = null, totalColumns = null) {
+export function handleDrop(event, blocks, dragStartIndex, dropIndex, dropChildIndex = null, targetColumnIndex = null) {
     event.preventDefault();
     
     if (dragStartIndex === null) return;
@@ -57,7 +59,7 @@ export function handleDrop(event, blocks, dragStartIndex, dropIndex, dropChildIn
             
             // Prüfe ob es ein Spalten-Layout ist
             if (parent.type === 'twoColumn' || parent.type === 'threeColumn') {
-                const columns = parent.type === 'twoColumn' ? 2 : 3;
+                const columns = getColumnCount(parent.type);
                 const draggedChild = parent.children[start.childIndex];
                 const startColumn = start.childIndex % columns;
                 

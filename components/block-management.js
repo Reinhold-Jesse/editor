@@ -1,6 +1,7 @@
 // Block Management Functions
 import { generateId, findBlockById } from './utils.js';
 import { initializeTable } from './table-management.js';
+import { getColumnCount, isContainerBlock } from './block-types.js';
 
 export function createBlock(blockIdCounter, type, content = '') {
     const block = {
@@ -9,7 +10,6 @@ export function createBlock(blockIdCounter, type, content = '') {
         content: content,
         style: '',
         classes: '',
-        children: [],
         createdAt: new Date().toISOString()
     };
     
@@ -20,12 +20,6 @@ export function createBlock(blockIdCounter, type, content = '') {
         block.tableData.lastCellIdCounter = tableData.lastCellIdCounter;
     }
     
-    // Initialize link data if it's a link
-    if (type === 'link') {
-        block.linkText = content || 'Link-Text';
-        block.linkUrl = '';
-    }
-    
     // Initialize image data if it's an image
     if (type === 'image') {
         block.imageUrl = '';
@@ -33,59 +27,31 @@ export function createBlock(blockIdCounter, type, content = '') {
         block.imageTitle = '';
     }
     
-    // Initialize column structure for twoColumn and threeColumn
-    if (type === 'twoColumn') {
-        block.children = [
-            {
-                id: generateId(blockIdCounter + 1),
-                type: 'column',
-                content: '',
-                style: '',
-                classes: '',
-                children: [],
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: generateId(blockIdCounter + 2),
-                type: 'column',
-                content: '',
-                style: '',
-                classes: '',
-                children: [],
-                createdAt: new Date().toISOString()
+    // Initialize children array ONLY for container blocks
+    if (isContainerBlock(type)) {
+        const columnCount = getColumnCount(type);
+        if (columnCount > 0) {
+            // Initialize column structure for twoColumn and threeColumn
+            block.children = [];
+            for (let i = 0; i < columnCount; i++) {
+                block.children.push({
+                    id: generateId(blockIdCounter + i + 1),
+                    type: 'column',
+                    content: '',
+                    style: '',
+                    classes: '',
+                    children: [],
+                    createdAt: new Date().toISOString()
+                });
             }
-        ];
-    } else if (type === 'threeColumn') {
-        block.children = [
-            {
-                id: generateId(blockIdCounter + 1),
-                type: 'column',
-                content: '',
-                style: '',
-                classes: '',
-                children: [],
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: generateId(blockIdCounter + 2),
-                type: 'column',
-                content: '',
-                style: '',
-                classes: '',
-                children: [],
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: generateId(blockIdCounter + 3),
-                type: 'column',
-                content: '',
-                style: '',
-                classes: '',
-                children: [],
-                createdAt: new Date().toISOString()
-            }
-        ];
+        } else if (type === 'table') {
+            block.children = [];
+        } else {
+            // Other container blocks
+            block.children = [];
+        }
     }
+    // Non-container blocks should NOT have children array
     
     return block;
 }
@@ -138,18 +104,6 @@ export function changeBlockType(blocks, blockId, newType, blockIdCounter = 0) {
         block.content = oldContent;
         block.updatedAt = new Date().toISOString();
         
-        // Initialize link data if changing to link type
-        if (newType === 'link' && oldType !== 'link') {
-            block.linkText = oldContent || 'Link-Text';
-            block.linkUrl = '';
-        }
-        
-        // Clean up link data if changing away from link type
-        if (oldType === 'link' && newType !== 'link') {
-            delete block.linkText;
-            delete block.linkUrl;
-        }
-        
         // Initialize image data if changing to image type
         if (newType === 'image' && oldType !== 'image') {
             block.imageUrl = '';
@@ -177,57 +131,20 @@ export function changeBlockType(blocks, blockId, newType, blockIdCounter = 0) {
         }
         
         // Initialize column structure if changing to twoColumn or threeColumn
-        if (newType === 'twoColumn' && oldType !== 'twoColumn') {
-            block.children = [
-                {
-                    id: generateId(blockIdCounter + 1),
+        const columnCount = getColumnCount(newType);
+        if (columnCount > 0 && (oldType !== 'twoColumn' && oldType !== 'threeColumn')) {
+            block.children = [];
+            for (let i = 0; i < columnCount; i++) {
+                block.children.push({
+                    id: generateId(blockIdCounter + i + 1),
                     type: 'column',
                     content: '',
                     style: '',
                     classes: '',
                     children: [],
                     createdAt: new Date().toISOString()
-                },
-                {
-                    id: generateId(blockIdCounter + 2),
-                    type: 'column',
-                    content: '',
-                    style: '',
-                    classes: '',
-                    children: [],
-                    createdAt: new Date().toISOString()
-                }
-            ];
-        } else if (newType === 'threeColumn' && oldType !== 'threeColumn') {
-            block.children = [
-                {
-                    id: generateId(blockIdCounter + 1),
-                    type: 'column',
-                    content: '',
-                    style: '',
-                    classes: '',
-                    children: [],
-                    createdAt: new Date().toISOString()
-                },
-                {
-                    id: generateId(blockIdCounter + 2),
-                    type: 'column',
-                    content: '',
-                    style: '',
-                    classes: '',
-                    children: [],
-                    createdAt: new Date().toISOString()
-                },
-                {
-                    id: generateId(blockIdCounter + 3),
-                    type: 'column',
-                    content: '',
-                    style: '',
-                    classes: '',
-                    children: [],
-                    createdAt: new Date().toISOString()
-                }
-            ];
+                });
+            }
         }
         
         // Clean up column structure if changing away from column layouts
@@ -277,23 +194,6 @@ export function moveBlock(blocks, index, direction) {
     }
 }
 
-export function updateLinkText(blocks, blockId, linkText) {
-    const { block } = findBlockById(blocks, blockId);
-    if (block && block.type === 'link') {
-        block.linkText = linkText;
-        block.content = linkText; // Keep content in sync for compatibility
-        block.updatedAt = new Date().toISOString();
-    }
-}
-
-export function updateLinkUrl(blocks, blockId, linkUrl) {
-    const { block } = findBlockById(blocks, blockId);
-    if (block && block.type === 'link') {
-        block.linkUrl = linkUrl;
-        block.updatedAt = new Date().toISOString();
-    }
-}
-
 export function updateImageUrl(blocks, blockId, imageUrl) {
     const { block } = findBlockById(blocks, blockId);
     if (block && block.type === 'image') {
@@ -316,5 +216,69 @@ export function updateImageTitle(blocks, blockId, imageTitle) {
         block.imageTitle = imageTitle;
         block.updatedAt = new Date().toISOString();
     }
+}
+
+// Stellt sicher, dass Column-Blöcke die richtige Anzahl von Spalten haben
+export function ensureColumnStructure(blocks) {
+    function fixBlockColumns(block) {
+        // Entferne children Array von nicht-Container-Blöcken
+        if (!isContainerBlock(block.type)) {
+            if (block.children && block.children.length > 0) {
+                delete block.children;
+            }
+        } else {
+            // Für Container-Blöcke: Stelle sicher, dass die richtige Struktur vorhanden ist
+            const columnCount = getColumnCount(block.type);
+            if (columnCount > 0) {
+                // Column-Blöcke (twoColumn, threeColumn)
+                if (!block.children) {
+                    block.children = [];
+                }
+                
+                // Stelle sicher, dass genau die richtige Anzahl von Spalten vorhanden ist
+                while (block.children.length < columnCount) {
+                    const columnIndex = block.children.length;
+                    block.children.push({
+                        id: `col-${block.id}-${columnIndex}`,
+                        type: 'column',
+                        content: '',
+                        style: '',
+                        classes: '',
+                        children: [],
+                        createdAt: new Date().toISOString()
+                    });
+                }
+                
+                // Entferne überschüssige Spalten
+                if (block.children.length > columnCount) {
+                    block.children = block.children.slice(0, columnCount);
+                }
+            } else if (block.type === 'table') {
+                // Table-Blöcke: children sollte ein Array sein (für zukünftige Erweiterungen)
+                if (!block.children) {
+                    block.children = [];
+                }
+            }
+        }
+        
+        // Rekursiv für verschachtelte Blöcke
+        if (block.children && Array.isArray(block.children)) {
+            block.children.forEach(child => {
+                // Prüfe ob es eine Spalte ist (dann rekursiv für deren children)
+                if (child.type === 'column' && child.children) {
+                    child.children.forEach(grandChild => {
+                        fixBlockColumns(grandChild);
+                    });
+                } else {
+                    // Normales Child
+                    fixBlockColumns(child);
+                }
+            });
+        }
+    }
+    
+    blocks.forEach(block => {
+        fixBlockColumns(block);
+    });
 }
 

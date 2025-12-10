@@ -57,6 +57,18 @@ export function initAllBlockContents(blocks) {
             }
         }
         
+        // Initialisiere Tabellenzellen
+        if (block.type === 'table' && block.tableData && block.tableData.cells) {
+            block.tableData.cells.forEach(row => {
+                row.forEach(cell => {
+                    const cellElement = document.querySelector(`[data-cell-id="${cell.id}"]`);
+                    if (cellElement && !cellElement.textContent && cell.content) {
+                        cellElement.innerHTML = cell.content;
+                    }
+                });
+            });
+        }
+        
         // Initialisiere Children
         if (block.children) {
             block.children.forEach(child => {

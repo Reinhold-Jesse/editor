@@ -1,8 +1,9 @@
 // Block Management Functions
 import { generateId, findBlockById } from './utils.js';
+import { initializeTable } from './table-management.js';
 
 export function createBlock(blockIdCounter, type, content = '') {
-    return {
+    const block = {
         id: generateId(blockIdCounter),
         type: type,
         content: content,
@@ -11,6 +12,15 @@ export function createBlock(blockIdCounter, type, content = '') {
         children: [],
         createdAt: new Date().toISOString()
     };
+    
+    // Initialize table data if it's a table
+    if (type === 'table') {
+        const tableData = initializeTable(blockIdCounter, 3, 3, true, false);
+        block.tableData = tableData;
+        block.tableData.lastCellIdCounter = tableData.lastCellIdCounter;
+    }
+    
+    return block;
 }
 
 export function addBlock(blocks, selectedBlockId, blockIdCounter, type, content = '') {

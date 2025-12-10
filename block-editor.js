@@ -35,6 +35,17 @@ import {
     importJSON as importJSONUtil,
     exportJSON as exportJSONUtil
 } from './components/storage.js';
+import {
+    addTableRow,
+    removeTableRow,
+    addTableColumn,
+    removeTableColumn,
+    mergeTableCells,
+    unmergeTableCells,
+    updateTableCellContent,
+    toggleTableHeader,
+    toggleTableFooter
+} from './components/table-management.js';
 
 function blockEditor() {
     return {
@@ -65,6 +76,22 @@ function blockEditor() {
 
         initBlockContent(element, block, isTextContent = false) {
             initBlockContent(element, block, isTextContent);
+        },
+
+        initTableCellContent(element, cell) {
+            // Nur initialisieren wenn Element leer ist und Cell Inhalt hat
+            if (!element.textContent && cell && cell.content) {
+                element.innerHTML = cell.content;
+                // Cursor ans Ende setzen
+                this.$nextTick(() => {
+                    const range = document.createRange();
+                    const sel = window.getSelection();
+                    range.selectNodeContents(element);
+                    range.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                });
+            }
         },
 
         openSidebar(blockId = null) {
@@ -305,6 +332,68 @@ function blockEditor() {
 
         exportJSON() {
             exportJSONUtil(this.blocks);
+        },
+
+        // Table Management Functions
+        addTableRow(blockId, position = 'bottom') {
+            const result = addTableRow(this.blocks, blockId, this.blockIdCounter, position);
+            if (result) {
+                this.blockIdCounter = result.lastCellIdCounter + 1;
+            }
+        },
+
+        removeTableRow(blockId, rowIndex) {
+            removeTableRow(this.blocks, blockId, rowIndex);
+        },
+
+        addTableColumn(blockId, position = 'right') {
+            const result = addTableColumn(this.blocks, blockId, this.blockIdCounter, position);
+            if (result) {
+                this.blockIdCounter = result.lastCellIdCounter + 1;
+            }
+        },
+
+        removeTableColumn(blockId, colIndex) {
+            removeTableColumn(this.blocks, blockId, colIndex);
+        },
+
+        mergeTableCells(blockId, startRow, startCol, endRow, endCol) {
+            mergeTableCells(this.blocks, blockId, startRow, startCol, endRow, endCol);
+        },
+
+        unmergeTableCells(blockId, row, col) {
+            unmergeTableCells(this.blocks, blockId, row, col);
+        },
+
+        updateTableCellContent(blockId, cellId, content) {
+            updateTableCellContent(this.blocks, blockId, cellId, content);
+        },
+
+        toggleTableHeader(blockId) {
+            toggleTableHeader(this.blocks, blockId);
+        },
+
+        toggleTableFooter(blockId) {
+            toggleTableFooter(this.blocks, blockId);
+        },
+
+        getSelectedTableCell() {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                let cell = range.commonAncestorContainer;
+                while (cell && cell.nodeName !== 'TD' && cell.nodeName !== 'TH') {
+                    cell = cell.parentNode;
+                }
+                if (cell) {
+                    return {
+                        cell: cell,
+                        rowIndex: cell.parentNode.rowIndex,
+                        colIndex: cell.cellIndex
+                    };
+                }
+            }
+            return null;
         }
     }
 }

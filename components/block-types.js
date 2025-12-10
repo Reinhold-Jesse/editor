@@ -57,6 +57,13 @@ export const BLOCK_TYPES = {
         placeholder: '',
         classes: 'grid grid-cols-3 gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]',
         isContainer: true
+    },
+    table: {
+        label: '📋 Tabelle',
+        tag: 'table',
+        placeholder: '',
+        classes: 'w-full border-collapse border border-gray-300',
+        isContainer: true
     }
 };
 

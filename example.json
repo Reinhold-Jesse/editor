@@ -1,0 +1,51 @@
+[
+  {
+    "id": "block-1-1736505600000",
+    "type": "heading1",
+    "content": "Willkommen im Block Editor",
+    "createdAt": "2025-12-10T08:00:00.000Z"
+  },
+  {
+    "id": "block-2-1736505601000",
+    "type": "paragraph",
+    "content": "Dies ist ein Beispiel-Absatz. Du kannst diesen Editor verwenden, um verschiedene Arten von Inhalten zu erstellen.",
+    "createdAt": "2025-12-10T08:00:01.000Z"
+  },
+  {
+    "id": "block-3-1736505602000",
+    "type": "heading2",
+    "content": "Funktionen",
+    "createdAt": "2025-12-10T08:00:02.000Z"
+  },
+  {
+    "id": "block-4-1736505603000",
+    "type": "paragraph",
+    "content": "Der Editor unterstützt verschiedene Block-Typen wie Überschriften, Absätze, Code-Blöcke und Zitate.",
+    "createdAt": "2025-12-10T08:00:03.000Z"
+  },
+  {
+    "id": "block-5-1736505604000",
+    "type": "code",
+    "content": "function beispiel() {\n    console.log('Hallo Welt!');\n}",
+    "createdAt": "2025-12-10T08:00:04.000Z"
+  },
+  {
+    "id": "block-6-1736505605000",
+    "type": "quote",
+    "content": "Dies ist ein Beispiel-Zitat.",
+    "createdAt": "2025-12-10T08:00:05.000Z"
+  },
+  {
+    "id": "block-7-1736505606000",
+    "type": "divider",
+    "content": "",
+    "createdAt": "2025-12-10T08:00:06.000Z"
+  },
+  {
+    "id": "block-8-1736505607000",
+    "type": "heading3",
+    "content": "Viel Spaß beim Editieren!",
+    "createdAt": "2025-12-10T08:00:07.000Z"
+  }
+]
+

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Imports</title>
+</head>
+<body>
+    <h1>Test Module Imports</h1>
+    <div id="output"></div>
+    <script type="module">
+        const output = document.getElementById('output');
+        
+        try {
+            // Test utils.js
+            const utils = await import('./components/utils.js');
+            output.innerHTML += '<p>✅ utils.js geladen</p>';
+            console.log('utils exports:', Object.keys(utils));
+            
+            // Test block-management.js
+            const blockMgmt = await import('./components/block-management.js');
+            output.innerHTML += '<p>✅ block-management.js geladen</p>';
+            console.log('block-management exports:', Object.keys(blockMgmt));
+            
+            // Test child-management.js
+            const childMgmt = await import('./components/child-management.js');
+            output.innerHTML += '<p>✅ child-management.js geladen</p>';
+            console.log('child-management exports:', Object.keys(childMgmt));
+            
+            // Test drag-drop.js
+            const dragDrop = await import('./components/drag-drop.js');
+            output.innerHTML += '<p>✅ drag-drop.js geladen</p>';
+            console.log('drag-drop exports:', Object.keys(dragDrop));
+            
+            // Test storage.js
+            const storage = await import('./components/storage.js');
+            output.innerHTML += '<p>✅ storage.js geladen</p>';
+            console.log('storage exports:', Object.keys(storage));
+            
+            // Test block-editor.js
+            await import('./block-editor.js');
+            output.innerHTML += '<p>✅ block-editor.js geladen</p>';
+            
+            // Prüfe ob blockEditor verfügbar ist
+            if (typeof window.blockEditor === 'function') {
+                output.innerHTML += '<p>✅ window.blockEditor ist verfügbar</p>';
+            } else {
+                output.innerHTML += '<p>❌ window.blockEditor ist NICHT verfügbar</p>';
+            }
+            
+        } catch (error) {
+            output.innerHTML += '<p style="color: red;">❌ Fehler: ' + error.message + '</p>';
+            console.error('Import error:', error);
+        }
+    </script>
+</body>
+</html>
+

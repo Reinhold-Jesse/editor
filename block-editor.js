@@ -58,6 +58,14 @@ function blockEditor() {
         dragStartIndex: null,
         dragOverIndex: null,
         showSidebar: false,
+        showImportModal: false,
+        importJSONText: '',
+        importJSONValid: false,
+        importJSONError: null,
+        importJSONPreview: null,
+        showExportModal: false,
+        exportJSONText: '',
+        exportCopied: false,
 
         init() {
             // Start mit einem leeren Paragraph
@@ -324,13 +332,122 @@ function blockEditor() {
         },
 
         importJSON() {
+            this.showImportModal = true;
+            this.importJSONText = '';
+            this.importJSONValid = false;
+            this.importJSONError = null;
+            this.importJSONPreview = null;
+        },
+
+        closeImportModal() {
+            this.showImportModal = false;
+            this.importJSONText = '';
+            this.importJSONValid = false;
+            this.importJSONError = null;
+            this.importJSONPreview = null;
+        },
+
+        validateImportJSON() {
+            this.importJSONError = null;
+            this.importJSONValid = false;
+            this.importJSONPreview = null;
+
+            if (!this.importJSONText.trim()) {
+                return;
+            }
+
+            try {
+                const parsed = JSON.parse(this.importJSONText);
+                
+                // Prüfe ob es ein Array ist
+                if (!Array.isArray(parsed)) {
+                    this.importJSONError = 'JSON muss ein Array von Blöcken sein.';
+                    return;
+                }
+
+                // Prüfe ob Blöcke die erforderlichen Felder haben
+                if (parsed.length === 0) {
+                    this.importJSONError = 'Das Array ist leer.';
+                    return;
+                }
+
+                // Validiere Block-Struktur
+                for (let i = 0; i < parsed.length; i++) {
+                    const block = parsed[i];
+                    if (!block.id || !block.type) {
+                        this.importJSONError = `Block ${i + 1} fehlt 'id' oder 'type' Feld.`;
+                        return;
+                    }
+                }
+
+                this.importJSONValid = true;
+                this.importJSONPreview = {
+                    blockCount: parsed.length
+                };
+            } catch (error) {
+                this.importJSONError = error.message || 'Ungültiges JSON Format.';
+            }
+        },
+
+        confirmImportJSON() {
+            if (!this.importJSONValid || !this.importJSONText) {
+                return;
+            }
+
             const updateCounter = (newCounter) => {
                 this.blockIdCounter = newCounter;
             };
-            importJSONUtil(this.blocks, this.blockIdCounter, this.$nextTick.bind(this), initAllBlockContents, updateCounter);
+            
+            importJSONUtil(
+                this.importJSONText,
+                this.blocks,
+                this.blockIdCounter,
+                this.$nextTick.bind(this),
+                initAllBlockContents,
+                updateCounter
+            );
+            
+            this.closeImportModal();
         },
 
         exportJSON() {
+            const json = JSON.stringify(this.blocks, null, 2);
+            this.exportJSONText = json;
+            this.showExportModal = true;
+        },
+
+        closeExportModal() {
+            this.showExportModal = false;
+            this.exportJSONText = '';
+            this.exportCopied = false;
+        },
+
+        async copyExportJSON() {
+            try {
+                // Moderne Clipboard API verwenden falls verfügbar
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(this.exportJSONText);
+                } else {
+                    // Fallback für ältere Browser
+                    if (this.$refs.exportJSONTextarea) {
+                        this.$refs.exportJSONTextarea.select();
+                        this.$refs.exportJSONTextarea.setSelectionRange(0, 99999);
+                        document.execCommand('copy');
+                    }
+                }
+                
+                // Erfolgsmeldung anzeigen
+                this.exportCopied = true;
+                setTimeout(() => {
+                    this.exportCopied = false;
+                }, 2000);
+            } catch (err) {
+                console.error('Fehler beim Kopieren:', err);
+                alert('Fehler beim Kopieren. Bitte manuell kopieren.');
+            }
+        },
+
+        downloadExportJSON() {
             exportJSONUtil(this.blocks);
         },
 
@@ -400,4 +517,6 @@ function blockEditor() {
 
 // Registriere die Komponente global für Alpine.js
 window.blockEditor = blockEditor;
+
+
 

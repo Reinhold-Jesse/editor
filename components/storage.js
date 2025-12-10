@@ -39,44 +39,54 @@ export function loadFromJSON(blocks, blockIdCounter, $nextTick, initAllBlockCont
     }
 }
 
-export function importJSON(blocks, blockIdCounter, $nextTick, initAllBlockContents, updateCounter) {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'application/json';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const parsedBlocks = JSON.parse(event.target.result);
-                    blocks.splice(0, blocks.length, ...parsedBlocks);
-                    
-                    const maxId = Math.max(...parsedBlocks.map(b => {
-                        const match = b.id.match(/block-(\d+)-/);
-                        return match ? parseInt(match[1]) : 0;
-                    }));
-                    
-                    const newCounter = maxId || 0;
-                    
-                    if (updateCounter) {
-                        updateCounter(newCounter);
-                    }
-                    
-                    // Initialisiere Block-Inhalte nach dem Rendering
-                    $nextTick(() => {
-                        initAllBlockContents(blocks);
-                    });
-                    
-                    alert('Daten importiert!');
-                } catch (error) {
-                    alert('Fehler beim Importieren der Daten!');
-                }
-            };
-            reader.readAsText(file);
+export function importJSON(jsonText, blocks, blockIdCounter, $nextTick, initAllBlockContents, updateCounter) {
+    try {
+        const parsedBlocks = JSON.parse(jsonText);
+        
+        // Validiere dass es ein Array ist
+        if (!Array.isArray(parsedBlocks)) {
+            alert('Fehler: JSON muss ein Array von Blöcken sein.');
+            return;
         }
-    };
-    input.click();
+
+        // Validiere Block-Struktur
+        for (let i = 0; i < parsedBlocks.length; i++) {
+            const block = parsedBlocks[i];
+            if (!block.id || !block.type) {
+                alert(`Fehler: Block ${i + 1} fehlt 'id' oder 'type' Feld.`);
+                return;
+            }
+        }
+
+        blocks.splice(0, blocks.length, ...parsedBlocks);
+        
+        // Berechne den maximalen Block-ID Counter
+        let maxId = 0;
+        parsedBlocks.forEach(b => {
+            const match = b.id.match(/block-(\d+)-/);
+            if (match) {
+                const idNum = parseInt(match[1]);
+                if (idNum > maxId) {
+                    maxId = idNum;
+                }
+            }
+        });
+        
+        const newCounter = maxId || 0;
+        
+        if (updateCounter) {
+            updateCounter(newCounter);
+        }
+        
+        // Initialisiere Block-Inhalte nach dem Rendering
+        $nextTick(() => {
+            initAllBlockContents(blocks);
+        });
+        
+        alert(`Erfolgreich ${parsedBlocks.length} Block(s) importiert!`);
+    } catch (error) {
+        alert('Fehler beim Importieren der Daten: ' + error.message);
+    }
 }
 
 export function exportJSON(blocks) {

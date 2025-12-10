@@ -17,12 +17,16 @@ import {
     clearBlockClasses as clearBlockClassesUtil,
     moveBlock as moveBlockUtil,
     updateLinkText as updateLinkTextUtil,
-    updateLinkUrl as updateLinkUrlUtil
+    updateLinkUrl as updateLinkUrlUtil,
+    updateImageUrl as updateImageUrlUtil,
+    updateImageAlt as updateImageAltUtil,
+    updateImageTitle as updateImageTitleUtil
 } from './components/block-management.js';
 import {
     addChild as addChildUtil,
     addChildAfter as addChildAfterUtil,
     removeChild as removeChildUtil,
+    removeChildFromColumn as removeChildFromColumnUtil,
     moveChildBlock as moveChildBlockUtil,
     addChildToColumn as addChildToColumnUtil
 } from './components/child-management.js';
@@ -54,6 +58,7 @@ import {
     toggleTableHeader,
     toggleTableFooter
 } from './components/table-management.js';
+import { CHILD_BLOCK_TYPES } from './components/block-types.js';
 
 function blockEditor() {
     return {
@@ -83,6 +88,11 @@ function blockEditor() {
         linkSettingsBlockId: null,
         linkSettingsText: '',
         linkSettingsUrl: '',
+        showImageSettingsModal: false,
+        imageSettingsBlockId: null,
+        imageSettingsUrl: '',
+        imageSettingsAlt: '',
+        imageSettingsTitle: '',
         showFloatingToolbar: false,
         floatingToolbarPosition: { top: 0, left: 0 },
         selectedText: '',
@@ -98,6 +108,7 @@ function blockEditor() {
         saveThemeError: null,
         editThemeError: null,
         themes: [],
+        childBlockTypes: CHILD_BLOCK_TYPES,
         notification: {
             show: false,
             message: '',
@@ -372,18 +383,90 @@ function blockEditor() {
             }
         },
 
-        handleDragStart(event, index, childIndex = null) {
+        handleDragStart(event, index, columnIndex = null, childIndex = null) {
+            // If columnIndex is provided, we're dealing with column children
+            if (columnIndex !== null && columnIndex !== undefined) {
+                const block = this.blocks[index];
+                if (block && block.children && block.children[columnIndex]) {
+                    const columnBlock = block.children[columnIndex];
+                    if (columnBlock.children && columnBlock.children[childIndex]) {
+                        const childBlock = columnBlock.children[childIndex];
+                        this.dragStartIndex = { 
+                            type: 'columnChild', 
+                            parentIndex: index, 
+                            columnIndex: columnIndex, 
+                            childIndex: childIndex 
+                        };
+                        this.draggingBlockId = childBlock.id;
+                        event.dataTransfer.effectAllowed = 'move';
+                        event.dataTransfer.setData('text/html', event.target.outerHTML);
+                        return;
+                    }
+                }
+            }
+            // Fallback to original logic
             const result = handleDragStartUtil(event, this.blocks, index, childIndex);
             this.dragStartIndex = result.dragStartIndex;
             this.draggingBlockId = result.draggingBlockId;
         },
 
-        handleDragOver(event, index, childIndex = null) {
+        handleDragOver(event, index, columnIndex = null, childIndex = null) {
+            // If columnIndex is provided, we're dealing with column children
+            if (columnIndex !== null && columnIndex !== undefined) {
+                this.dragOverIndex = { 
+                    type: 'columnChild', 
+                    parentIndex: index, 
+                    columnIndex: columnIndex, 
+                    childIndex: childIndex 
+                };
+                event.dataTransfer.dropEffect = 'move';
+                return;
+            }
+            // Fallback to original logic
             this.dragOverIndex = handleDragOverUtil(event, index, childIndex);
         },
 
-        handleDrop(event, dropIndex, dropChildIndex = null) {
-            handleDropUtil(event, this.blocks, this.dragStartIndex, dropIndex, dropChildIndex);
+        handleDrop(event, dropIndex, dropColumnIndex = null, dropChildIndex = null) {
+            event.preventDefault();
+            
+            if (this.dragStartIndex === null) return;
+            
+            // Handle column child drag & drop
+            if (this.dragStartIndex.type === 'columnChild') {
+                const start = this.dragStartIndex;
+                const parentBlock = this.blocks[start.parentIndex];
+                
+                if (parentBlock && parentBlock.children) {
+                    const startColumn = parentBlock.children[start.columnIndex];
+                    const dropColumn = dropColumnIndex !== null ? parentBlock.children[dropColumnIndex] : startColumn;
+                    
+                    if (startColumn && startColumn.children && dropColumn && dropColumn.children) {
+                        const draggedChild = startColumn.children[start.childIndex];
+                        
+                        // Remove from start position
+                        startColumn.children.splice(start.childIndex, 1);
+                        
+                        // Insert at drop position
+                        if (dropChildIndex !== null && dropChildIndex !== undefined) {
+                            let insertIndex = dropChildIndex;
+                            // Adjust index if moving within same column and moving down
+                            if (start.columnIndex === dropColumnIndex && start.childIndex < dropChildIndex) {
+                                insertIndex = dropChildIndex - 1;
+                            }
+                            dropColumn.children.splice(insertIndex, 0, draggedChild);
+                        } else {
+                            // Append to end
+                            dropColumn.children.push(draggedChild);
+                        }
+                        
+                        parentBlock.updatedAt = new Date().toISOString();
+                    }
+                }
+            } else {
+                // Fallback to original logic
+                handleDropUtil(event, this.blocks, this.dragStartIndex, dropIndex, dropChildIndex, dropColumnIndex, null);
+            }
+            
             this.dragStartIndex = null;
             this.dragOverIndex = null;
         },
@@ -395,7 +478,11 @@ function blockEditor() {
         },
 
         changeBlockType(blockId, newType) {
-            changeBlockTypeUtil(this.blocks, blockId, newType);
+            changeBlockTypeUtil(this.blocks, blockId, newType, this.blockIdCounter);
+            // Increment blockIdCounter if columns were created
+            if (newType === 'twoColumn' || newType === 'threeColumn') {
+                this.blockIdCounter += (newType === 'twoColumn' ? 2 : 3);
+            }
             
             // Focus auf den Block nach Typ-Änderung
             this.$nextTick(() => {
@@ -456,6 +543,10 @@ function blockEditor() {
             removeChildUtil(this.blocks, parentBlockId, childIndex);
         },
 
+        removeChildFromColumn(parentBlockId, columnIndex, childIndex) {
+            removeChildFromColumnUtil(this.blocks, parentBlockId, columnIndex, childIndex);
+        },
+
         moveChildBlock(parentBlockId, childIndex, direction) {
             moveChildBlockUtil(this.blocks, parentBlockId, childIndex, direction);
         },
@@ -463,6 +554,10 @@ function blockEditor() {
         addChildToColumn(parentBlockId, childType, columnIndex, totalColumns) {
             this.blockIdCounter++;
             const childBlock = addChildToColumnUtil(this.blocks, parentBlockId, this.blockIdCounter, childType, columnIndex, totalColumns);
+            if (!childBlock) {
+                this.blockIdCounter--; // Rollback if failed
+                return;
+            }
             if (childBlock) {
                 this.selectedBlockId = childBlock.id;
                 
@@ -913,6 +1008,81 @@ function blockEditor() {
             
             this.showNotification('Link-Einstellungen erfolgreich gespeichert!', 'success');
             this.closeLinkSettingsModal();
+        },
+
+        updateImageUrl(blockId, imageUrl) {
+            updateImageUrlUtil(this.blocks, blockId, imageUrl);
+        },
+
+        updateImageAlt(blockId, imageAlt) {
+            updateImageAltUtil(this.blocks, blockId, imageAlt);
+        },
+
+        updateImageTitle(blockId, imageTitle) {
+            updateImageTitleUtil(this.blocks, blockId, imageTitle);
+        },
+
+        openImageSettingsModal(blockId) {
+            const { block } = this.findBlockById(blockId);
+            if (block && block.type === 'image') {
+                this.imageSettingsBlockId = blockId;
+                this.imageSettingsUrl = block.imageUrl || '';
+                this.imageSettingsAlt = block.imageAlt || '';
+                this.imageSettingsTitle = block.imageTitle || '';
+                this.showImageSettingsModal = true;
+            }
+        },
+
+        closeImageSettingsModal() {
+            this.showImageSettingsModal = false;
+            this.imageSettingsBlockId = null;
+            this.imageSettingsUrl = '';
+            this.imageSettingsAlt = '';
+            this.imageSettingsTitle = '';
+        },
+
+        saveImageSettings() {
+            if (!this.imageSettingsBlockId) return;
+            
+            if (!this.imageSettingsUrl.trim()) {
+                this.showNotification('Bitte geben Sie eine Bild-URL ein', 'warning');
+                return;
+            }
+            
+            updateImageUrlUtil(this.blocks, this.imageSettingsBlockId, this.imageSettingsUrl);
+            updateImageAltUtil(this.blocks, this.imageSettingsBlockId, this.imageSettingsAlt);
+            updateImageTitleUtil(this.blocks, this.imageSettingsBlockId, this.imageSettingsTitle);
+            
+            this.showNotification('Bild-Einstellungen erfolgreich gespeichert!', 'success');
+            this.closeImageSettingsModal();
+        },
+
+        selectImageFile(blockId) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const imageUrl = event.target.result;
+                        updateImageUrlUtil(this.blocks, blockId, imageUrl);
+                        
+                        // Aktualisiere auch die Modal-Felder, falls das Modal geöffnet ist
+                        if (this.showImageSettingsModal && this.imageSettingsBlockId === blockId) {
+                            this.imageSettingsUrl = imageUrl;
+                        }
+                        
+                        this.showNotification('Bild erfolgreich hochgeladen!', 'success');
+                    };
+                    reader.onerror = () => {
+                        this.showNotification('Fehler beim Laden des Bildes', 'error');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
         },
 
         handleTextSelection() {

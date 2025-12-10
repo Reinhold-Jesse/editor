@@ -26,6 +26,67 @@ export function createBlock(blockIdCounter, type, content = '') {
         block.linkUrl = '';
     }
     
+    // Initialize image data if it's an image
+    if (type === 'image') {
+        block.imageUrl = '';
+        block.imageAlt = '';
+        block.imageTitle = '';
+    }
+    
+    // Initialize column structure for twoColumn and threeColumn
+    if (type === 'twoColumn') {
+        block.children = [
+            {
+                id: generateId(blockIdCounter + 1),
+                type: 'column',
+                content: '',
+                style: '',
+                classes: '',
+                children: [],
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: generateId(blockIdCounter + 2),
+                type: 'column',
+                content: '',
+                style: '',
+                classes: '',
+                children: [],
+                createdAt: new Date().toISOString()
+            }
+        ];
+    } else if (type === 'threeColumn') {
+        block.children = [
+            {
+                id: generateId(blockIdCounter + 1),
+                type: 'column',
+                content: '',
+                style: '',
+                classes: '',
+                children: [],
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: generateId(blockIdCounter + 2),
+                type: 'column',
+                content: '',
+                style: '',
+                classes: '',
+                children: [],
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: generateId(blockIdCounter + 3),
+                type: 'column',
+                content: '',
+                style: '',
+                classes: '',
+                children: [],
+                createdAt: new Date().toISOString()
+            }
+        ];
+    }
+    
     return block;
 }
 
@@ -67,7 +128,7 @@ export function deleteBlock(blocks, blockId) {
     return { deleted: false, newSelectedIndex: null };
 }
 
-export function changeBlockType(blocks, blockId, newType) {
+export function changeBlockType(blocks, blockId, newType, blockIdCounter = 0) {
     const { block } = findBlockById(blocks, blockId);
     if (block) {
         const oldContent = block.content;
@@ -89,6 +150,20 @@ export function changeBlockType(blocks, blockId, newType) {
             delete block.linkUrl;
         }
         
+        // Initialize image data if changing to image type
+        if (newType === 'image' && oldType !== 'image') {
+            block.imageUrl = '';
+            block.imageAlt = '';
+            block.imageTitle = '';
+        }
+        
+        // Clean up image data if changing away from image type
+        if (oldType === 'image' && newType !== 'image') {
+            delete block.imageUrl;
+            delete block.imageAlt;
+            delete block.imageTitle;
+        }
+        
         // Initialize table data if changing to table type
         if (newType === 'table' && oldType !== 'table') {
             const tableData = initializeTable(blockId, 3, 3, true, false);
@@ -99,6 +174,65 @@ export function changeBlockType(blocks, blockId, newType) {
         // Clean up table data if changing away from table type
         if (oldType === 'table' && newType !== 'table') {
             delete block.tableData;
+        }
+        
+        // Initialize column structure if changing to twoColumn or threeColumn
+        if (newType === 'twoColumn' && oldType !== 'twoColumn') {
+            block.children = [
+                {
+                    id: generateId(blockIdCounter + 1),
+                    type: 'column',
+                    content: '',
+                    style: '',
+                    classes: '',
+                    children: [],
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: generateId(blockIdCounter + 2),
+                    type: 'column',
+                    content: '',
+                    style: '',
+                    classes: '',
+                    children: [],
+                    createdAt: new Date().toISOString()
+                }
+            ];
+        } else if (newType === 'threeColumn' && oldType !== 'threeColumn') {
+            block.children = [
+                {
+                    id: generateId(blockIdCounter + 1),
+                    type: 'column',
+                    content: '',
+                    style: '',
+                    classes: '',
+                    children: [],
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: generateId(blockIdCounter + 2),
+                    type: 'column',
+                    content: '',
+                    style: '',
+                    classes: '',
+                    children: [],
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: generateId(blockIdCounter + 3),
+                    type: 'column',
+                    content: '',
+                    style: '',
+                    classes: '',
+                    children: [],
+                    createdAt: new Date().toISOString()
+                }
+            ];
+        }
+        
+        // Clean up column structure if changing away from column layouts
+        if ((oldType === 'twoColumn' || oldType === 'threeColumn') && newType !== 'twoColumn' && newType !== 'threeColumn') {
+            delete block.children;
         }
     }
 }
@@ -156,6 +290,30 @@ export function updateLinkUrl(blocks, blockId, linkUrl) {
     const { block } = findBlockById(blocks, blockId);
     if (block && block.type === 'link') {
         block.linkUrl = linkUrl;
+        block.updatedAt = new Date().toISOString();
+    }
+}
+
+export function updateImageUrl(blocks, blockId, imageUrl) {
+    const { block } = findBlockById(blocks, blockId);
+    if (block && block.type === 'image') {
+        block.imageUrl = imageUrl;
+        block.updatedAt = new Date().toISOString();
+    }
+}
+
+export function updateImageAlt(blocks, blockId, imageAlt) {
+    const { block } = findBlockById(blocks, blockId);
+    if (block && block.type === 'image') {
+        block.imageAlt = imageAlt;
+        block.updatedAt = new Date().toISOString();
+    }
+}
+
+export function updateImageTitle(blocks, blockId, imageTitle) {
+    const { block } = findBlockById(blocks, blockId);
+    if (block && block.type === 'image') {
+        block.imageTitle = imageTitle;
         block.updatedAt = new Date().toISOString();
     }
 }

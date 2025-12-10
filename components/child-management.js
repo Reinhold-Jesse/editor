@@ -18,6 +18,13 @@ export function addChild(blocks, parentBlockId, blockIdCounter, childType) {
             createdAt: new Date().toISOString()
         };
         
+        // Initialize image data if it's an image
+        if (childType === 'image') {
+            childBlock.imageUrl = '';
+            childBlock.imageAlt = '';
+            childBlock.imageTitle = '';
+        }
+        
         parentBlock.children.push(childBlock);
         parentBlock.updatedAt = new Date().toISOString();
         return childBlock;
@@ -38,6 +45,13 @@ export function addChildAfter(blocks, parentBlockId, childIndex, blockIdCounter,
             createdAt: new Date().toISOString()
         };
         
+        // Initialize image data if it's an image
+        if (childType === 'image') {
+            childBlock.imageUrl = '';
+            childBlock.imageAlt = '';
+            childBlock.imageTitle = '';
+        }
+        
         parentBlock.children.splice(childIndex + 1, 0, childBlock);
         parentBlock.updatedAt = new Date().toISOString();
         return childBlock;
@@ -52,6 +66,20 @@ export function removeChild(blocks, parentBlockId, childIndex) {
         parentBlock.updatedAt = new Date().toISOString();
         if (parentBlock.children.length === 0) {
             delete parentBlock.children;
+        }
+    }
+}
+
+export function removeChildFromColumn(blocks, parentBlockId, columnIndex, childIndex) {
+    const parentBlock = blocks.find(b => b.id === parentBlockId);
+    if (parentBlock && parentBlock.children && parentBlock.children[columnIndex]) {
+        const columnBlock = parentBlock.children[columnIndex];
+        if (columnBlock.children) {
+            columnBlock.children.splice(childIndex, 1);
+            parentBlock.updatedAt = new Date().toISOString();
+            if (columnBlock.children.length === 0) {
+                columnBlock.children = [];
+            }
         }
     }
 }
@@ -71,11 +99,36 @@ export function moveChildBlock(blocks, parentBlockId, childIndex, direction) {
 
 export function addChildToColumn(blocks, parentBlockId, blockIdCounter, childType, columnIndex, totalColumns) {
     const parentBlock = blocks.find(b => b.id === parentBlockId);
-    if (parentBlock) {
-        if (!parentBlock.children) {
+    if (parentBlock && (parentBlock.type === 'twoColumn' || parentBlock.type === 'threeColumn')) {
+        // Ensure children array exists and has column blocks
+        if (!parentBlock.children || parentBlock.children.length === 0) {
+            // Initialize column blocks if they don't exist
             parentBlock.children = [];
+            for (let i = 0; i < totalColumns; i++) {
+                parentBlock.children.push({
+                    id: generateId(blockIdCounter + i),
+                    type: 'column',
+                    content: '',
+                    style: '',
+                    classes: '',
+                    children: [],
+                    createdAt: new Date().toISOString()
+                });
+            }
         }
         
+        // Find the column block at the specified index
+        const columnBlock = parentBlock.children[columnIndex];
+        if (!columnBlock) {
+            return null;
+        }
+        
+        // Ensure column block has children array
+        if (!columnBlock.children) {
+            columnBlock.children = [];
+        }
+        
+        // Create the new child block
         const childBlock = {
             id: generateId(blockIdCounter),
             type: childType,
@@ -86,39 +139,20 @@ export function addChildToColumn(blocks, parentBlockId, blockIdCounter, childTyp
             createdAt: new Date().toISOString()
         };
         
-        // Calculate insertion index based on column
-        // For two-column: column 0 -> indices 0,2,4... (even), column 1 -> indices 1,3,5... (odd)
-        // For three-column: column 0 -> 0,3,6..., column 1 -> 1,4,7..., column 2 -> 2,5,8...
-        const currentChildren = parentBlock.children.length;
-        let insertIndex;
-        
-        if (totalColumns === 2) {
-            // Find the next available index for this column
-            // Count how many items are already in this column
-            let itemsInColumn = 0;
-            for (let i = 0; i < currentChildren; i++) {
-                if (i % 2 === columnIndex) {
-                    itemsInColumn++;
-                }
-            }
-            // Calculate the target index: column 0 -> 0,2,4... column 1 -> 1,3,5...
-            insertIndex = itemsInColumn * totalColumns + columnIndex;
-        } else if (totalColumns === 3) {
-            // Count how many items are already in this column
-            let itemsInColumn = 0;
-            for (let i = 0; i < currentChildren; i++) {
-                if (i % 3 === columnIndex) {
-                    itemsInColumn++;
-                }
-            }
-            // Calculate the target index: column 0 -> 0,3,6... column 1 -> 1,4,7... column 2 -> 2,5,8...
-            insertIndex = itemsInColumn * totalColumns + columnIndex;
-        } else {
-            // Default: append to end
-            insertIndex = currentChildren;
+        // Initialize image data if it's an image
+        if (childType === 'image') {
+            childBlock.imageUrl = '';
+            childBlock.imageAlt = '';
+            childBlock.imageTitle = '';
         }
         
-        parentBlock.children.splice(insertIndex, 0, childBlock);
+        // Initialize children array for container blocks
+        if (childType === 'twoColumn' || childType === 'threeColumn' || childType === 'table') {
+            childBlock.children = [];
+        }
+        
+        // Add the child block to the column's children
+        columnBlock.children.push(childBlock);
         parentBlock.updatedAt = new Date().toISOString();
         return childBlock;
     }

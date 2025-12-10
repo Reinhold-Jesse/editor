@@ -71,6 +71,14 @@ export const BLOCK_TYPES = {
         placeholder: 'Link-Text...',
         classes: 'block-placeholder text-blue-600 underline hover:text-blue-800 min-h-[1.5rem]',
         hasLinkData: true
+    },
+    image: {
+        label: '🖼️ Bild',
+        tag: 'img',
+        placeholder: '',
+        classes: 'max-w-full h-auto rounded',
+        isVoid: true,
+        hasImageData: true
     }
 };
 
@@ -111,6 +119,35 @@ export const CHILD_BLOCK_TYPES = {
         tag: 'blockquote',
         placeholder: 'Child Zitat...',
         classes: 'block-placeholder border-l-4 border-blue-500 pl-3 italic text-gray-700 min-h-[1.5rem] text-sm'
+    },
+    image: {
+        label: '🖼️ Bild',
+        tag: 'img',
+        placeholder: '',
+        classes: 'w-full h-auto rounded',
+        isVoid: true,
+        hasImageData: true
+    },
+    twoColumn: {
+        label: '📊 Zwei Spalten',
+        tag: 'div',
+        placeholder: '',
+        classes: 'grid grid-cols-2 gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]',
+        isContainer: true
+    },
+    threeColumn: {
+        label: '📊 Drei Spalten',
+        tag: 'div',
+        placeholder: '',
+        classes: 'grid grid-cols-3 gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]',
+        isContainer: true
+    },
+    table: {
+        label: '📋 Tabelle',
+        tag: 'table',
+        placeholder: '',
+        classes: 'w-full border-collapse border border-gray-300',
+        isContainer: true
     }
 };
 

@@ -7,18 +7,36 @@ export function generateId(blockIdCounter) {
 export function findBlockById(blocks, blockId) {
     // Suche in Haupt-Blöcken
     let block = blocks.find(b => b.id === blockId);
+    if (block) return { block, parent: null };
     
-    // Wenn nicht gefunden, suche in Children
-    if (!block) {
-        for (let parentBlock of blocks) {
-            if (parentBlock.children) {
-                block = parentBlock.children.find(c => c.id === blockId);
-                if (block) return { block, parent: parentBlock };
+    // Rekursive Suche in verschachtelten Strukturen
+    function searchInChildren(children, parent) {
+        if (!children) return null;
+        
+        for (let child of children) {
+            if (child.id === blockId) {
+                return { block: child, parent: parent };
             }
+            
+            // Rekursiv in children suchen
+            if (child.children) {
+                const result = searchInChildren(child.children, child);
+                if (result) return result;
+            }
+        }
+        
+        return null;
+    }
+    
+    // Suche in allen Haupt-Blöcken und ihren Children
+    for (let parentBlock of blocks) {
+        if (parentBlock.children) {
+            const result = searchInChildren(parentBlock.children, parentBlock);
+            if (result) return result;
         }
     }
     
-    return { block, parent: null };
+    return { block: null, parent: null };
 }
 
 export function getAllBlocks(blocks) {

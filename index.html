@@ -254,6 +254,7 @@
                                     <option value="heading3">H3 Überschrift</option>
                                     <option value="code">💻 Code Block</option>
                                     <option value="quote">💬 Zitat</option>
+                                    <option value="link">🔗 Link</option>
                                     <option value="divider">➖ Trennlinie</option>
                                     <option value="twoColumn">📊 Zwei Spalten</option>
                                     <option value="threeColumn">📊 Drei Spalten</option>
@@ -312,6 +313,16 @@
                                 <div class="mt-2 text-xs text-gray-500">
                                     Beispiel: <code class="bg-gray-100 px-1 rounded">color: blue; font-size: 18px; margin: 10px;</code>
                                 </div>
+                            </div>
+
+                            <!-- Link Management -->
+                            <div x-show="block.type === 'link'" class="pt-4 border-t border-gray-200" @click.stop>
+                                <button 
+                                    @click.stop="openLinkSettingsModal(block.id)"
+                                    class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                                >
+                                    🔗 Link-Einstellungen öffnen
+                                </button>
                             </div>
 
                             <!-- Table Management -->
@@ -574,6 +585,12 @@
                         💬 Zitat
                     </button>
                     <button 
+                        @click="addBlock('link')"
+                        class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
+                    >
+                        🔗 Link
+                    </button>
+                    <button 
                         @click="addBlock('divider')"
                         class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
                     >
@@ -719,6 +736,43 @@
                             </button>
                         </div>
 
+                        <!-- Text-Ausrichtung für Text-Blöcke -->
+                        <div 
+                            x-show="selectedBlockId === block.id && (block.type === 'paragraph' || block.type === 'heading1' || block.type === 'heading2' || block.type === 'heading3' || block.type === 'quote')"
+                            class="mb-2 p-2 bg-gray-100 rounded-lg flex gap-1 flex-wrap"
+                            @click.stop
+                        >
+                            <span class="text-xs text-gray-600 self-center mr-2">Text-Ausrichtung:</span>
+                            <button 
+                                @click.stop="applyTextAlignment(block.id, 'left')"
+                                class="px-2 py-1 bg-white rounded hover:bg-gray-200 text-sm"
+                                title="Links ausrichten"
+                            >
+                                ⬅
+                            </button>
+                            <button 
+                                @click.stop="applyTextAlignment(block.id, 'center')"
+                                class="px-2 py-1 bg-white rounded hover:bg-gray-200 text-sm"
+                                title="Zentriert"
+                            >
+                                ⬌
+                            </button>
+                            <button 
+                                @click.stop="applyTextAlignment(block.id, 'right')"
+                                class="px-2 py-1 bg-white rounded hover:bg-gray-200 text-sm"
+                                title="Rechts ausrichten"
+                            >
+                                ➡
+                            </button>
+                            <button 
+                                @click.stop="applyTextAlignment(block.id, 'justify')"
+                                class="px-2 py-1 bg-white rounded hover:bg-gray-200 text-sm"
+                                title="Bündig"
+                            >
+                                ⬌⬌
+                            </button>
+                        </div>
+
                         <!-- Block Content -->
                         <div class="block-content">
                             <!-- Paragraph -->
@@ -809,6 +863,26 @@
                                     @keydown.backspace="handleBackspace(block.id, $event)"
                                     @focus="initBlockContent($event.target, block)"
                                 ></blockquote>
+                            </div>
+
+                            <!-- Link -->
+                            <div x-show="block.type === 'link'" class="flex items-center gap-2">
+                                <a 
+                                    :data-block-id="block.id"
+                                    :href="block.linkUrl || '#'"
+                                    :style="block.style || ''"
+                                    :class="['block-placeholder text-blue-600 underline hover:text-blue-800 min-h-[1.5rem]', block.classes || '']"
+                                    x-text="block.linkText || 'Link-Text'"
+                                    @click.stop="openLinkSettingsModal(block.id)"
+                                    class="cursor-pointer"
+                                ></a>
+                                <button 
+                                    @click.stop="openLinkSettingsModal(block.id)"
+                                    class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                    title="Link-Einstellungen öffnen"
+                                >
+                                    ⚙
+                                </button>
                             </div>
 
                             <!-- Divider -->
@@ -1750,6 +1824,249 @@
                     class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                     Schließen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Toolbar für Text-Selektion -->
+    <div 
+        x-show="showFloatingToolbar"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100 scale-100"
+        x-transition:leave-end="opacity-0 scale-95"
+        class="floating-toolbar fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-2 flex flex-col gap-2 min-w-[300px] max-w-[500px]"
+        :style="'top: ' + floatingToolbarPosition.top + 'px; left: ' + floatingToolbarPosition.left + 'px; transform: translateX(-50%);'"
+        @click.stop
+        style="display: none;"
+    >
+        <!-- Buttons Row -->
+        <div class="flex gap-1 items-center flex-wrap">
+            <button 
+                @click.stop="applyTextFormat('bold')"
+                class="px-3 py-1.5 bg-white rounded hover:bg-gray-100 text-sm font-bold border border-gray-200"
+                title="Fett"
+            >
+                <strong>B</strong>
+            </button>
+            <button 
+                @click.stop="applyTextFormat('italic')"
+                class="px-3 py-1.5 bg-white rounded hover:bg-gray-100 text-sm italic border border-gray-200"
+                title="Kursiv"
+            >
+                <em>I</em>
+            </button>
+            <button 
+                @click.stop="applyTextFormat('underline')"
+                class="px-3 py-1.5 bg-white rounded hover:bg-gray-100 text-sm underline border border-gray-200"
+                title="Unterstrichen"
+            >
+                <u>U</u>
+            </button>
+            <div class="w-px bg-gray-300 mx-1 h-6"></div>
+            <button 
+                @click.stop="openLinkInputForSelection()"
+                class="px-3 py-1.5 bg-white rounded hover:bg-gray-100 text-sm border border-gray-200 flex items-center gap-1"
+                title="Link hinzufügen/bearbeiten"
+            >
+                🔗 Link
+            </button>
+            <div class="w-px bg-gray-300 mx-1 h-6"></div>
+            <button 
+                @click.stop="removeFormatting()"
+                class="px-3 py-1.5 bg-white rounded hover:bg-gray-100 text-sm border border-gray-200"
+                title="Formatierung entfernen"
+            >
+                🗑 Formatierung entfernen
+            </button>
+        </div>
+        
+        <!-- Selected Text Row -->
+        <div class="w-full pt-2 border-t border-gray-200">
+            <div class="text-xs text-gray-500 px-2 py-1.5 bg-gray-50 rounded break-words" x-text="selectedText"></div>
+        </div>
+    </div>
+
+    <!-- Link Input Modal für Text-Selektion -->
+    <div 
+        x-show="showLinkInputModal"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+        @click.self="closeLinkInputModal()"
+        style="display: none;"
+    >
+        <div 
+            class="bg-white rounded-lg shadow-xl max-w-md w-full flex flex-col"
+            @click.stop
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+        >
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-6 border-b border-gray-200">
+                <h2 class="text-xl font-bold text-gray-900" x-text="editingLink ? '🔗 Link bearbeiten' : '🔗 Link hinzufügen'"></h2>
+                <button 
+                    @click="closeLinkInputModal()"
+                    class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Schließen"
+                >
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Text:
+                        </label>
+                        <div class="p-3 bg-gray-50 rounded-lg text-sm text-gray-700 border border-gray-200" x-text="selectedText || editingLink?.text || ''"></div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            URL:
+                        </label>
+                        <input 
+                            type="text"
+                            x-model="linkInputUrl"
+                            @keydown.enter.prevent="applyLinkToSelection()"
+                            @click.stop
+                            @focus.stop
+                            placeholder="https://example.com"
+                            class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <p class="mt-1 text-xs text-gray-500">
+                            Beispiel: <code class="bg-gray-100 px-1 rounded">https://example.com</code>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex justify-between items-center gap-3 p-6 border-t border-gray-200">
+                <button 
+                    x-show="editingLink"
+                    @click="removeLink()"
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                    Link entfernen
+                </button>
+                <div class="flex gap-3 ml-auto">
+                    <button 
+                        @click="closeLinkInputModal()"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    >
+                        Abbrechen
+                    </button>
+                    <button 
+                        @click="applyLinkToSelection()"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        x-text="editingLink ? 'Link aktualisieren' : 'Link hinzufügen'"
+                    ></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link Settings Modal -->
+    <div 
+        x-show="showLinkSettingsModal"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+        @click.self="closeLinkSettingsModal()"
+        style="display: none;"
+    >
+        <div 
+            class="bg-white rounded-lg shadow-xl max-w-md w-full flex flex-col"
+            @click.stop
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+        >
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-6 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900">🔗 Link-Einstellungen</h2>
+                <button 
+                    @click="closeLinkSettingsModal()"
+                    class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Schließen"
+                >
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Link-Text:
+                        </label>
+                        <input 
+                            type="text"
+                            x-model="linkSettingsText"
+                            @click.stop
+                            @focus.stop
+                            placeholder="Link-Text eingeben..."
+                            class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Link-URL:
+                        </label>
+                        <input 
+                            type="text"
+                            x-model="linkSettingsUrl"
+                            @click.stop
+                            @focus.stop
+                            placeholder="https://example.com"
+                            class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <p class="mt-1 text-xs text-gray-500">
+                            Beispiel: <code class="bg-gray-100 px-1 rounded">https://example.com</code>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex justify-end gap-3 p-6 border-t border-gray-200">
+                <button 
+                    @click="closeLinkSettingsModal()"
+                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                    Abbrechen
+                </button>
+                <button 
+                    @click="saveLinkSettings()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                    Speichern
                 </button>
             </div>
         </div>

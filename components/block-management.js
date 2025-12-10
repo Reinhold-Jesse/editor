@@ -20,6 +20,12 @@ export function createBlock(blockIdCounter, type, content = '') {
         block.tableData.lastCellIdCounter = tableData.lastCellIdCounter;
     }
     
+    // Initialize link data if it's a link
+    if (type === 'link') {
+        block.linkText = content || 'Link-Text';
+        block.linkUrl = '';
+    }
+    
     return block;
 }
 
@@ -65,9 +71,35 @@ export function changeBlockType(blocks, blockId, newType) {
     const { block } = findBlockById(blocks, blockId);
     if (block) {
         const oldContent = block.content;
+        const oldType = block.type;
+        
         block.type = newType;
         block.content = oldContent;
         block.updatedAt = new Date().toISOString();
+        
+        // Initialize link data if changing to link type
+        if (newType === 'link' && oldType !== 'link') {
+            block.linkText = oldContent || 'Link-Text';
+            block.linkUrl = '';
+        }
+        
+        // Clean up link data if changing away from link type
+        if (oldType === 'link' && newType !== 'link') {
+            delete block.linkText;
+            delete block.linkUrl;
+        }
+        
+        // Initialize table data if changing to table type
+        if (newType === 'table' && oldType !== 'table') {
+            const tableData = initializeTable(blockId, 3, 3, true, false);
+            block.tableData = tableData;
+            block.tableData.lastCellIdCounter = tableData.lastCellIdCounter;
+        }
+        
+        // Clean up table data if changing away from table type
+        if (oldType === 'table' && newType !== 'table') {
+            delete block.tableData;
+        }
     }
 }
 
@@ -108,6 +140,23 @@ export function moveBlock(blocks, index, direction) {
         [blocks[index - 1], blocks[index]] = [blocks[index], blocks[index - 1]];
     } else if (direction === 'down' && index < blocks.length - 1) {
         [blocks[index], blocks[index + 1]] = [blocks[index + 1], blocks[index]];
+    }
+}
+
+export function updateLinkText(blocks, blockId, linkText) {
+    const { block } = findBlockById(blocks, blockId);
+    if (block && block.type === 'link') {
+        block.linkText = linkText;
+        block.content = linkText; // Keep content in sync for compatibility
+        block.updatedAt = new Date().toISOString();
+    }
+}
+
+export function updateLinkUrl(blocks, blockId, linkUrl) {
+    const { block } = findBlockById(blocks, blockId);
+    if (block && block.type === 'link') {
+        block.linkUrl = linkUrl;
+        block.updatedAt = new Date().toISOString();
     }
 }
 

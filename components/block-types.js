@@ -64,6 +64,13 @@ export const BLOCK_TYPES = {
         placeholder: '',
         classes: 'w-full border-collapse border border-gray-300',
         isContainer: true
+    },
+    link: {
+        label: '🔗 Link',
+        tag: 'a',
+        placeholder: 'Link-Text...',
+        classes: 'block-placeholder text-blue-600 underline hover:text-blue-800 min-h-[1.5rem]',
+        hasLinkData: true
     }
 };
 

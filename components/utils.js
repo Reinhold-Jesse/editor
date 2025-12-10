@@ -37,11 +37,20 @@ export function getAllBlocks(blocks) {
 
 export function initBlockContent(element, block, isTextContent = false) {
     // Setze Inhalt nur wenn Element leer ist und Block Inhalt hat
-    if (!element.textContent && block.content) {
-        if (isTextContent) {
-            element.textContent = block.content;
-        } else {
-            element.innerHTML = block.content;
+    if (!element.textContent) {
+        let content = block.content;
+        
+        // Für Link-Blöcke verwende linkText
+        if (block.type === 'link' && block.linkText) {
+            content = block.linkText;
+        }
+        
+        if (content) {
+            if (isTextContent) {
+                element.textContent = content;
+            } else {
+                element.innerHTML = content;
+            }
         }
     }
 }
@@ -49,11 +58,20 @@ export function initBlockContent(element, block, isTextContent = false) {
 export function initAllBlockContents(blocks) {
     blocks.forEach(block => {
         const element = document.querySelector(`[data-block-id="${block.id}"]`);
-        if (element && !element.textContent && block.content) {
-            if (block.type === 'code') {
-                element.textContent = block.content;
-            } else {
-                element.innerHTML = block.content;
+        if (element && !element.textContent) {
+            let content = block.content;
+            
+            // Für Link-Blöcke verwende linkText
+            if (block.type === 'link' && block.linkText) {
+                content = block.linkText;
+            }
+            
+            if (content) {
+                if (block.type === 'code') {
+                    element.textContent = content;
+                } else {
+                    element.innerHTML = content;
+                }
             }
         }
         
@@ -73,11 +91,20 @@ export function initAllBlockContents(blocks) {
         if (block.children) {
             block.children.forEach(child => {
                 const childElement = document.querySelector(`[data-block-id="${child.id}"]`);
-                if (childElement && !childElement.textContent && child.content) {
-                    if (child.type === 'code') {
-                        childElement.textContent = child.content;
-                    } else {
-                        childElement.innerHTML = child.content;
+                if (childElement && !childElement.textContent) {
+                    let content = child.content;
+                    
+                    // Für Link-Blöcke verwende linkText
+                    if (child.type === 'link' && child.linkText) {
+                        content = child.linkText;
+                    }
+                    
+                    if (content) {
+                        if (child.type === 'code') {
+                            childElement.textContent = content;
+                        } else {
+                            childElement.innerHTML = content;
+                        }
                     }
                 }
             });

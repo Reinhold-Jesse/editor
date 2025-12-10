@@ -60,4 +60,54 @@ this.showNotification('<strong>Wichtig:</strong> Bitte prüfen Sie die Einstellu
 - Die Notification erscheint oben rechts im Viewport
 - Unterstützt Alpine.js Transitions für sanfte Animationen
 
+## Funktionen und Block-Verarbeitung
+
+### Verbot von doppelten Funktionen
+
+**WICHTIG:** Es dürfen KEINE doppelten Funktionen existieren. Jede Funktion bearbeitet genau einen Block-Typ oder eine spezifische Funktionalität.
+
+### Regeln:
+
+1. **Eine Funktion = Ein Block-Typ:** Jede Funktion ist für genau einen Block-Typ oder eine spezifische Aufgabe zuständig
+2. **Keine doppelte Verarbeitung:** Funktionen dürfen nicht doppelt verarbeitet werden, auch nicht in `init()` oder anderen Initialisierungsfunktionen
+3. **Keine doppelten Init-Funktionen:** Jeder Block-Typ hat genau eine Initialisierungsfunktion, keine doppelten `init()` Aufrufe für denselben Block
+4. **Einheitliche Zuständigkeit:** Wenn eine Funktion bereits einen Block bearbeitet, darf keine andere Funktion denselben Block ebenfalls bearbeiten
+
+### Beispiele für VERBOTEN:
+
+```javascript
+// VERBOTEN: Doppelte Funktion für denselben Block
+function initTextBlock() { /* ... */ }
+function initializeTextBlock() { /* ... */ } // VERBOTEN - doppelte Initialisierung
+
+// VERBOTEN: Doppelte Verarbeitung in init()
+function init() {
+    processBlock(block); // VERBOTEN wenn processBlock bereits in initBlock() aufgerufen wird
+    initBlock(block);
+}
+
+// VERBOTEN: Mehrere Funktionen bearbeiten denselben Block
+function handleTextBlock() { /* ... */ }
+function processTextBlock() { /* ... */ } // VERBOTEN - doppelte Bearbeitung
+```
+
+### Beispiele für ERLAUBT:
+
+```javascript
+// ERLAUBT: Eine Funktion pro Block-Typ
+function initTextBlock() { /* ... */ }
+function initImageBlock() { /* ... */ }
+
+// ERLAUBT: Klare Trennung der Zuständigkeiten
+function init() {
+    initTextBlock();
+    initImageBlock();
+}
+
+// ERLAUBT: Eine Funktion bearbeitet einen Block
+function handleTextBlock(block) {
+    // Einzige Funktion, die Text-Blocks bearbeitet
+}
+```
+
 

@@ -130,13 +130,27 @@ export function changeBlockType(blocks, blockId, newType, blockIdCounter = 0) {
             delete block.tableData;
         }
         
-        // Initialize column structure if changing to twoColumn or threeColumn
+        // Initialize or fix column structure if changing to twoColumn or threeColumn
         const columnCount = getColumnCount(newType);
-        if (columnCount > 0 && (oldType !== 'twoColumn' && oldType !== 'threeColumn')) {
-            block.children = [];
-            for (let i = 0; i < columnCount; i++) {
+        if (columnCount > 0) {
+            // Wenn zu twoColumn oder threeColumn geändert wird
+            if (!block.children) {
+                block.children = [];
+            }
+            
+            // Stelle sicher, dass genau die richtige Anzahl von Spalten vorhanden ist
+            const currentColumnCount = block.children.length;
+            
+            // Entferne überschüssige Spalten
+            if (currentColumnCount > columnCount) {
+                block.children = block.children.slice(0, columnCount);
+            }
+            
+            // Füge fehlende Spalten hinzu
+            while (block.children.length < columnCount) {
+                const columnIndex = block.children.length;
                 block.children.push({
-                    id: generateId(blockIdCounter + i + 1),
+                    id: generateId(blockIdCounter + columnIndex + 1),
                     type: 'column',
                     content: '',
                     style: '',
@@ -221,13 +235,10 @@ export function updateImageTitle(blocks, blockId, imageTitle) {
 // Stellt sicher, dass Column-Blöcke die richtige Anzahl von Spalten haben
 export function ensureColumnStructure(blocks) {
     function fixBlockColumns(block) {
-        // Entferne children Array von nicht-Container-Blöcken
-        if (!isContainerBlock(block.type)) {
-            if (block.children && block.children.length > 0) {
-                delete block.children;
-            }
-        } else {
-            // Für Container-Blöcke: Stelle sicher, dass die richtige Struktur vorhanden ist
+        if (!block) return;
+        
+        // Für Container-Blöcke: Stelle sicher, dass die richtige Struktur vorhanden ist
+        if (isContainerBlock(block.type)) {
             const columnCount = getColumnCount(block.type);
             if (columnCount > 0) {
                 // Column-Blöcke (twoColumn, threeColumn)
@@ -249,7 +260,7 @@ export function ensureColumnStructure(blocks) {
                     });
                 }
                 
-                // Entferne überschüssige Spalten
+                // Entferne überschüssige Spalten (WICHTIG: Dies korrigiert falsche Spaltenanzahl)
                 if (block.children.length > columnCount) {
                     block.children = block.children.slice(0, columnCount);
                 }
@@ -259,18 +270,28 @@ export function ensureColumnStructure(blocks) {
                     block.children = [];
                 }
             }
+        } else {
+            // Entferne children Array von nicht-Container-Blöcken
+            // image, divider und andere void/non-container Blöcke sollten KEINE children haben
+            if (block.children && block.children.length > 0) {
+                // Nur Container-Blöcke sollten children haben
+                delete block.children;
+            }
         }
         
         // Rekursiv für verschachtelte Blöcke
         if (block.children && Array.isArray(block.children)) {
             block.children.forEach(child => {
                 // Prüfe ob es eine Spalte ist (dann rekursiv für deren children)
-                if (child.type === 'column' && child.children) {
-                    child.children.forEach(grandChild => {
-                        fixBlockColumns(grandChild);
-                    });
+                if (child.type === 'column') {
+                    // Column-Blöcke: rekursiv für deren children
+                    if (child.children && Array.isArray(child.children)) {
+                        child.children.forEach(grandChild => {
+                            fixBlockColumns(grandChild);
+                        });
+                    }
                 } else {
-                    // Normales Child
+                    // Normales Child (kann auch ein Container-Block sein) - rekursiv behandeln
                     fixBlockColumns(child);
                 }
             });

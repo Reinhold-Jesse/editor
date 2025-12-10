@@ -3,6 +3,8 @@ import { initAllBlockContents } from './utils.js';
 import { ensureColumnStructure } from './block-management.js';
 
 export function saveToJSON(blocks) {
+    // Stelle sicher, dass die Struktur korrekt ist, bevor gespeichert wird
+    ensureColumnStructure(blocks);
     const json = JSON.stringify(blocks, null, 2);
     localStorage.setItem('blockEditorData', json);
     // Notification wird vom block-editor.js angezeigt

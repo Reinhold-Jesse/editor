@@ -290,31 +290,8 @@ function blockEditor() {
             });
         },
 
-        async loadThemeFromToolbar(themeName) {
-            try {
-                const updateCounter = (newCounter) => {
-                    this.blockIdCounter = newCounter;
-                };
-                
-                const result = await loadThemeUtil(
-                    themeName,
-                    this.blocks,
-                    this.blockIdCounter,
-                    this.$nextTick.bind(this),
-                    initAllBlockContents,
-                    updateCounter
-                );
-                
-                if (result.blocks) {
-                    this.selectedBlockId = null;
-                    this.blockIdCounter = result.blockIdCounter;
-                    this.showToolbar = false;
-                    this.showThemeDropdown = false;
-                    this.showNotification(`Theme "${themeName}" erfolgreich geladen!`, 'success');
-                }
-            } catch (error) {
-                this.showNotification('Fehler beim Laden des Themes: ' + error.message, 'error');
-            }
+        loadThemeFromToolbar(themeName) {
+            this.showLoadThemeConfirm(themeName);
         },
 
         addBlockAfter(blockId, type = 'paragraph') {
@@ -528,6 +505,9 @@ function blockEditor() {
             this.blockIdCounter++;
             const childBlock = addChildUtil(this.blocks, parentBlockId, this.blockIdCounter, childType);
             if (childBlock) {
+                // Stelle sicher, dass die Struktur korrekt ist (entfernt Children von nicht-Container-Blöcken)
+                ensureColumnStructure(this.blocks);
+                
                 this.selectedBlockId = childBlock.id;
                 
                 this.$nextTick(() => {
@@ -543,6 +523,9 @@ function blockEditor() {
             this.blockIdCounter++;
             const childBlock = addChildAfterUtil(this.blocks, parentBlockId, childIndex, this.blockIdCounter, childType);
             if (childBlock) {
+                // Stelle sicher, dass die Struktur korrekt ist (entfernt Children von nicht-Container-Blöcken)
+                ensureColumnStructure(this.blocks);
+                
                 this.selectedBlockId = childBlock.id;
                 
                 this.$nextTick(() => {
@@ -574,6 +557,9 @@ function blockEditor() {
                 return;
             }
             if (childBlock) {
+                // Stelle sicher, dass die Struktur korrekt ist (entfernt Children von nicht-Container-Blöcken)
+                ensureColumnStructure(this.blocks);
+                
                 this.selectedBlockId = childBlock.id;
                 
                 this.$nextTick(() => {
@@ -733,6 +719,35 @@ function blockEditor() {
             exportJSONUtil(this.blocks);
         },
 
+        async copyJSONToClipboard() {
+            try {
+                // Stelle sicher, dass die Struktur korrekt ist
+                ensureColumnStructure(this.blocks);
+                const json = JSON.stringify(this.blocks, null, 2);
+                
+                // Moderne Clipboard API verwenden falls verfügbar
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(json);
+                    this.showNotification('JSON erfolgreich in die Zwischenablage kopiert!', 'success');
+                } else {
+                    // Fallback für ältere Browser
+                    const textarea = document.createElement('textarea');
+                    textarea.value = json;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    textarea.setSelectionRange(0, 99999);
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    this.showNotification('JSON erfolgreich in die Zwischenablage kopiert!', 'success');
+                }
+            } catch (err) {
+                console.error('Fehler beim Kopieren:', err);
+                this.showNotification('Fehler beim Kopieren in die Zwischenablage.', 'error');
+            }
+        },
+
         // Table Management Functions
         addTableRow(blockId, position = 'bottom') {
             const result = addTableRow(this.blocks, blockId, this.blockIdCounter, position);
@@ -837,10 +852,18 @@ function blockEditor() {
             }
         },
 
+        showLoadThemeConfirm(themeName) {
+            this.confirmModal = {
+                title: 'Theme laden',
+                message: `Möchten Sie das Theme "${themeName}" laden? Alle aktuellen Änderungen gehen verloren.`,
+                onConfirm: () => this.loadTheme(themeName),
+                onCancel: () => this.closeConfirmModal()
+            };
+            this.showConfirmModal = true;
+        },
+
         async loadTheme(themeName) {
-            if (!confirm(`Möchten Sie das Theme "${themeName}" laden? Alle aktuellen Änderungen gehen verloren.`)) {
-                return;
-            }
+            this.closeConfirmModal();
 
             try {
                 const updateCounter = (newCounter) => {
@@ -859,6 +882,8 @@ function blockEditor() {
                 if (result.blocks) {
                     this.selectedBlockId = null;
                     this.blockIdCounter = result.blockIdCounter;
+                    this.showToolbar = false;
+                    this.showThemeDropdown = false;
                     this.showNotification(`Theme "${themeName}" erfolgreich geladen!`, 'success');
                 }
             } catch (error) {

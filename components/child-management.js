@@ -1,10 +1,15 @@
 // Child Block Management Functions
-import { generateId } from './utils.js';
-import { getColumnCount, isContainerBlock } from './block-types.js';
+import { generateId, findBlockById } from './utils.js';
+import { getColumnCount, isContainerBlock, canBlockHaveChildren } from './block-types.js';
 
 export function addChild(blocks, parentBlockId, blockIdCounter, childType) {
     const parentBlock = blocks.find(b => b.id === parentBlockId);
     if (parentBlock) {
+        // Prüfe ob der Parent-Block Kinder haben darf
+        if (!canBlockHaveChildren(parentBlock.type)) {
+            return null;
+        }
+        
         if (!parentBlock.children) {
             parentBlock.children = [];
         }
@@ -31,17 +36,21 @@ export function addChild(blocks, parentBlockId, blockIdCounter, childType) {
                 childBlock.children = [];
             } else if (childType === 'twoColumn' || childType === 'threeColumn') {
                 const childColumnCount = getColumnCount(childType);
-                childBlock.children = [];
-                for (let i = 0; i < childColumnCount; i++) {
-                    childBlock.children.push({
-                        id: generateId(blockIdCounter + i + 1),
-                        type: 'column',
-                        content: '',
-                        style: '',
-                        classes: '',
-                        children: [],
-                        createdAt: new Date().toISOString()
-                    });
+                if (childColumnCount > 0) {
+                    childBlock.children = [];
+                    for (let i = 0; i < childColumnCount; i++) {
+                        childBlock.children.push({
+                            id: generateId(blockIdCounter + i + 1),
+                            type: 'column',
+                            content: '',
+                            style: '',
+                            classes: '',
+                            children: [],
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+                } else {
+                    childBlock.children = [];
                 }
             } else {
                 childBlock.children = [];
@@ -51,6 +60,31 @@ export function addChild(blocks, parentBlockId, blockIdCounter, childType) {
         
         parentBlock.children.push(childBlock);
         parentBlock.updatedAt = new Date().toISOString();
+        
+        // Validate that the child block has correct column structure
+        if (isContainerBlock(childType) && (childType === 'twoColumn' || childType === 'threeColumn')) {
+            const expectedColumnCount = getColumnCount(childType);
+            if (childBlock.children && childBlock.children.length !== expectedColumnCount) {
+                // Fix column count if incorrect
+                if (childBlock.children.length > expectedColumnCount) {
+                    childBlock.children = childBlock.children.slice(0, expectedColumnCount);
+                } else {
+                    while (childBlock.children.length < expectedColumnCount) {
+                        const idx = childBlock.children.length;
+                        childBlock.children.push({
+                            id: generateId(blockIdCounter + idx + 1),
+                            type: 'column',
+                            content: '',
+                            style: '',
+                            classes: '',
+                            children: [],
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+                }
+            }
+        }
+        
         return childBlock;
     }
     return null;
@@ -59,6 +93,10 @@ export function addChild(blocks, parentBlockId, blockIdCounter, childType) {
 export function addChildAfter(blocks, parentBlockId, childIndex, blockIdCounter, childType) {
     const parentBlock = blocks.find(b => b.id === parentBlockId);
     if (parentBlock && parentBlock.children) {
+        // Prüfe ob der Parent-Block Kinder haben darf
+        if (!canBlockHaveChildren(parentBlock.type)) {
+            return null;
+        }
         const childBlock = {
             id: generateId(blockIdCounter),
             type: childType,
@@ -81,17 +119,21 @@ export function addChildAfter(blocks, parentBlockId, childIndex, blockIdCounter,
                 childBlock.children = [];
             } else if (childType === 'twoColumn' || childType === 'threeColumn') {
                 const childColumnCount = getColumnCount(childType);
-                childBlock.children = [];
-                for (let i = 0; i < childColumnCount; i++) {
-                    childBlock.children.push({
-                        id: generateId(blockIdCounter + i + 1),
-                        type: 'column',
-                        content: '',
-                        style: '',
-                        classes: '',
-                        children: [],
-                        createdAt: new Date().toISOString()
-                    });
+                if (childColumnCount > 0) {
+                    childBlock.children = [];
+                    for (let i = 0; i < childColumnCount; i++) {
+                        childBlock.children.push({
+                            id: generateId(blockIdCounter + i + 1),
+                            type: 'column',
+                            content: '',
+                            style: '',
+                            classes: '',
+                            children: [],
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+                } else {
+                    childBlock.children = [];
                 }
             } else {
                 childBlock.children = [];
@@ -101,6 +143,31 @@ export function addChildAfter(blocks, parentBlockId, childIndex, blockIdCounter,
         
         parentBlock.children.splice(childIndex + 1, 0, childBlock);
         parentBlock.updatedAt = new Date().toISOString();
+        
+        // Validate that the child block has correct column structure
+        if (isContainerBlock(childType) && (childType === 'twoColumn' || childType === 'threeColumn')) {
+            const expectedColumnCount = getColumnCount(childType);
+            if (childBlock.children && childBlock.children.length !== expectedColumnCount) {
+                // Fix column count if incorrect
+                if (childBlock.children.length > expectedColumnCount) {
+                    childBlock.children = childBlock.children.slice(0, expectedColumnCount);
+                } else {
+                    while (childBlock.children.length < expectedColumnCount) {
+                        const idx = childBlock.children.length;
+                        childBlock.children.push({
+                            id: generateId(blockIdCounter + idx + 1),
+                            type: 'column',
+                            content: '',
+                            style: '',
+                            classes: '',
+                            children: [],
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+                }
+            }
+        }
+        
         return childBlock;
     }
     return null;
@@ -145,8 +212,104 @@ export function moveChildBlock(blocks, parentBlockId, childIndex, direction) {
 }
 
 export function addChildToColumn(blocks, parentBlockId, blockIdCounter, childType, columnIndex) {
-    const parentBlock = blocks.find(b => b.id === parentBlockId);
-    if (parentBlock && (parentBlock.type === 'twoColumn' || parentBlock.type === 'threeColumn')) {
+    const { block: parentBlock } = findBlockById(blocks, parentBlockId);
+    if (!parentBlock) {
+        return null;
+    }
+    
+    // If parent is already a column block, add child directly to it
+    if (parentBlock.type === 'column') {
+        // Column-Blöcke können immer Kinder haben, keine Prüfung nötig
+        // Ensure column block has children array
+        if (!parentBlock.children) {
+            parentBlock.children = [];
+        }
+        
+        // Create the new child block
+        const childBlock = {
+            id: generateId(blockIdCounter),
+            type: childType,
+            content: '',
+            style: '',
+            classes: '',
+            createdAt: new Date().toISOString()
+        };
+        
+        // Initialize image data if it's an image
+        if (childType === 'image') {
+            childBlock.imageUrl = '';
+            childBlock.imageAlt = '';
+            childBlock.imageTitle = '';
+        }
+        
+        // Initialize children array ONLY for container blocks
+        if (isContainerBlock(childType)) {
+            if (childType === 'table') {
+                childBlock.children = [];
+            } else if (childType === 'twoColumn' || childType === 'threeColumn') {
+                // Initialize column structure for twoColumn and threeColumn
+                const childColumnCount = getColumnCount(childType);
+                if (childColumnCount > 0) {
+                    childBlock.children = [];
+                    for (let i = 0; i < childColumnCount; i++) {
+                        childBlock.children.push({
+                            id: generateId(blockIdCounter + i + 1), // Increment counter for each column
+                            type: 'column',
+                            content: '',
+                            style: '',
+                            classes: '',
+                            children: [],
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+                } else {
+                    childBlock.children = [];
+                }
+            } else {
+                // Other container blocks (like future container types)
+                childBlock.children = [];
+            }
+        }
+        // Non-container blocks should NOT have children array
+        
+        // Add the child block to the column's children
+        parentBlock.children.push(childBlock);
+        parentBlock.updatedAt = new Date().toISOString();
+        
+        // Validate that the child block has correct column structure
+        if (isContainerBlock(childType) && (childType === 'twoColumn' || childType === 'threeColumn')) {
+            const expectedColumnCount = getColumnCount(childType);
+            if (childBlock.children && childBlock.children.length !== expectedColumnCount) {
+                // Fix column count if incorrect
+                if (childBlock.children.length > expectedColumnCount) {
+                    childBlock.children = childBlock.children.slice(0, expectedColumnCount);
+                } else {
+                    while (childBlock.children.length < expectedColumnCount) {
+                        const idx = childBlock.children.length;
+                        childBlock.children.push({
+                            id: generateId(blockIdCounter + idx + 1),
+                            type: 'column',
+                            content: '',
+                            style: '',
+                            classes: '',
+                            children: [],
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+                }
+            }
+        }
+        
+        return childBlock;
+    }
+    
+    // If parent is twoColumn or threeColumn, use existing logic
+    if (parentBlock.type === 'twoColumn' || parentBlock.type === 'threeColumn') {
+        // Prüfe ob der Parent-Block Kinder haben darf
+        if (!canBlockHaveChildren(parentBlock.type)) {
+            return null;
+        }
+        
         // Get the correct column count from the block type
         const requiredColumnCount = getColumnCount(parentBlock.type);
         
@@ -223,17 +386,21 @@ export function addChildToColumn(blocks, parentBlockId, blockIdCounter, childTyp
             } else if (childType === 'twoColumn' || childType === 'threeColumn') {
                 // Initialize column structure for twoColumn and threeColumn
                 const childColumnCount = getColumnCount(childType);
-                childBlock.children = [];
-                for (let i = 0; i < childColumnCount; i++) {
-                    childBlock.children.push({
-                        id: generateId(blockIdCounter + i + 1), // Increment counter for each column
-                        type: 'column',
-                        content: '',
-                        style: '',
-                        classes: '',
-                        children: [],
-                        createdAt: new Date().toISOString()
-                    });
+                if (childColumnCount > 0) {
+                    childBlock.children = [];
+                    for (let i = 0; i < childColumnCount; i++) {
+                        childBlock.children.push({
+                            id: generateId(blockIdCounter + i + 1), // Increment counter for each column
+                            type: 'column',
+                            content: '',
+                            style: '',
+                            classes: '',
+                            children: [],
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+                } else {
+                    childBlock.children = [];
                 }
             } else {
                 // Other container blocks (like future container types)
@@ -245,8 +412,34 @@ export function addChildToColumn(blocks, parentBlockId, blockIdCounter, childTyp
         // Add the child block to the column's children
         columnBlock.children.push(childBlock);
         parentBlock.updatedAt = new Date().toISOString();
+        
+        // Validate that the child block has correct column structure
+        if (isContainerBlock(childType) && (childType === 'twoColumn' || childType === 'threeColumn')) {
+            const expectedColumnCount = getColumnCount(childType);
+            if (childBlock.children && childBlock.children.length !== expectedColumnCount) {
+                // Fix column count if incorrect
+                if (childBlock.children.length > expectedColumnCount) {
+                    childBlock.children = childBlock.children.slice(0, expectedColumnCount);
+                } else {
+                    while (childBlock.children.length < expectedColumnCount) {
+                        const idx = childBlock.children.length;
+                        childBlock.children.push({
+                            id: generateId(blockIdCounter + idx + 1),
+                            type: 'column',
+                            content: '',
+                            style: '',
+                            classes: '',
+                            children: [],
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+                }
+            }
+        }
+        
         return childBlock;
     }
+    
     return null;
 }
 

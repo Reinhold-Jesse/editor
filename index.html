@@ -28,6 +28,79 @@
 </head>
 <body class="bg-gray-50 min-h-screen">
     <div x-data="blockEditor()" x-init="init()" class="flex h-screen overflow-hidden">
+        <!-- Notification Component -->
+        <div 
+            x-show="notification.show"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-2"
+            x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 translate-y-0"
+            x-transition:leave-end="opacity-0 translate-y-2"
+            class="fixed top-4 right-4 z-50 max-w-sm w-full"
+            @click="hideNotification()"
+        >
+            <div 
+                :class="{
+                    'bg-green-50 border-green-200 text-green-800': notification.type === 'success',
+                    'bg-red-50 border-red-200 text-red-800': notification.type === 'error',
+                    'bg-blue-50 border-blue-200 text-blue-800': notification.type === 'info',
+                    'bg-yellow-50 border-yellow-200 text-yellow-800': notification.type === 'warning'
+                }"
+                class="border rounded-lg shadow-lg p-4 flex items-start gap-3 cursor-pointer hover:shadow-xl transition-shadow"
+            >
+                <div class="flex-shrink-0">
+                    <svg 
+                        x-show="notification.type === 'success'"
+                        class="w-5 h-5 text-green-600" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <svg 
+                        x-show="notification.type === 'error'"
+                        class="w-5 h-5 text-red-600" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <svg 
+                        x-show="notification.type === 'info'"
+                        class="w-5 h-5 text-blue-600" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <svg 
+                        x-show="notification.type === 'warning'"
+                        class="w-5 h-5 text-yellow-600" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium" x-html="notification.message"></p>
+                </div>
+                <button 
+                    @click.stop="hideNotification()"
+                    class="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
         <!-- Overlay für Sidebar (schließt Sidebar beim Klick) -->
         <div 
             x-show="showSidebar"
@@ -56,7 +129,7 @@
             <template x-if="showSidebar">
                 <div class="p-4" @click.stop>
                     <div class="flex justify-between items-center mb-4" @click.stop>
-                        <h2 class="text-xl font-bold text-gray-900">Block-Einstellungen</h2>
+                        <h2 class="text-xl font-bold text-gray-900">Einstellungen</h2>
                         <button 
                             @click.stop="closeSidebar()"
                             class="p-1 hover:bg-gray-100 rounded"
@@ -66,10 +139,101 @@
                         </button>
                     </div>
 
-                    <div x-show="selectedBlockId === null" class="text-center text-gray-500 py-8">
-                        <p>Kein Block ausgewählt</p>
-                        <p class="text-sm mt-2">Wähle einen Block aus, um seine Einstellungen zu bearbeiten</p>
+                    <!-- Tabs für Sidebar-Navigation -->
+                    <div class="flex gap-2 mb-4 border-b border-gray-200" @click.stop>
+                        <button 
+                            @click.stop="sidebarTab = 'blocks'"
+                            :class="sidebarTab === 'blocks' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'"
+                            class="px-4 py-2 font-semibold transition-colors"
+                        >
+                            Blöcke
+                        </button>
+                        <button 
+                            @click.stop="sidebarTab = 'themes'"
+                            :class="sidebarTab === 'themes' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'"
+                            class="px-4 py-2 font-semibold transition-colors"
+                        >
+                            Themes
+                        </button>
                     </div>
+
+                    <!-- Themes Tab -->
+                    <div x-show="sidebarTab === 'themes'" class="space-y-4" @click.stop>
+                        <div class="flex gap-2">
+                            <button 
+                                @click.stop="openSaveThemeModal()"
+                                class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 text-sm"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                Speichern
+                            </button>
+                            <button 
+                                @click.stop="openImportThemeModal()"
+                                class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-sm"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                Import
+                            </button>
+                        </div>
+
+                        <div class="border-t border-gray-200 pt-4">
+                            <h3 class="text-sm font-semibold text-gray-700 mb-3">Gespeicherte Themes</h3>
+                            <div class="space-y-2 max-h-96 overflow-y-auto">
+                                <template x-for="theme in themes" :key="theme.name">
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="font-medium text-gray-900 truncate" x-text="theme.name"></div>
+                                            <div class="text-xs text-gray-500" x-text="new Date(theme.createdAt).toLocaleDateString('de-DE')"></div>
+                                        </div>
+                                        <div class="flex gap-1 ml-2">
+                                            <button 
+                                                @click.stop="loadTheme(theme.name)"
+                                                class="p-1.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                                                title="Theme laden"
+                                            >
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                                                </svg>
+                                            </button>
+                                            <button 
+                                                @click.stop="openEditThemeModal(theme.name)"
+                                                class="p-1.5 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
+                                                title="Theme bearbeiten"
+                                            >
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                </svg>
+                                            </button>
+                                            <button 
+                                                @click.stop="deleteTheme(theme.name)"
+                                                class="p-1.5 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                                                title="Theme löschen"
+                                            >
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </template>
+                                <div x-show="themes.length === 0" class="text-center text-gray-500 py-8 text-sm">
+                                    <p>Keine Themes gespeichert</p>
+                                    <p class="text-xs mt-1">Speichere dein erstes Theme oben</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Blocks Tab -->
+                    <div x-show="sidebarTab === 'blocks'">
+                        <div x-show="selectedBlockId === null" class="text-center text-gray-500 py-8">
+                            <p>Kein Block ausgewählt</p>
+                            <p class="text-sm mt-2">Wähle einen Block aus, um seine Einstellungen zu bearbeiten</p>
+                        </div>
 
                     <template x-for="block in getAllBlocks()" :key="block.id">
                         <div x-show="block.id === selectedBlockId" class="space-y-4">
@@ -317,6 +481,7 @@
                             </div>
                         </div>
                     </template>
+                    </div>
                 </div>
             </template>
         </div>
@@ -1199,6 +1364,237 @@
                     class="px-4 py-2 bg-purple-600 text-white rounded-lg transition-colors"
                 >
                     Importieren
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Theme Modal -->
+    <div 
+        x-show="showSaveThemeModal"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+        @click.self="closeSaveThemeModal()"
+        style="display: none;"
+    >
+        <div 
+            class="bg-white rounded-lg shadow-xl max-w-md w-full"
+            @click.stop
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+        >
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-6 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900">Theme speichern</h2>
+                <button 
+                    @click="closeSaveThemeModal()"
+                    class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Schließen"
+                >
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6">
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Theme-Name:
+                    </label>
+                    <input
+                        type="text"
+                        x-model="newThemeName"
+                        @keydown.enter="saveTheme()"
+                        @keydown.escape="closeSaveThemeModal()"
+                        placeholder="z.B. Mein Theme"
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        autofocus
+                    />
+                    <div x-show="saveThemeError" class="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                        <span x-text="saveThemeError"></span>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-600 mb-4">
+                    <p>Das aktuelle Layout wird als Theme gespeichert.</p>
+                    <p class="mt-1"><strong>Blöcke:</strong> <span x-text="blocks.length"></span></p>
+                    <p class="mt-1 text-xs text-gray-500">Die Datei wird im themes Ordner gespeichert.</p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex justify-end gap-3 p-6 border-t border-gray-200">
+                <button 
+                    @click="closeSaveThemeModal()"
+                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                    Abbrechen
+                </button>
+                <button 
+                    @click="saveTheme()"
+                    :disabled="!newThemeName || !newThemeName.trim()"
+                    :class="(!newThemeName || !newThemeName.trim()) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg transition-colors"
+                >
+                    Speichern
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Theme Modal -->
+    <div 
+        x-show="showEditThemeModal"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+        @click.self="closeEditThemeModal()"
+        style="display: none;"
+    >
+        <div 
+            class="bg-white rounded-lg shadow-xl max-w-md w-full"
+            @click.stop
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+        >
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-6 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900">Theme bearbeiten</h2>
+                <button 
+                    @click="closeEditThemeModal()"
+                    class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Schließen"
+                >
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6">
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Theme-Name:
+                    </label>
+                    <input
+                        type="text"
+                        x-model="editThemeName"
+                        @keydown.enter="updateTheme()"
+                        @keydown.escape="closeEditThemeModal()"
+                        placeholder="Theme-Name"
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        autofocus
+                    />
+                    <div x-show="editThemeError" class="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                        <span x-text="editThemeError"></span>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-600 mb-4">
+                    <p>Ändere den Namen des Themes. Die Datei wird beim nächsten Speichern aktualisiert.</p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex justify-end gap-3 p-6 border-t border-gray-200">
+                <button 
+                    @click="closeEditThemeModal()"
+                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                    Abbrechen
+                </button>
+                <button 
+                    @click="updateTheme()"
+                    :disabled="!editThemeName || !editThemeName.trim()"
+                    :class="(!editThemeName || !editThemeName.trim()) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-yellow-700'"
+                    class="px-4 py-2 bg-yellow-600 text-white rounded-lg transition-colors"
+                >
+                    Speichern
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Theme Modal -->
+    <div 
+        x-show="showImportThemeModal"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+        @click.self="closeImportThemeModal()"
+        style="display: none;"
+    >
+        <div 
+            class="bg-white rounded-lg shadow-xl max-w-md w-full"
+            @click.stop
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+        >
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-6 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900">Theme importieren</h2>
+                <button 
+                    @click="closeImportThemeModal()"
+                    class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Schließen"
+                >
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6">
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        JSON-Datei auswählen:
+                    </label>
+                    <input
+                        type="file"
+                        accept=".json"
+                        @change="handleThemeFileImport($event)"
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                </div>
+                <div class="text-sm text-gray-600 mb-4">
+                    <p>Wähle eine JSON-Datei aus dem themes Ordner aus, um ein Theme zu importieren.</p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex justify-end gap-3 p-6 border-t border-gray-200">
+                <button 
+                    @click="closeImportThemeModal()"
+                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                    Schließen
                 </button>
             </div>
         </div>

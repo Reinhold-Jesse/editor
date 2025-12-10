@@ -1,0 +1,62 @@
+# Cursor Rules für Block Editor
+
+## Notification Message System
+
+### Verwendung der Notification-Funktion
+
+**WICHTIG:** Verwende IMMER die `showNotification()` Funktion für alle Benutzer-Feedback-Nachrichten. Verwende KEINE `alert()`, `confirm()` oder andere Browser-Dialoge für Erfolgs-/Fehler-Meldungen.
+
+### Funktion: `showNotification(message, type, duration)`
+
+**Parameter:**
+- `message` (string, erforderlich): Die Nachricht, die angezeigt werden soll. Kann auch HTML enthalten.
+- `type` (string, optional, Standard: 'success'): Der Typ der Notification
+  - `'success'` - Erfolgsmeldung (grün)
+  - `'error'` - Fehlermeldung (rot)
+  - `'info'` - Informationsmeldung (blau)
+  - `'warning'` - Warnmeldung (gelb)
+- `duration` (number, optional, Standard: 3000): Dauer in Millisekunden bis zum automatischen Ausblenden. Setze `0` für kein automatisches Ausblenden.
+
+### Verwendungsbeispiele:
+
+```javascript
+// Erfolgreiche Aktion (Standard)
+this.showNotification('Erfolgreich gespeichert!', 'success');
+
+// Fehler mit längerer Anzeigedauer
+this.showNotification('Fehler beim Speichern', 'error', 5000);
+
+// Warnung
+this.showNotification('Bitte beachten Sie die Einstellungen', 'warning');
+
+// Info
+this.showNotification('Neue Version verfügbar', 'info');
+
+// HTML-Inhalt ohne automatisches Ausblenden
+this.showNotification('<strong>Wichtig:</strong> Bitte prüfen Sie die Einstellungen', 'warning', 0);
+```
+
+### Wann welche Funktion verwenden:
+
+- **Speichern-Operationen:** `this.showNotification('Erfolgreich gespeichert!', 'success');`
+- **Löschen-Operationen:** `this.showNotification('Erfolgreich gelöscht!', 'success');`
+- **Bearbeiten-Operationen:** `this.showNotification('Erfolgreich bearbeitet!', 'success');`
+- **Fehler:** `this.showNotification('Fehler beim Speichern', 'error');`
+- **Warnungen:** `this.showNotification('Bitte beachten Sie...', 'warning');`
+- **Informationen:** `this.showNotification('Hinweis: ...', 'info');`
+
+### Wichtige Regeln:
+
+1. **NIEMALS** `alert()` für Erfolgs-/Fehler-Meldungen verwenden
+2. **IMMER** `showNotification()` für Benutzer-Feedback verwenden
+3. Verwende den passenden Typ (`success`, `error`, `info`, `warning`)
+4. Für kritische Warnungen kann `duration: 0` verwendet werden (kein automatisches Ausblenden)
+5. HTML-Inhalte werden unterstützt (z.B. für fettgedruckte Texte: `<strong>Text</strong>`)
+
+### Technische Details:
+
+- Die Notification wird automatisch nach der angegebenen Dauer ausgeblendet
+- Benutzer können die Notification auch manuell schließen (Klick auf X oder auf die Notification)
+- Die Notification erscheint oben rechts im Viewport
+- Unterstützt Alpine.js Transitions für sanfte Animationen
+

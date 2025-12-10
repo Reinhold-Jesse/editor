@@ -33,7 +33,13 @@ import {
     saveToJSON as saveToJSONUtil,
     loadFromJSON as loadFromJSONUtil,
     importJSON as importJSONUtil,
-    exportJSON as exportJSONUtil
+    exportJSON as exportJSONUtil,
+    saveTheme as saveThemeUtil,
+    getAllThemes as getAllThemesUtil,
+    loadTheme as loadThemeUtil,
+    deleteTheme as deleteThemeUtil,
+    updateTheme as updateThemeUtil,
+    importThemeFromFile as importThemeFromFileUtil
 } from './components/storage.js';
 import {
     addTableRow,
@@ -58,6 +64,7 @@ function blockEditor() {
         dragStartIndex: null,
         dragOverIndex: null,
         showSidebar: false,
+        sidebarTab: 'blocks',
         showImportModal: false,
         importJSONText: '',
         importJSONValid: false,
@@ -66,12 +73,30 @@ function blockEditor() {
         showExportModal: false,
         exportJSONText: '',
         exportCopied: false,
+        showSaveThemeModal: false,
+        showEditThemeModal: false,
+        showImportThemeModal: false,
+        newThemeName: '',
+        editThemeName: '',
+        editThemeOriginalName: '',
+        saveThemeError: null,
+        editThemeError: null,
+        themes: [],
+        notification: {
+            show: false,
+            message: '',
+            type: 'success', // success, error, info, warning
+            duration: 3000 // Automatisches Ausblenden in Millisekunden (0 = kein automatisches Ausblenden)
+        },
+        notificationTimeout: null, // Timeout-Referenz für automatisches Ausblenden
 
         init() {
             // Start mit einem leeren Paragraph
             if (this.blocks.length === 0) {
                 this.addBlock('paragraph');
             }
+            // Lade Themes beim Initialisieren
+            this.loadThemes();
             // Initialisiere Block-Inhalte nach dem Rendering
             this.$nextTick(() => {
                 this.initAllBlockContents();
@@ -511,6 +536,209 @@ function blockEditor() {
                 }
             }
             return null;
+        },
+
+        // Theme Management Functions
+        loadThemes() {
+            this.themes = getAllThemesUtil();
+        },
+
+        openSaveThemeModal() {
+            this.newThemeName = '';
+            this.saveThemeError = null;
+            this.showSaveThemeModal = true;
+        },
+
+        closeSaveThemeModal() {
+            this.showSaveThemeModal = false;
+            this.newThemeName = '';
+            this.saveThemeError = null;
+        },
+
+        saveTheme() {
+            if (!this.newThemeName || !this.newThemeName.trim()) {
+                this.saveThemeError = 'Bitte gib einen Theme-Namen ein.';
+                return;
+            }
+
+            try {
+                saveThemeUtil(this.newThemeName.trim(), this.blocks);
+                this.loadThemes(); // Aktualisiere Themes-Liste
+                this.closeSaveThemeModal();
+                this.showNotification(`Theme "${this.newThemeName.trim()}" erfolgreich gespeichert!`, 'success');
+            } catch (error) {
+                this.saveThemeError = error.message || 'Fehler beim Speichern des Themes.';
+                this.showNotification('Fehler beim Speichern des Themes.', 'error');
+            }
+        },
+
+        async loadTheme(themeName) {
+            if (!confirm(`Möchten Sie das Theme "${themeName}" laden? Alle aktuellen Änderungen gehen verloren.`)) {
+                return;
+            }
+
+            try {
+                const updateCounter = (newCounter) => {
+                    this.blockIdCounter = newCounter;
+                };
+                
+                const result = await loadThemeUtil(
+                    themeName,
+                    this.blocks,
+                    this.blockIdCounter,
+                    this.$nextTick.bind(this),
+                    initAllBlockContents,
+                    updateCounter
+                );
+                
+                if (result.blocks) {
+                    this.selectedBlockId = null;
+                    this.blockIdCounter = result.blockIdCounter;
+                    this.showNotification(`Theme "${themeName}" erfolgreich geladen!`, 'success');
+                }
+            } catch (error) {
+                this.showNotification('Fehler beim Laden des Themes: ' + error.message, 'error');
+            }
+        },
+
+        deleteTheme(themeName) {
+            if (!confirm(`Möchten Sie das Theme "${themeName}" wirklich löschen?\n\nHinweis: Die JSON-Datei im themes Ordner muss manuell gelöscht werden.`)) {
+                return;
+            }
+
+            try {
+                const deleted = deleteThemeUtil(themeName);
+                if (deleted) {
+                    this.loadThemes(); // Aktualisiere Themes-Liste
+                    this.showNotification(`Theme "${themeName}" erfolgreich gelöscht!`, 'success');
+                } else {
+                    this.showNotification(`Theme "${themeName}" konnte nicht gefunden werden.`, 'error');
+                }
+            } catch (error) {
+                this.showNotification('Fehler beim Löschen des Themes: ' + error.message, 'error');
+            }
+        },
+
+        openEditThemeModal(themeName) {
+            this.editThemeOriginalName = themeName;
+            this.editThemeName = themeName;
+            this.editThemeError = null;
+            this.showEditThemeModal = true;
+        },
+
+        closeEditThemeModal() {
+            this.showEditThemeModal = false;
+            this.editThemeName = '';
+            this.editThemeOriginalName = '';
+            this.editThemeError = null;
+        },
+
+        updateTheme() {
+            if (!this.editThemeName || !this.editThemeName.trim()) {
+                this.editThemeError = 'Bitte gib einen Theme-Namen ein.';
+                return;
+            }
+
+            if (this.editThemeName.trim() === this.editThemeOriginalName) {
+                this.closeEditThemeModal();
+                return;
+            }
+
+            try {
+                updateThemeUtil(this.editThemeOriginalName, this.editThemeName.trim());
+                this.loadThemes(); // Aktualisiere Themes-Liste
+                this.closeEditThemeModal();
+                this.showNotification(`Theme erfolgreich umbenannt zu "${this.editThemeName.trim()}"!`, 'success');
+            } catch (error) {
+                this.editThemeError = error.message || 'Fehler beim Umbenennen des Themes.';
+                this.showNotification('Fehler beim Bearbeiten des Themes.', 'error');
+            }
+        },
+
+        openImportThemeModal() {
+            this.showImportThemeModal = true;
+        },
+
+        closeImportThemeModal() {
+            this.showImportThemeModal = false;
+        },
+
+        async handleThemeFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            if (!file.name.endsWith('.json')) {
+                alert('Bitte wählen Sie eine JSON-Datei aus.');
+                return;
+            }
+
+            try {
+                const { themeData, blocks } = await importThemeFromFileUtil(file);
+                this.loadThemes(); // Aktualisiere Themes-Liste
+                this.closeImportThemeModal();
+                this.showNotification(`Theme "${themeData.name}" erfolgreich importiert!`, 'success');
+                
+                if (confirm('Theme jetzt laden?')) {
+                    await this.loadTheme(themeData.name);
+                }
+            } catch (error) {
+                this.showNotification('Fehler beim Importieren des Themes: ' + error.message, 'error');
+            }
+            
+            // Reset file input
+            event.target.value = '';
+        },
+
+        /**
+         * Zeigt eine Notification-Nachricht an
+         * @param {string} message - Die Nachricht (kann auch HTML enthalten)
+         * @param {string} type - Der Typ: 'success', 'error', 'info', 'warning'
+         * @param {number} duration - Dauer in Millisekunden bis zum automatischen Ausblenden (Standard: 3000, 0 = kein automatisches Ausblenden)
+         * 
+         * Beispiele:
+         * this.showNotification('Erfolgreich gespeichert!', 'success');
+         * this.showNotification('Fehler beim Speichern', 'error', 5000);
+         * this.showNotification('Bitte beachten Sie...', 'warning');
+         * this.showNotification('Information: Neue Version verfügbar', 'info');
+         * this.showNotification('<strong>Wichtig:</strong> Bitte prüfen Sie die Einstellungen', 'warning', 0); // Kein automatisches Ausblenden
+         */
+        showNotification(message, type = 'success', duration = 3000) {
+            // Validiere Typ
+            const validTypes = ['success', 'error', 'info', 'warning'];
+            if (!validTypes.includes(type)) {
+                console.warn(`Ungültiger Notification-Typ: ${type}. Verwende 'success' als Standard.`);
+                type = 'success';
+            }
+            
+            // Setze Notification-Daten
+            this.notification.message = message;
+            this.notification.type = type;
+            this.notification.duration = duration;
+            this.notification.show = true;
+            
+            // Automatisch nach angegebener Zeit ausblenden (wenn duration > 0)
+            if (duration > 0) {
+                // Clear existing timeout if any
+                if (this.notificationTimeout) {
+                    clearTimeout(this.notificationTimeout);
+                }
+                
+                this.notificationTimeout = setTimeout(() => {
+                    this.notification.show = false;
+                    this.notificationTimeout = null;
+                }, duration);
+            }
+        },
+
+        hideNotification() {
+            // Clear timeout wenn vorhanden
+            if (this.notificationTimeout) {
+                clearTimeout(this.notificationTimeout);
+                this.notificationTimeout = null;
+            }
+            this.notification.show = false;
         }
     }
 }

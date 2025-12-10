@@ -60,6 +60,7 @@ function blockEditor() {
         hoveredBlockId: null,
         draggingBlockId: null,
         showToolbar: false,
+        showThemeDropdown: false,
         blockIdCounter: 0,
         dragStartIndex: null,
         dragOverIndex: null,
@@ -144,6 +145,7 @@ function blockEditor() {
             const block = addBlockUtil(this.blocks, this.selectedBlockId, this.blockIdCounter, type, content);
             this.selectedBlockId = block.id;
             this.showToolbar = false;
+            this.showThemeDropdown = false;
             
             // Focus auf den neuen Block
             this.$nextTick(() => {
@@ -159,6 +161,33 @@ function blockEditor() {
                     sel.addRange(range);
                 }
             });
+        },
+
+        async loadThemeFromToolbar(themeName) {
+            try {
+                const updateCounter = (newCounter) => {
+                    this.blockIdCounter = newCounter;
+                };
+                
+                const result = await loadThemeUtil(
+                    themeName,
+                    this.blocks,
+                    this.blockIdCounter,
+                    this.$nextTick.bind(this),
+                    initAllBlockContents,
+                    updateCounter
+                );
+                
+                if (result.blocks) {
+                    this.selectedBlockId = null;
+                    this.blockIdCounter = result.blockIdCounter;
+                    this.showToolbar = false;
+                    this.showThemeDropdown = false;
+                    this.showNotification(`Theme "${themeName}" erfolgreich geladen!`, 'success');
+                }
+            } catch (error) {
+                this.showNotification('Fehler beim Laden des Themes: ' + error.message, 'error');
+            }
         },
 
         addBlockAfter(blockId, type = 'paragraph') {

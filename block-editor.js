@@ -5,21 +5,24 @@ import {
     findBlockById, 
     getAllBlocks 
 } from './components/utils.js';
-import { 
-    addBlock as addBlockUtil, 
+import {
+    addBlock as addBlockUtil,
     addBlockAfter as addBlockAfterUtil,
     updateBlockContent as updateBlockContentUtil,
     deleteBlock as deleteBlockUtil,
     changeBlockType as changeBlockTypeUtil,
     updateBlockStyle as updateBlockStyleUtil,
     clearBlockStyle as clearBlockStyleUtil,
+    updateBlockClasses as updateBlockClassesUtil,
+    clearBlockClasses as clearBlockClassesUtil,
     moveBlock as moveBlockUtil
 } from './components/block-management.js';
 import {
     addChild as addChildUtil,
     addChildAfter as addChildAfterUtil,
     removeChild as removeChildUtil,
-    moveChildBlock as moveChildBlockUtil
+    moveChildBlock as moveChildBlockUtil,
+    addChildToColumn as addChildToColumnUtil
 } from './components/child-management.js';
 import {
     handleDragStart as handleDragStartUtil,
@@ -212,6 +215,14 @@ function blockEditor() {
             clearBlockStyleUtil(this.blocks, blockId);
         },
 
+        updateBlockClasses(blockId, classes) {
+            updateBlockClassesUtil(this.blocks, blockId, classes);
+        },
+
+        clearBlockClasses(blockId) {
+            clearBlockClassesUtil(this.blocks, blockId);
+        },
+
         addChild(parentBlockId, childType) {
             this.blockIdCounter++;
             const childBlock = addChildUtil(this.blocks, parentBlockId, this.blockIdCounter, childType);
@@ -248,6 +259,21 @@ function blockEditor() {
 
         moveChildBlock(parentBlockId, childIndex, direction) {
             moveChildBlockUtil(this.blocks, parentBlockId, childIndex, direction);
+        },
+
+        addChildToColumn(parentBlockId, childType, columnIndex, totalColumns) {
+            this.blockIdCounter++;
+            const childBlock = addChildToColumnUtil(this.blocks, parentBlockId, this.blockIdCounter, childType, columnIndex, totalColumns);
+            if (childBlock) {
+                this.selectedBlockId = childBlock.id;
+                
+                this.$nextTick(() => {
+                    const element = document.querySelector(`[data-block-id="${childBlock.id}"]`);
+                    if (element) {
+                        element.focus();
+                    }
+                });
+            }
         },
 
         findBlockById(blockId) {

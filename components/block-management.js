@@ -7,6 +7,7 @@ export function createBlock(blockIdCounter, type, content = '') {
         type: type,
         content: content,
         style: '',
+        classes: '',
         children: [],
         createdAt: new Date().toISOString()
     };
@@ -72,6 +73,22 @@ export function clearBlockStyle(blocks, blockId) {
     const { block } = findBlockById(blocks, blockId);
     if (block) {
         block.style = '';
+        block.updatedAt = new Date().toISOString();
+    }
+}
+
+export function updateBlockClasses(blocks, blockId, classes) {
+    const { block } = findBlockById(blocks, blockId);
+    if (block) {
+        block.classes = classes;
+        block.updatedAt = new Date().toISOString();
+    }
+}
+
+export function clearBlockClasses(blocks, blockId) {
+    const { block } = findBlockById(blocks, blockId);
+    if (block) {
+        block.classes = '';
         block.updatedAt = new Date().toISOString();
     }
 }

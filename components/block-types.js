@@ -43,6 +43,20 @@ export const BLOCK_TYPES = {
         placeholder: '',
         classes: 'border-t-2 border-gray-300 my-4',
         isVoid: true
+    },
+    twoColumn: {
+        label: '📊 Zwei Spalten',
+        tag: 'div',
+        placeholder: '',
+        classes: 'grid grid-cols-2 gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]',
+        isContainer: true
+    },
+    threeColumn: {
+        label: '📊 Drei Spalten',
+        tag: 'div',
+        placeholder: '',
+        classes: 'grid grid-cols-3 gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]',
+        isContainer: true
     }
 };
 

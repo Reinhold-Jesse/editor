@@ -91,17 +91,46 @@
                                     <option value="code">💻 Code Block</option>
                                     <option value="quote">💬 Zitat</option>
                                     <option value="divider">➖ Trennlinie</option>
+                                    <option value="twoColumn">📊 Zwei Spalten</option>
+                                    <option value="threeColumn">📊 Drei Spalten</option>
                                 </select>
                             </div>
 
-                            <!-- CSS Editor -->
+                            <!-- Tailwind CSS Klassen Editor -->
                             <div @click.stop>
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                    Inline CSS:
+                                    Tailwind CSS Klassen:
+                                </label>
+                                <input 
+                                    type="text"
+                                    x-model="block.classes"
+                                    @input="block.updatedAt = new Date().toISOString()"
+                                    @click.stop
+                                    @focus.stop
+                                    placeholder="z.B. text-red-500 bg-yellow-200 p-4 rounded-lg"
+                                    class="w-full p-2 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                                <div class="mt-2 flex gap-2">
+                                    <button 
+                                        @click.stop="clearBlockClasses(block.id)"
+                                        class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+                                    >
+                                        Zurücksetzen
+                                    </button>
+                                </div>
+                                <div class="mt-2 text-xs text-gray-500">
+                                    Beispiel: <code class="bg-gray-100 px-1 rounded">text-blue-600 bg-gray-100 p-4 rounded-lg shadow-md</code>
+                                </div>
+                            </div>
+
+                            <!-- CSS Editor (Optional) -->
+                            <div @click.stop class="pt-4 border-t border-gray-200">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Inline CSS (Optional):
                                 </label>
                                 <textarea 
                                     x-model="block.style"
-                                    @input="updateBlockStyle(block.id, $event.target.value)"
+                                    @input="block.updatedAt = new Date().toISOString()"
                                     @click.stop
                                     @focus.stop
                                     placeholder="z.B. color: red; background-color: yellow; padding: 10px;"
@@ -270,6 +299,18 @@
                 >
                     ➖ Trennlinie
                 </button>
+                <button 
+                    @click="addBlock('twoColumn')"
+                    class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
+                >
+                    📊 Zwei Spalten
+                </button>
+                <button 
+                    @click="addBlock('threeColumn')"
+                    class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
+                >
+                    📊 Drei Spalten
+                </button>
             </div>
 
             <!-- Blocks Container -->
@@ -346,8 +387,8 @@
                                 <div 
                                     :data-block-id="block.id"
                                     :style="block.style || ''"
+                                    :class="['block-placeholder min-h-[1.5rem]', block.classes || '']"
                                     contenteditable="true"
-                                    class="block-placeholder min-h-[1.5rem]"
                                     data-placeholder="Schreibe einen Absatz..."
                                     @input="updateBlockContent(block.id, $event.target.innerHTML)"
                                     @keydown.enter.prevent="addBlockAfter(block.id, 'paragraph')"
@@ -361,8 +402,8 @@
                                 <h1 
                                     :data-block-id="block.id"
                                     :style="block.style || ''"
+                                    :class="['block-placeholder text-3xl font-bold mb-2 min-h-[2rem]', block.classes || '']"
                                     contenteditable="true"
-                                    class="block-placeholder text-3xl font-bold mb-2 min-h-[2rem]"
                                     data-placeholder="Überschrift 1..."
                                     @input="updateBlockContent(block.id, $event.target.innerHTML)"
                                     @keydown.enter.prevent="addBlockAfter(block.id, 'paragraph')"
@@ -376,8 +417,8 @@
                                 <h2 
                                     :data-block-id="block.id"
                                     :style="block.style || ''"
+                                    :class="['block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]', block.classes || '']"
                                     contenteditable="true"
-                                    class="block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]"
                                     data-placeholder="Überschrift 2..."
                                     @input="updateBlockContent(block.id, $event.target.innerHTML)"
                                     @keydown.enter.prevent="addBlockAfter(block.id, 'paragraph')"
@@ -391,8 +432,8 @@
                                 <h3 
                                     :data-block-id="block.id"
                                     :style="block.style || ''"
+                                    :class="['block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]', block.classes || '']"
                                     contenteditable="true"
-                                    class="block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]"
                                     data-placeholder="Überschrift 3..."
                                     @input="updateBlockContent(block.id, $event.target.innerHTML)"
                                     @keydown.enter.prevent="addBlockAfter(block.id, 'paragraph')"
@@ -406,8 +447,8 @@
                                 <pre 
                                     :data-block-id="block.id"
                                     :style="block.style || ''"
+                                    :class="['block-placeholder bg-gray-900 text-green-400 p-4 rounded font-mono text-sm min-h-[4rem] whitespace-pre-wrap', block.classes || '']"
                                     contenteditable="true"
-                                    class="block-placeholder bg-gray-900 text-green-400 p-4 rounded font-mono text-sm min-h-[4rem] whitespace-pre-wrap"
                                     data-placeholder="Schreibe Code..."
                                     @input="updateBlockContent(block.id, $event.target.textContent)"
                                     @keydown.enter.prevent="addBlockAfter(block.id, 'paragraph')"
@@ -421,8 +462,8 @@
                                 <blockquote 
                                     :data-block-id="block.id"
                                     :style="block.style || ''"
+                                    :class="['block-placeholder border-l-4 border-blue-500 pl-4 italic text-gray-700 min-h-[1.5rem]', block.classes || '']"
                                     contenteditable="true"
-                                    class="block-placeholder border-l-4 border-blue-500 pl-4 italic text-gray-700 min-h-[1.5rem]"
                                     data-placeholder="Zitat..."
                                     @input="updateBlockContent(block.id, $event.target.innerHTML)"
                                     @keydown.enter.prevent="addBlockAfter(block.id, 'paragraph')"
@@ -435,10 +476,253 @@
                             <div x-show="block.type === 'divider'">
                                 <hr class="border-t-2 border-gray-300 my-4">
                             </div>
+
+                            <!-- Two Column -->
+                            <div x-show="block.type === 'twoColumn'" class="grid grid-cols-2 gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]">
+                                <div class="space-y-2">
+                                    <div class="text-xs font-semibold text-gray-500 mb-2">Spalte 1</div>
+                                    <template x-for="(child, childIndex) in (block.children || [])" :key="child.id">
+                                        <div x-show="childIndex % 2 === 0" 
+                                            :class="{
+                                                'ring-2 ring-blue-500': selectedBlockId === child.id,
+                                                'opacity-50': draggingBlockId === child.id
+                                            }"
+                                            class="block-item group relative p-2 rounded-lg hover:bg-gray-50 transition-all cursor-move bg-gray-50"
+                                            @click.stop="selectBlock(child.id)"
+                                            @mouseenter="hoveredBlockId = child.id"
+                                            @mouseleave="hoveredBlockId = null"
+                                            draggable="true"
+                                            @dragstart="handleDragStart($event, index, childIndex)"
+                                            @dragover.prevent="handleDragOver($event, index, childIndex)"
+                                            @drop="handleDrop($event, index, childIndex)"
+                                            @dragend="handleDragEnd()"
+                                        >
+                                            <div x-show="selectedBlockId === child.id" class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l"></div>
+                                            <div x-show="hoveredBlockId === child.id || selectedBlockId === child.id" class="absolute -left-10 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                <button @click.stop="openSidebar(child.id)" class="p-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 text-xs" title="Einstellungen öffnen">⚙</button>
+                                                <button @click.stop="removeChild(block.id, childIndex)" class="p-1 bg-red-500 text-white rounded shadow hover:bg-red-600" title="Löschen">×</button>
+                                            </div>
+                                            <div class="block-content">
+                                                <div x-show="child.type === 'paragraph'">
+                                                    <div :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder min-h-[1.5rem] text-sm', child.classes || '']" contenteditable="true" data-placeholder="Spalte 1 Inhalt..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></div>
+                                                </div>
+                                                <div x-show="child.type === 'heading1'">
+                                                    <h1 :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]', child.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h1>
+                                                </div>
+                                                <div x-show="child.type === 'heading2'">
+                                                    <h2 :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]', child.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h2>
+                                                </div>
+                                                <div x-show="child.type === 'heading3'">
+                                                    <h3 :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder text-lg font-bold mb-2 min-h-[1.5rem]', child.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h3>
+                                                </div>
+                                                <div x-show="child.type === 'code'">
+                                                    <pre :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder bg-gray-900 text-green-400 p-3 rounded font-mono text-xs min-h-[3rem] whitespace-pre-wrap', child.classes || '']" contenteditable="true" data-placeholder="Code..." @input="updateBlockContent(child.id, $event.target.textContent)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child, true)"></pre>
+                                                </div>
+                                                <div x-show="child.type === 'quote'">
+                                                    <blockquote :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder border-l-4 border-blue-500 pl-3 italic text-gray-700 min-h-[1.5rem] text-sm', child.classes || '']" contenteditable="true" data-placeholder="Zitat..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></blockquote>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <button @click.stop="addChildToColumn(block.id, 'paragraph', 0, 2)" class="w-full mt-2 p-2 border border-dashed border-gray-400 rounded text-xs text-gray-500 hover:border-blue-500 hover:text-blue-500">+ Inhalt hinzufügen</button>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="text-xs font-semibold text-gray-500 mb-2">Spalte 2</div>
+                                    <template x-for="(child, childIndex) in (block.children || [])" :key="child.id">
+                                        <div x-show="childIndex % 2 === 1" 
+                                            :class="{
+                                                'ring-2 ring-blue-500': selectedBlockId === child.id,
+                                                'opacity-50': draggingBlockId === child.id
+                                            }"
+                                            class="block-item group relative p-2 rounded-lg hover:bg-gray-50 transition-all cursor-move bg-gray-50"
+                                            @click.stop="selectBlock(child.id)"
+                                            @mouseenter="hoveredBlockId = child.id"
+                                            @mouseleave="hoveredBlockId = null"
+                                            draggable="true"
+                                            @dragstart="handleDragStart($event, index, childIndex)"
+                                            @dragover.prevent="handleDragOver($event, index, childIndex)"
+                                            @drop="handleDrop($event, index, childIndex)"
+                                            @dragend="handleDragEnd()"
+                                        >
+                                            <div x-show="selectedBlockId === child.id" class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l"></div>
+                                            <div x-show="hoveredBlockId === child.id || selectedBlockId === child.id" class="absolute -left-10 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                <button @click.stop="openSidebar(child.id)" class="p-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 text-xs" title="Einstellungen öffnen">⚙</button>
+                                                <button @click.stop="removeChild(block.id, childIndex)" class="p-1 bg-red-500 text-white rounded shadow hover:bg-red-600" title="Löschen">×</button>
+                                            </div>
+                                            <div class="block-content">
+                                                <div x-show="child.type === 'paragraph'">
+                                                    <div :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder min-h-[1.5rem] text-sm" data-placeholder="Spalte 2 Inhalt..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></div>
+                                                </div>
+                                                <div x-show="child.type === 'heading1'">
+                                                    <h1 :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h1>
+                                                </div>
+                                                <div x-show="child.type === 'heading2'">
+                                                    <h2 :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h2>
+                                                </div>
+                                                <div x-show="child.type === 'heading3'">
+                                                    <h3 :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder text-lg font-bold mb-2 min-h-[1.5rem]" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h3>
+                                                </div>
+                                                <div x-show="child.type === 'code'">
+                                                    <pre :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder bg-gray-900 text-green-400 p-3 rounded font-mono text-xs min-h-[3rem] whitespace-pre-wrap" data-placeholder="Code..." @input="updateBlockContent(child.id, $event.target.textContent)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child, true)"></pre>
+                                                </div>
+                                                <div x-show="child.type === 'quote'">
+                                                    <blockquote :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder border-l-4 border-blue-500 pl-3 italic text-gray-700 min-h-[1.5rem] text-sm" data-placeholder="Zitat..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></blockquote>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <button @click.stop="addChildToColumn(block.id, 'paragraph', 1, 2)" class="w-full mt-2 p-2 border border-dashed border-gray-400 rounded text-xs text-gray-500 hover:border-blue-500 hover:text-blue-500">+ Inhalt hinzufügen</button>
+                                </div>
+                            </div>
+
+                            <!-- Three Column -->
+                            <div x-show="block.type === 'threeColumn'" class="grid grid-cols-3 gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]">
+                                <div class="space-y-2">
+                                    <div class="text-xs font-semibold text-gray-500 mb-2">Spalte 1</div>
+                                    <template x-for="(child, childIndex) in (block.children || [])" :key="child.id">
+                                        <div x-show="childIndex % 3 === 0" 
+                                            :class="{
+                                                'ring-2 ring-blue-500': selectedBlockId === child.id,
+                                                'opacity-50': draggingBlockId === child.id
+                                            }"
+                                            class="block-item group relative p-2 rounded-lg hover:bg-gray-50 transition-all cursor-move bg-gray-50"
+                                            @click.stop="selectBlock(child.id)"
+                                            @mouseenter="hoveredBlockId = child.id"
+                                            @mouseleave="hoveredBlockId = null"
+                                            draggable="true"
+                                            @dragstart="handleDragStart($event, index, childIndex)"
+                                            @dragover.prevent="handleDragOver($event, index, childIndex)"
+                                            @drop="handleDrop($event, index, childIndex)"
+                                            @dragend="handleDragEnd()"
+                                        >
+                                            <div x-show="selectedBlockId === child.id" class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l"></div>
+                                            <div x-show="hoveredBlockId === child.id || selectedBlockId === child.id" class="absolute -left-10 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                <button @click.stop="openSidebar(child.id)" class="p-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 text-xs" title="Einstellungen öffnen">⚙</button>
+                                                <button @click.stop="removeChild(block.id, childIndex)" class="p-1 bg-red-500 text-white rounded shadow hover:bg-red-600" title="Löschen">×</button>
+                                            </div>
+                                            <div class="block-content">
+                                                <div x-show="child.type === 'paragraph'">
+                                                    <div :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder min-h-[1.5rem] text-sm', child.classes || '']" contenteditable="true" data-placeholder="Spalte 1 Inhalt..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></div>
+                                                </div>
+                                                <div x-show="child.type === 'heading1'">
+                                                    <h1 :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]', child.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h1>
+                                                </div>
+                                                <div x-show="child.type === 'heading2'">
+                                                    <h2 :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]', child.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h2>
+                                                </div>
+                                                <div x-show="child.type === 'heading3'">
+                                                    <h3 :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder text-lg font-bold mb-2 min-h-[1.5rem]', child.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h3>
+                                                </div>
+                                                <div x-show="child.type === 'code'">
+                                                    <pre :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder bg-gray-900 text-green-400 p-3 rounded font-mono text-xs min-h-[3rem] whitespace-pre-wrap', child.classes || '']" contenteditable="true" data-placeholder="Code..." @input="updateBlockContent(child.id, $event.target.textContent)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child, true)"></pre>
+                                                </div>
+                                                <div x-show="child.type === 'quote'">
+                                                    <blockquote :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder border-l-4 border-blue-500 pl-3 italic text-gray-700 min-h-[1.5rem] text-sm', child.classes || '']" contenteditable="true" data-placeholder="Zitat..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></blockquote>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <button @click.stop="addChildToColumn(block.id, 'paragraph', 0, 3)" class="w-full mt-2 p-2 border border-dashed border-gray-400 rounded text-xs text-gray-500 hover:border-blue-500 hover:text-blue-500">+ Inhalt hinzufügen</button>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="text-xs font-semibold text-gray-500 mb-2">Spalte 2</div>
+                                    <template x-for="(child, childIndex) in (block.children || [])" :key="child.id">
+                                        <div x-show="childIndex % 3 === 1" 
+                                            :class="{
+                                                'ring-2 ring-blue-500': selectedBlockId === child.id,
+                                                'opacity-50': draggingBlockId === child.id
+                                            }"
+                                            class="block-item group relative p-2 rounded-lg hover:bg-gray-50 transition-all cursor-move bg-gray-50"
+                                            @click.stop="selectBlock(child.id)"
+                                            @mouseenter="hoveredBlockId = child.id"
+                                            @mouseleave="hoveredBlockId = null"
+                                            draggable="true"
+                                            @dragstart="handleDragStart($event, index, childIndex)"
+                                            @dragover.prevent="handleDragOver($event, index, childIndex)"
+                                            @drop="handleDrop($event, index, childIndex)"
+                                            @dragend="handleDragEnd()"
+                                        >
+                                            <div x-show="selectedBlockId === child.id" class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l"></div>
+                                            <div x-show="hoveredBlockId === child.id || selectedBlockId === child.id" class="absolute -left-10 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                <button @click.stop="openSidebar(child.id)" class="p-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 text-xs" title="Einstellungen öffnen">⚙</button>
+                                                <button @click.stop="removeChild(block.id, childIndex)" class="p-1 bg-red-500 text-white rounded shadow hover:bg-red-600" title="Löschen">×</button>
+                                            </div>
+                                            <div class="block-content">
+                                                <div x-show="child.type === 'paragraph'">
+                                                    <div :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder min-h-[1.5rem] text-sm" data-placeholder="Spalte 2 Inhalt..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></div>
+                                                </div>
+                                                <div x-show="child.type === 'heading1'">
+                                                    <h1 :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h1>
+                                                </div>
+                                                <div x-show="child.type === 'heading2'">
+                                                    <h2 :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h2>
+                                                </div>
+                                                <div x-show="child.type === 'heading3'">
+                                                    <h3 :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder text-lg font-bold mb-2 min-h-[1.5rem]" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h3>
+                                                </div>
+                                                <div x-show="child.type === 'code'">
+                                                    <pre :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder bg-gray-900 text-green-400 p-3 rounded font-mono text-xs min-h-[3rem] whitespace-pre-wrap" data-placeholder="Code..." @input="updateBlockContent(child.id, $event.target.textContent)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child, true)"></pre>
+                                                </div>
+                                                <div x-show="child.type === 'quote'">
+                                                    <blockquote :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder border-l-4 border-blue-500 pl-3 italic text-gray-700 min-h-[1.5rem] text-sm" data-placeholder="Zitat..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></blockquote>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <button @click.stop="addChildToColumn(block.id, 'paragraph', 1, 3)" class="w-full mt-2 p-2 border border-dashed border-gray-400 rounded text-xs text-gray-500 hover:border-blue-500 hover:text-blue-500">+ Inhalt hinzufügen</button>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="text-xs font-semibold text-gray-500 mb-2">Spalte 3</div>
+                                    <template x-for="(child, childIndex) in (block.children || [])" :key="child.id">
+                                        <div x-show="childIndex % 3 === 2" 
+                                            :class="{
+                                                'ring-2 ring-blue-500': selectedBlockId === child.id,
+                                                'opacity-50': draggingBlockId === child.id
+                                            }"
+                                            class="block-item group relative p-2 rounded-lg hover:bg-gray-50 transition-all cursor-move bg-gray-50"
+                                            @click.stop="selectBlock(child.id)"
+                                            @mouseenter="hoveredBlockId = child.id"
+                                            @mouseleave="hoveredBlockId = null"
+                                            draggable="true"
+                                            @dragstart="handleDragStart($event, index, childIndex)"
+                                            @dragover.prevent="handleDragOver($event, index, childIndex)"
+                                            @drop="handleDrop($event, index, childIndex)"
+                                            @dragend="handleDragEnd()"
+                                        >
+                                            <div x-show="selectedBlockId === child.id" class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l"></div>
+                                            <div x-show="hoveredBlockId === child.id || selectedBlockId === child.id" class="absolute -left-10 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                <button @click.stop="openSidebar(child.id)" class="p-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 text-xs" title="Einstellungen öffnen">⚙</button>
+                                                <button @click.stop="removeChild(block.id, childIndex)" class="p-1 bg-red-500 text-white rounded shadow hover:bg-red-600" title="Löschen">×</button>
+                                            </div>
+                                            <div class="block-content">
+                                                <div x-show="child.type === 'paragraph'">
+                                                    <div :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder min-h-[1.5rem] text-sm" data-placeholder="Spalte 3 Inhalt..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></div>
+                                                </div>
+                                                <div x-show="child.type === 'heading1'">
+                                                    <h1 :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h1>
+                                                </div>
+                                                <div x-show="child.type === 'heading2'">
+                                                    <h2 :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h2>
+                                                </div>
+                                                <div x-show="child.type === 'heading3'">
+                                                    <h3 :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder text-lg font-bold mb-2 min-h-[1.5rem]" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h3>
+                                                </div>
+                                                <div x-show="child.type === 'code'">
+                                                    <pre :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder bg-gray-900 text-green-400 p-3 rounded font-mono text-xs min-h-[3rem] whitespace-pre-wrap" data-placeholder="Code..." @input="updateBlockContent(child.id, $event.target.textContent)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child, true)"></pre>
+                                                </div>
+                                                <div x-show="child.type === 'quote'">
+                                                    <blockquote :data-block-id="child.id" :style="child.style || ''" contenteditable="true" class="block-placeholder border-l-4 border-blue-500 pl-3 italic text-gray-700 min-h-[1.5rem] text-sm" data-placeholder="Zitat..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></blockquote>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <button @click.stop="addChildToColumn(block.id, 'paragraph', 2, 3)" class="w-full mt-2 p-2 border border-dashed border-gray-400 rounded text-xs text-gray-500 hover:border-blue-500 hover:text-blue-500">+ Inhalt hinzufügen</button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Children Blocks (Verschachtelt) -->
-                        <div x-show="block.children && block.children.length > 0" class="ml-8 mt-2 space-y-2 border-l-2 border-gray-300 pl-4">
+                        <div x-show="block.children && block.children.length > 0 && block.type !== 'twoColumn' && block.type !== 'threeColumn'" class="ml-8 mt-2 space-y-2 border-l-2 border-gray-300 pl-4">
                             <template x-for="(child, childIndex) in block.children" :key="child.id">
                                 <div 
                                     :class="{
@@ -508,8 +792,8 @@
                                             <div 
                                                 :data-block-id="child.id"
                                                 :style="child.style || ''"
+                                                :class="['block-placeholder min-h-[1.5rem] text-sm', child.classes || '']"
                                                 contenteditable="true"
-                                                class="block-placeholder min-h-[1.5rem] text-sm"
                                                 data-placeholder="Child Absatz..."
                                                 @input="updateBlockContent(child.id, $event.target.innerHTML)"
                                                 @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
@@ -523,8 +807,8 @@
                                             <h1 
                                                 :data-block-id="child.id"
                                                 :style="child.style || ''"
+                                                :class="['block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]', child.classes || '']"
                                                 contenteditable="true"
-                                                class="block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]"
                                                 data-placeholder="Child Überschrift 1..."
                                                 @input="updateBlockContent(child.id, $event.target.innerHTML)"
                                                 @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
@@ -538,8 +822,8 @@
                                             <h2 
                                                 :data-block-id="child.id"
                                                 :style="child.style || ''"
+                                                :class="['block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]', child.classes || '']"
                                                 contenteditable="true"
-                                                class="block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]"
                                                 data-placeholder="Child Überschrift 2..."
                                                 @input="updateBlockContent(child.id, $event.target.innerHTML)"
                                                 @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
@@ -553,8 +837,8 @@
                                             <h3 
                                                 :data-block-id="child.id"
                                                 :style="child.style || ''"
+                                                :class="['block-placeholder text-lg font-bold mb-2 min-h-[1.5rem]', child.classes || '']"
                                                 contenteditable="true"
-                                                class="block-placeholder text-lg font-bold mb-2 min-h-[1.5rem]"
                                                 data-placeholder="Child Überschrift 3..."
                                                 @input="updateBlockContent(child.id, $event.target.innerHTML)"
                                                 @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
@@ -568,8 +852,8 @@
                                             <pre 
                                                 :data-block-id="child.id"
                                                 :style="child.style || ''"
+                                                :class="['block-placeholder bg-gray-900 text-green-400 p-3 rounded font-mono text-xs min-h-[3rem] whitespace-pre-wrap', child.classes || '']"
                                                 contenteditable="true"
-                                                class="block-placeholder bg-gray-900 text-green-400 p-3 rounded font-mono text-xs min-h-[3rem] whitespace-pre-wrap"
                                                 data-placeholder="Child Code..."
                                                 @input="updateBlockContent(child.id, $event.target.textContent)"
                                                 @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
@@ -583,8 +867,8 @@
                                             <blockquote 
                                                 :data-block-id="child.id"
                                                 :style="child.style || ''"
+                                                :class="['block-placeholder border-l-4 border-blue-500 pl-3 italic text-gray-700 min-h-[1.5rem] text-sm', child.classes || '']"
                                                 contenteditable="true"
-                                                class="block-placeholder border-l-4 border-blue-500 pl-3 italic text-gray-700 min-h-[1.5rem] text-sm"
                                                 data-placeholder="Child Zitat..."
                                                 @input="updateBlockContent(child.id, $event.target.innerHTML)"
                                                 @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"

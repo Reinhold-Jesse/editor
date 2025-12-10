@@ -1,0 +1,147 @@
+[
+  {
+    "id": "block-1-1765356996716",
+    "type": "heading1",
+    "content": "Arbeitsvorbereitung",
+    "style": "",
+    "classes": "",
+    "children": [
+      {
+        "id": "col-block-1-1765356996716-0",
+        "type": "column",
+        "children": [],
+        "createdAt": "2025-12-10T12:57:46.037Z"
+      },
+      {
+        "id": "col-block-1-1765356996716-1",
+        "type": "column",
+        "children": [],
+        "createdAt": "2025-12-10T12:57:46.037Z"
+      }
+    ],
+    "createdAt": "2025-12-10T08:56:36.716Z",
+    "updatedAt": "2025-12-10T08:59:45.981Z"
+  },
+  {
+    "id": "block-3-1765357190343",
+    "type": "table",
+    "content": "",
+    "style": "",
+    "classes": "",
+    "children": [
+      {
+        "id": "col-block-3-1765357190343-0",
+        "type": "column",
+        "children": [],
+        "createdAt": "2025-12-10T12:57:46.055Z"
+      },
+      {
+        "id": "col-block-3-1765357190343-1",
+        "type": "column",
+        "children": [],
+        "createdAt": "2025-12-10T12:57:46.055Z"
+      }
+    ],
+    "createdAt": "2025-12-10T08:59:50.343Z",
+    "tableData": {
+      "cells": [
+        [
+          {
+            "id": "block-3-1765357190343",
+            "content": "Aufgabe",
+            "colspan": 1,
+            "rowspan": 1,
+            "isHeader": true
+          },
+          {
+            "id": "block-4-1765357190343",
+            "content": "Hauptverantwortlicher",
+            "colspan": 1,
+            "rowspan": 1,
+            "isHeader": true
+          },
+          {
+            "id": "block-5-1765357190343",
+            "content": "Vertretung",
+            "colspan": 1,
+            "rowspan": 1,
+            "isHeader": true
+          }
+        ],
+        [
+          {
+            "id": "block-6-1765357190343",
+            "content": "Reklamation",
+            "colspan": 1,
+            "rowspan": 1,
+            "isHeader": false
+          },
+          {
+            "id": "block-7-1765357190343",
+            "content": "Lilia Gress, Kai Oettinger, Berkan Kurt, Janik Schönthaler",
+            "colspan": 1,
+            "rowspan": 1,
+            "isHeader": false
+          },
+          {
+            "id": "block-8-1765357190343",
+            "content": "",
+            "colspan": 1,
+            "rowspan": 1,
+            "isHeader": false
+          }
+        ],
+        [
+          {
+            "id": "block-9-1765357190343",
+            "content": "Speditionsabwicklung",
+            "colspan": 1,
+            "rowspan": 1,
+            "isHeader": false
+          },
+          {
+            "id": "block-10-1765357190343",
+            "content": "Berkan Kurt",
+            "colspan": 1,
+            "rowspan": 1,
+            "isHeader": false
+          },
+          {
+            "id": "block-11-1765357190343",
+            "content": "Kai Oettinger, Janik Schönthaler",
+            "colspan": 1,
+            "rowspan": 1,
+            "isHeader": false
+          }
+        ],
+        [
+          {
+            "id": "block-12-1765357190343",
+            "content": "",
+            "colspan": 1,
+            "rowspan": 1,
+            "isHeader": false
+          },
+          {
+            "id": "block-13-1765357190343",
+            "content": "",
+            "colspan": 1,
+            "rowspan": 1,
+            "isHeader": false
+          },
+          {
+            "id": "block-14-1765357190343",
+            "content": "",
+            "colspan": 1,
+            "rowspan": 1,
+            "isHeader": false
+          }
+        ]
+      ],
+      "hasHeader": true,
+      "hasFooter": false,
+      "lastCellIdCounter": 14
+    },
+    "updatedAt": "2025-12-10T09:02:13.672Z"
+  }
+]

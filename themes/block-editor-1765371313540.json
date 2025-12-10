@@ -1,0 +1,99 @@
+[
+  {
+    "id": "block-3-1765364187010",
+    "type": "threeColumn",
+    "content": "",
+    "style": "",
+    "classes": "",
+    "children": [
+      {
+        "id": "block-4-1765364187010",
+        "type": "column",
+        "content": "",
+        "style": "",
+        "classes": "",
+        "children": [
+          {
+            "id": "block-4-1765364189773",
+            "type": "image",
+            "content": "",
+            "style": "",
+            "classes": "",
+            "children": [],
+            "createdAt": "2025-12-10T10:56:29.773Z",
+            "imageUrl": "https://www.heco.de/cms/fileadmin/_processed_/f/c/csm_Handel_58f7dff7a1.jpg",
+            "imageAlt": "",
+            "imageTitle": "",
+            "updatedAt": "2025-12-10T10:56:42.565Z"
+          },
+          {
+            "id": "block-5-1765364205762",
+            "type": "heading1",
+            "content": "Handel",
+            "style": "",
+            "classes": "",
+            "children": [],
+            "createdAt": "2025-12-10T10:56:45.762Z",
+            "updatedAt": "2025-12-10T10:56:51.774Z"
+          },
+          {
+            "id": "block-6-1765364215408",
+            "type": "paragraph",
+            "content": "Rostfreie Edelstähle",
+            "style": "",
+            "classes": "",
+            "children": [],
+            "createdAt": "2025-12-10T10:56:55.408Z",
+            "updatedAt": "2025-12-10T10:57:12.904Z"
+          }
+        ],
+        "createdAt": "2025-12-10T10:56:27.010Z"
+      },
+      {
+        "id": "block-5-1765364187010",
+        "type": "column",
+        "content": "",
+        "style": "",
+        "classes": "",
+        "children": [
+          {
+            "id": "block-7-1765364252716",
+            "type": "image",
+            "content": "",
+            "style": "",
+            "classes": "",
+            "children": [],
+            "createdAt": "2025-12-10T10:57:32.716Z",
+            "imageUrl": "https://www.heco.de/cms/fileadmin/_processed_/1/f/csm_Produktion_efba24992d.jpg",
+            "imageAlt": "",
+            "imageTitle": "",
+            "updatedAt": "2025-12-10T10:57:36.539Z"
+          },
+          {
+            "id": "block-8-1765364260352",
+            "type": "heading1",
+            "content": "Produktion",
+            "style": "",
+            "classes": "",
+            "children": [],
+            "createdAt": "2025-12-10T10:57:40.352Z",
+            "updatedAt": "2025-12-10T10:57:46.944Z"
+          },
+          {
+            "id": "block-9-1765364271967",
+            "type": "paragraph",
+            "content": "Rostfreie Edelstähle",
+            "style": "",
+            "classes": "",
+            "children": [],
+            "createdAt": "2025-12-10T10:57:51.967Z",
+            "updatedAt": "2025-12-10T10:58:07.069Z"
+          }
+        ],
+        "createdAt": "2025-12-10T10:56:27.010Z"
+      }
+    ],
+    "createdAt": "2025-12-10T10:56:27.010Z",
+    "updatedAt": "2025-12-10T12:49:15.264Z"
+  }
+]

@@ -78,3 +78,4 @@ window.blockEditor = blockEditor;
 Dies ermöglicht Alpine.js, die Funktion über `x-data="blockEditor()"` zu verwenden.
 
 
+

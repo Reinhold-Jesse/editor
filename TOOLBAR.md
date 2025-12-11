@@ -430,3 +430,4 @@ Die Toolbar im Block Editor bietet zwei Hauptfunktionen:
 Beide Toolbars sind kontextbezogen und erscheinen nur, wenn sie benötigt werden. Die Erweiterungsmöglichkeiten sind vielfältig und können je nach Anforderungen angepasst werden.
 
 
+

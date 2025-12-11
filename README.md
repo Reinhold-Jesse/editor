@@ -2,6 +2,143 @@
 
 Ein moderner Block-basierter Editor, ähnlich wie Block Note, entwickelt mit Alpine.js und Tailwind CSS v4.
 
+## 🚀 Schnellstart
+
+```bash
+# 1. Repository klonen oder herunterladen
+git clone <repository-url>
+cd editor
+
+# 2. Lokalen Webserver starten (Python)
+python -m http.server 8000
+
+# 3. Im Browser öffnen
+# http://localhost:8000
+```
+
+**Oder einfach:** Öffne `index.html` direkt im Browser (für Development).
+
+## Installation
+
+### Voraussetzungen
+
+- Ein moderner Webbrowser (Chrome, Firefox, Edge, Safari)
+- Optional: Ein lokaler Webserver (für Production-Einsatz empfohlen)
+
+### Schnellstart (Entwicklung)
+
+1. **Repository klonen oder herunterladen:**
+   ```bash
+   git clone <repository-url>
+   cd editor
+   ```
+
+2. **Dateien öffnen:**
+   - Öffne einfach die `index.html` Datei direkt im Browser
+   - Oder nutze einen lokalen Webserver (siehe unten)
+
+### Lokaler Webserver (Empfohlen)
+
+Für die beste Performance und um CORS-Probleme zu vermeiden, wird die Verwendung eines lokalen Webservers empfohlen:
+
+#### Option 1: Python HTTP Server
+
+```bash
+# Python 3
+python -m http.server 8000
+
+# Oder Python 2
+python -m SimpleHTTPServer 8000
+```
+
+Dann öffne im Browser: `http://localhost:8000`
+
+#### Option 2: Node.js (http-server)
+
+```bash
+# Installation
+npm install -g http-server
+
+# Server starten
+http-server -p 8000
+```
+
+Dann öffne im Browser: `http://localhost:8000`
+
+#### Option 3: PHP Built-in Server
+
+```bash
+php -S localhost:8000
+```
+
+Dann öffne im Browser: `http://localhost:8000`
+
+#### Option 4: VS Code Live Server
+
+1. Installiere die Extension "Live Server" in VS Code
+2. Rechtsklick auf `index.html` → "Open with Live Server"
+
+### Projektstruktur
+
+```
+editor/
+├── index.html              # Haupt-HTML-Datei
+├── block-editor.js         # Haupt-JavaScript-Datei
+├── components/             # JavaScript-Module
+│   ├── utils.js
+│   ├── block-management.js
+│   ├── block-types.js
+│   ├── child-management.js
+│   ├── drag-drop.js
+│   ├── storage.js
+│   └── table-management.js
+├── themes/                 # Gespeicherte Themes
+├── example.json           # Beispiel-JSON
+├── README.md              # Diese Datei
+├── COMPONENTS.md          # Komponenten-Dokumentation
+└── TOOLBAR.md             # Toolbar-Dokumentation
+```
+
+### Abhängigkeiten
+
+Der Block Editor verwendet folgende externe Bibliotheken (via CDN):
+
+- **Alpine.js 3.15.2** - Reaktive UI-Logik
+- **Tailwind CSS 3.4.17** - CSS-Framework (CDN-Version)
+
+**Hinweis:** Die Tailwind CSS CDN-Version ist für Development geeignet. Für Production sollte Tailwind CSS als PostCSS-Plugin installiert werden (siehe [Tailwind CSS Dokumentation](https://tailwindcss.com/docs/installation)).
+
+### Production-Build (Optional)
+
+Für Production-Einsatz empfohlen:
+
+1. **Tailwind CSS installieren:**
+   ```bash
+   npm install -D tailwindcss
+   npx tailwindcss init
+   ```
+
+2. **Tailwind konfigurieren:**
+   - Erstelle eine `tailwind.config.js` mit den benötigten Klassen
+   - Ersetze die CDN-Version in `index.html` durch eine kompilierte CSS-Datei
+
+3. **Alpine.js:**
+   - Alpine.js kann weiterhin via CDN verwendet werden
+   - Oder als npm-Paket installieren: `npm install alpinejs`
+
+### Browser-Unterstützung
+
+Der Editor funktioniert in allen modernen Browsern mit Unterstützung für:
+- ES6+ (JavaScript Modules)
+- LocalStorage API
+- Drag & Drop API
+- ContentEditable API
+
+**Getestet in:**
+- Chrome/Edge (neueste Version)
+- Firefox (neueste Version)
+- Safari (neueste Version)
+
 ## Features
 
 - ✅ **Verschiedene Block-Typen:**
@@ -9,7 +146,11 @@ Ein moderner Block-basierter Editor, ähnlich wie Block Note, entwickelt mit Alp
   - Überschriften (H1, H2, H3)
   - Code-Blöcke
   - Zitate
+  - Bilder (Upload oder URL)
   - Trennlinien
+  - Zwei-Spalten-Layout
+  - Drei-Spalten-Layout
+  - Tabellen (mit Header/Footer, Zellen zusammenführen)
 
 - ✅ **Block-Management:**
   - Blöcke hinzufügen
@@ -26,6 +167,24 @@ Ein moderner Block-basierter Editor, ähnlich wie Block Note, entwickelt mit Alp
   - Laden aus LocalStorage
   - JSON-Export als Datei
   - JSON-Import aus Datei
+
+- ✅ **Theme-System:**
+  - Themes speichern und laden
+  - Theme-Import/Export
+  - Theme-Bearbeitung
+  - Schneller Zugriff über Toolbar
+
+- ✅ **Rich Text Formatting:**
+  - Floating Toolbar für Text-Formatierung
+  - Textfarbe ändern
+  - Hintergrundfarbe ändern
+  - Links einfügen und bearbeiten
+
+- ✅ **Tabellen:**
+  - Vollständige Tabellen-Verwaltung
+  - Header/Footer optional
+  - Zellen zusammenführen (colspan/rowspan)
+  - Inline-Bearbeitung
 
 - ✅ **Benutzerfreundlichkeit:**
   - Placeholder-Text für leere Blöcke
@@ -63,6 +222,19 @@ Zitat-Block mit linker Border und kursiver Schrift.
 
 ### Divider
 Horizontale Trennlinie zur visuellen Trennung von Bereichen.
+
+### Bild
+Bild-Block mit Upload-Funktion oder URL-Eingabe. Unterstützt Alt-Text und Titel für Barrierefreiheit.
+
+### Zwei Spalten / Drei Spalten
+Layout-Blöcke für mehrspaltige Inhalte. Jede Spalte kann eigene Child-Blöcke enthalten.
+
+### Tabelle
+Vollständige Tabellen-Verwaltung mit:
+- Optionaler Header/Footer
+- Zellen zusammenführen (colspan/rowspan)
+- Inline-Bearbeitung
+- Drag & Drop für Zeilen/Spalten
 
 ## JSON-Struktur
 
@@ -115,7 +287,35 @@ Moderne Browser mit Unterstützung für:
 
 ## Entwicklung
 
-Der Editor ist eine Single-Page-Anwendung (SPA) und benötigt keinen Build-Prozess. Einfach die `index.html` Datei in einem Browser öffnen.
+### Lokale Entwicklung
+
+Der Editor ist eine Single-Page-Anwendung (SPA) und benötigt keinen Build-Prozess:
+
+1. **Einfachste Methode:** Öffne `index.html` direkt im Browser
+2. **Empfohlen:** Nutze einen lokalen Webserver (siehe Installation)
+
+### Code-Struktur
+
+- **Modulares Design:** Der Code ist in separate Module aufgeteilt:
+  - `block-editor.js` - Haupt-Logik und Alpine.js Component
+  - `components/utils.js` - Utility-Funktionen
+  - `components/block-management.js` - Block-Verwaltung
+  - `components/child-management.js` - Child-Block-Verwaltung
+  - `components/drag-drop.js` - Drag & Drop Funktionalität
+  - `components/storage.js` - Speicherung und Import/Export
+  - `components/table-management.js` - Tabellen-Verwaltung
+  - `components/block-types.js` - Block-Typ-Definitionen
+
+### Debugging
+
+- Öffne die Browser-Entwicklertools (F12)
+- Console-Logs zeigen Fehler und Warnungen
+- LocalStorage kann im Application-Tab inspiziert werden
+
+### Bekannte Einschränkungen
+
+- Tailwind CSS CDN-Warnung: Dies ist nur eine Warnung, keine Fehlfunktion
+- Für Production sollte Tailwind CSS als PostCSS-Plugin verwendet werden
 
 ## Erweiterungsmöglichkeiten
 

@@ -1,4 +1,4 @@
-// Block Type Definitions and Helpers
+// Block Type Definitions and Helpers - als Objekt organisiert
 export const BLOCK_TYPES = {
     paragraph: {
         label: '📝 Paragraph',
@@ -88,30 +88,37 @@ export const BLOCK_TYPES = {
     }
 };
 
-export function getBlockTypeConfig(type) {
-    return BLOCK_TYPES[type] || BLOCK_TYPES.paragraph;
-}
+export const BlockTypes = {
+    getBlockTypeConfig(type) {
+        return BLOCK_TYPES[type] || BLOCK_TYPES.paragraph;
+    },
 
-// Gibt die Anzahl der Spalten für einen Block-Typ zurück
-export function getColumnCount(blockType) {
-    const config = getBlockTypeConfig(blockType);
-    return config.columnCount || 0;
-}
+    // Gibt die Anzahl der Spalten für einen Block-Typ zurück
+    getColumnCount(blockType) {
+        const config = this.getBlockTypeConfig(blockType);
+        return config.columnCount || 0;
+    },
 
-// Prüft ob ein Block-Typ ein Container ist
-export function isContainerBlock(blockType) {
-    const config = getBlockTypeConfig(blockType);
-    return config.isContainer === true;
-}
+    // Prüft ob ein Block-Typ ein Container ist
+    isContainerBlock(blockType) {
+        const config = this.getBlockTypeConfig(blockType);
+        return config.isContainer === true;
+    },
 
-// Prüft ob ein Block-Typ Kinder haben darf
-export function canBlockHaveChildren(blockType) {
-    // Column-Blöcke können immer Kinder haben (spezialfall)
-    if (blockType === 'column') {
-        return true;
+    // Prüft ob ein Block-Typ Kinder haben darf
+    canBlockHaveChildren(blockType) {
+        // Column-Blöcke können immer Kinder haben (spezialfall)
+        if (blockType === 'column') {
+            return true;
+        }
+        
+        const config = this.getBlockTypeConfig(blockType);
+        return config.canHaveChildren === true;
     }
-    
-    const config = getBlockTypeConfig(blockType);
-    return config.canHaveChildren === true;
-}
+};
 
+// Legacy Exports für Rückwärtskompatibilität
+export const getBlockTypeConfig = BlockTypes.getBlockTypeConfig.bind(BlockTypes);
+export const getColumnCount = BlockTypes.getColumnCount.bind(BlockTypes);
+export const isContainerBlock = BlockTypes.isContainerBlock.bind(BlockTypes);
+export const canBlockHaveChildren = BlockTypes.canBlockHaveChildren.bind(BlockTypes);

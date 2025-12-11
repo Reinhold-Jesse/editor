@@ -1,63 +1,11 @@
 // Block Editor Komponente
-import { 
-    initAllBlockContents, 
-    initBlockContent, 
-    findBlockById, 
-    getAllBlocks 
-} from './components/utils.js';
-import {
-    addBlock as addBlockUtil,
-    addBlockAfter as addBlockAfterUtil,
-    updateBlockContent as updateBlockContentUtil,
-    deleteBlock as deleteBlockUtil,
-    changeBlockType as changeBlockTypeUtil,
-    updateBlockStyle as updateBlockStyleUtil,
-    clearBlockStyle as clearBlockStyleUtil,
-    updateBlockClasses as updateBlockClassesUtil,
-    clearBlockClasses as clearBlockClassesUtil,
-    moveBlock as moveBlockUtil,
-    updateImageUrl as updateImageUrlUtil,
-    updateImageAlt as updateImageAltUtil,
-    updateImageTitle as updateImageTitleUtil,
-    ensureColumnStructure
-} from './components/block-management.js';
-import {
-    addChild as addChildUtil,
-    addChildAfter as addChildAfterUtil,
-    removeChild as removeChildUtil,
-    removeChildFromColumn as removeChildFromColumnUtil,
-    moveChildBlock as moveChildBlockUtil,
-    addChildToColumn as addChildToColumnUtil
-} from './components/child-management.js';
-import {
-    handleDragStart as handleDragStartUtil,
-    handleDragOver as handleDragOverUtil,
-    handleDrop as handleDropUtil
-} from './components/drag-drop.js';
-import {
-    saveToJSON as saveToJSONUtil,
-    loadFromJSON as loadFromJSONUtil,
-    importJSON as importJSONUtil,
-    exportJSON as exportJSONUtil,
-    saveTheme as saveThemeUtil,
-    getAllThemes as getAllThemesUtil,
-    loadTheme as loadThemeUtil,
-    deleteTheme as deleteThemeUtil,
-    updateTheme as updateThemeUtil,
-    importThemeFromFile as importThemeFromFileUtil
-} from './components/storage.js';
-import {
-    addTableRow,
-    removeTableRow,
-    addTableColumn,
-    removeTableColumn,
-    mergeTableCells,
-    unmergeTableCells,
-    updateTableCellContent,
-    toggleTableHeader,
-    toggleTableFooter
-} from './components/table-management.js';
-import { BLOCK_TYPES, getColumnCount } from './components/block-types.js';
+import { Utils } from './components/utils.js';
+import { BlockManagement } from './components/block-management.js';
+import { ChildManagement } from './components/child-management.js';
+import { DragDrop } from './components/drag-drop.js';
+import { Storage } from './components/storage.js';
+import { TableManagement } from './components/table-management.js';
+import { BLOCK_TYPES, BlockTypes } from './components/block-types.js';
 
 function blockEditor() {
     return {
@@ -117,7 +65,9 @@ function blockEditor() {
             title: '',
             message: '',
             onConfirm: null,
-            onCancel: null
+            onCancel: null,
+            onExtend: null, // Neue Option für "Erweitern"
+            showExtend: false // Zeigt ob "Erweitern" Button angezeigt werden soll
         },
 
         init() {
@@ -229,11 +179,11 @@ function blockEditor() {
         },
 
         initAllBlockContents() {
-            initAllBlockContents(this.blocks);
+            Utils.initAllBlockContents(this.blocks);
         },
 
         initBlockContent(element, block, isTextContent = false) {
-            initBlockContent(element, block, isTextContent);
+            Utils.initBlockContent(element, block, isTextContent);
         },
 
         initTableCellContent(element, cell) {
@@ -266,13 +216,13 @@ function blockEditor() {
 
         addBlock(type, content = '') {
             this.blockIdCounter++;
-            const block = addBlockUtil(this.blocks, this.selectedBlockId, this.blockIdCounter, type, content);
+            const block = BlockManagement.addBlock(this.blocks, this.selectedBlockId, this.blockIdCounter, type, content);
             this.selectedBlockId = block.id;
             this.showToolbar = false;
             this.showThemeDropdown = false;
             
             // Stelle sicher, dass Column-Blöcke die richtige Anzahl von Spalten haben
-            ensureColumnStructure(this.blocks);
+            BlockManagement.ensureColumnStructure(this.blocks);
             
             // Focus auf den neuen Block
             this.$nextTick(() => {
@@ -296,7 +246,7 @@ function blockEditor() {
 
         addBlockAfter(blockId, type = 'paragraph') {
             this.blockIdCounter++;
-            const block = addBlockAfterUtil(this.blocks, blockId, this.blockIdCounter, type);
+            const block = BlockManagement.addBlockAfter(this.blocks, blockId, this.blockIdCounter, type);
             this.selectedBlockId = block.id;
             
             this.$nextTick(() => {
@@ -315,11 +265,11 @@ function blockEditor() {
         },
 
         updateBlockContent(blockId, content) {
-            updateBlockContentUtil(this.blocks, blockId, content);
+            BlockManagement.updateBlockContent(this.blocks, blockId, content);
         },
 
         deleteBlock(blockId) {
-            const result = deleteBlockUtil(this.blocks, blockId);
+            const result = BlockManagement.deleteBlock(this.blocks, blockId);
             if (result.deleted) {
                 this.selectedBlockId = null;
                 
@@ -343,7 +293,7 @@ function blockEditor() {
         },
 
         moveBlock(index, direction) {
-            moveBlockUtil(this.blocks, index, direction);
+            BlockManagement.moveBlock(this.blocks, index, direction);
         },
 
         handleBackspace(blockId, event) {
@@ -388,7 +338,7 @@ function blockEditor() {
                 }
             }
             // Fallback to original logic
-            const result = handleDragStartUtil(event, this.blocks, index, childIndex);
+            const result = DragDrop.handleDragStart(event, this.blocks, index, childIndex);
             this.dragStartIndex = result.dragStartIndex;
             this.draggingBlockId = result.draggingBlockId;
         },
@@ -406,7 +356,7 @@ function blockEditor() {
                 return;
             }
             // Fallback to original logic
-            this.dragOverIndex = handleDragOverUtil(event, index, childIndex);
+            this.dragOverIndex = DragDrop.handleDragOver(event, index, childIndex);
         },
 
         handleDrop(event, dropIndex, dropColumnIndex = null, dropChildIndex = null) {
@@ -447,7 +397,7 @@ function blockEditor() {
                 }
             } else {
                 // Fallback to original logic
-                handleDropUtil(event, this.blocks, this.dragStartIndex, dropIndex, dropChildIndex, dropColumnIndex, null);
+                DragDrop.handleDrop(event, this.blocks, this.dragStartIndex, dropIndex, dropChildIndex, dropColumnIndex, null);
             }
             
             this.dragStartIndex = null;
@@ -461,15 +411,15 @@ function blockEditor() {
         },
 
         changeBlockType(blockId, newType) {
-            changeBlockTypeUtil(this.blocks, blockId, newType, this.blockIdCounter);
+            BlockManagement.changeBlockType(this.blocks, blockId, newType, this.blockIdCounter);
             // Increment blockIdCounter if columns were created
-            const columnCount = getColumnCount(newType);
+            const columnCount = BlockTypes.getColumnCount(newType);
             if (columnCount > 0) {
                 this.blockIdCounter += columnCount;
             }
             
             // Stelle sicher, dass Column-Blöcke die richtige Anzahl von Spalten haben
-            ensureColumnStructure(this.blocks);
+            BlockManagement.ensureColumnStructure(this.blocks);
             
             // Focus auf den Block nach Typ-Änderung
             this.$nextTick(() => {
@@ -482,31 +432,31 @@ function blockEditor() {
         
         // Helper-Funktion für x-init in HTML
         getColumnCountForBlock(blockType) {
-            return getColumnCount(blockType);
+            return BlockTypes.getColumnCount(blockType);
         },
 
         updateBlockStyle(blockId, style) {
-            updateBlockStyleUtil(this.blocks, blockId, style);
+            BlockManagement.updateBlockStyle(this.blocks, blockId, style);
         },
 
         clearBlockStyle(blockId) {
-            clearBlockStyleUtil(this.blocks, blockId);
+            BlockManagement.clearBlockStyle(this.blocks, blockId);
         },
 
         updateBlockClasses(blockId, classes) {
-            updateBlockClassesUtil(this.blocks, blockId, classes);
+            BlockManagement.updateBlockClasses(this.blocks, blockId, classes);
         },
 
         clearBlockClasses(blockId) {
-            clearBlockClassesUtil(this.blocks, blockId);
+            BlockManagement.clearBlockClasses(this.blocks, blockId);
         },
 
         addChild(parentBlockId, childType) {
             this.blockIdCounter++;
-            const childBlock = addChildUtil(this.blocks, parentBlockId, this.blockIdCounter, childType);
+            const childBlock = ChildManagement.addChild(this.blocks, parentBlockId, this.blockIdCounter, childType);
             if (childBlock) {
                 // Stelle sicher, dass die Struktur korrekt ist (entfernt Children von nicht-Container-Blöcken)
-                ensureColumnStructure(this.blocks);
+                BlockManagement.ensureColumnStructure(this.blocks);
                 
                 this.selectedBlockId = childBlock.id;
                 
@@ -521,10 +471,10 @@ function blockEditor() {
 
         addChildAfter(parentBlockId, childIndex, childType) {
             this.blockIdCounter++;
-            const childBlock = addChildAfterUtil(this.blocks, parentBlockId, childIndex, this.blockIdCounter, childType);
+            const childBlock = ChildManagement.addChildAfter(this.blocks, parentBlockId, childIndex, this.blockIdCounter, childType);
             if (childBlock) {
                 // Stelle sicher, dass die Struktur korrekt ist (entfernt Children von nicht-Container-Blöcken)
-                ensureColumnStructure(this.blocks);
+                BlockManagement.ensureColumnStructure(this.blocks);
                 
                 this.selectedBlockId = childBlock.id;
                 
@@ -538,27 +488,27 @@ function blockEditor() {
         },
 
         removeChild(parentBlockId, childIndex) {
-            removeChildUtil(this.blocks, parentBlockId, childIndex);
+            ChildManagement.removeChild(this.blocks, parentBlockId, childIndex);
         },
 
         removeChildFromColumn(parentBlockId, columnIndex, childIndex) {
-            removeChildFromColumnUtil(this.blocks, parentBlockId, columnIndex, childIndex);
+            ChildManagement.removeChildFromColumn(this.blocks, parentBlockId, columnIndex, childIndex);
         },
 
         moveChildBlock(parentBlockId, childIndex, direction) {
-            moveChildBlockUtil(this.blocks, parentBlockId, childIndex, direction);
+            ChildManagement.moveChildBlock(this.blocks, parentBlockId, childIndex, direction);
         },
 
         addChildToColumn(parentBlockId, childType, columnIndex) {
             this.blockIdCounter++;
-            const childBlock = addChildToColumnUtil(this.blocks, parentBlockId, this.blockIdCounter, childType, columnIndex);
+            const childBlock = ChildManagement.addChildToColumn(this.blocks, parentBlockId, this.blockIdCounter, childType, columnIndex);
             if (!childBlock) {
                 this.blockIdCounter--; // Rollback if failed
                 return;
             }
             if (childBlock) {
                 // Stelle sicher, dass die Struktur korrekt ist (entfernt Children von nicht-Container-Blöcken)
-                ensureColumnStructure(this.blocks);
+                BlockManagement.ensureColumnStructure(this.blocks);
                 
                 this.selectedBlockId = childBlock.id;
                 
@@ -572,20 +522,20 @@ function blockEditor() {
         },
 
         findBlockById(blockId) {
-            return findBlockById(this.blocks, blockId);
+            return Utils.findBlockById(this.blocks, blockId);
         },
 
         getAllBlocks() {
-            return getAllBlocks(this.blocks);
+            return Utils.getAllBlocks(this.blocks);
         },
 
         saveToJSON() {
-            saveToJSONUtil(this.blocks);
+            Storage.saveToJSON(this.blocks);
             this.showNotification('Daten erfolgreich gespeichert!', 'success');
         },
 
         loadFromJSON() {
-            const result = loadFromJSONUtil(this.blocks, this.blockIdCounter, this.$nextTick.bind(this), initAllBlockContents);
+            const result = Storage.loadFromJSON(this.blocks, this.blockIdCounter, this.$nextTick.bind(this), Utils.initAllBlockContents);
             if (result.blocks) {
                 this.selectedBlockId = null;
                 this.blockIdCounter = result.blockIdCounter;
@@ -660,12 +610,12 @@ function blockEditor() {
             };
             
             try {
-                importJSONUtil(
+                Storage.importJSON(
                     this.importJSONText,
                     this.blocks,
                     this.blockIdCounter,
                     this.$nextTick.bind(this),
-                    initAllBlockContents,
+                    Utils.initAllBlockContents,
                     updateCounter
                 );
                 
@@ -716,13 +666,13 @@ function blockEditor() {
         },
 
         downloadExportJSON() {
-            exportJSONUtil(this.blocks);
+            Storage.exportJSON(this.blocks);
         },
 
         async copyJSONToClipboard() {
             try {
                 // Stelle sicher, dass die Struktur korrekt ist
-                ensureColumnStructure(this.blocks);
+                BlockManagement.ensureColumnStructure(this.blocks);
                 const json = JSON.stringify(this.blocks, null, 2);
                 
                 // Moderne Clipboard API verwenden falls verfügbar
@@ -750,45 +700,45 @@ function blockEditor() {
 
         // Table Management Functions
         addTableRow(blockId, position = 'bottom') {
-            const result = addTableRow(this.blocks, blockId, this.blockIdCounter, position);
+            const result = TableManagement.addTableRow(this.blocks, blockId, this.blockIdCounter, position);
             if (result) {
                 this.blockIdCounter = result.lastCellIdCounter + 1;
             }
         },
 
         removeTableRow(blockId, rowIndex) {
-            removeTableRow(this.blocks, blockId, rowIndex);
+            TableManagement.removeTableRow(this.blocks, blockId, rowIndex);
         },
 
         addTableColumn(blockId, position = 'right') {
-            const result = addTableColumn(this.blocks, blockId, this.blockIdCounter, position);
+            const result = TableManagement.addTableColumn(this.blocks, blockId, this.blockIdCounter, position);
             if (result) {
                 this.blockIdCounter = result.lastCellIdCounter + 1;
             }
         },
 
         removeTableColumn(blockId, colIndex) {
-            removeTableColumn(this.blocks, blockId, colIndex);
+            TableManagement.removeTableColumn(this.blocks, blockId, colIndex);
         },
 
         mergeTableCells(blockId, startRow, startCol, endRow, endCol) {
-            mergeTableCells(this.blocks, blockId, startRow, startCol, endRow, endCol);
+            TableManagement.mergeTableCells(this.blocks, blockId, startRow, startCol, endRow, endCol);
         },
 
         unmergeTableCells(blockId, row, col) {
-            unmergeTableCells(this.blocks, blockId, row, col);
+            TableManagement.unmergeTableCells(this.blocks, blockId, row, col);
         },
 
         updateTableCellContent(blockId, cellId, content) {
-            updateTableCellContent(this.blocks, blockId, cellId, content);
+            TableManagement.updateTableCellContent(this.blocks, blockId, cellId, content);
         },
 
         toggleTableHeader(blockId) {
-            toggleTableHeader(this.blocks, blockId);
+            TableManagement.toggleTableHeader(this.blocks, blockId);
         },
 
         toggleTableFooter(blockId) {
-            toggleTableFooter(this.blocks, blockId);
+            TableManagement.toggleTableFooter(this.blocks, blockId);
         },
 
         getSelectedTableCell() {
@@ -812,7 +762,7 @@ function blockEditor() {
 
         // Theme Management Functions
         async loadThemes() {
-            this.themes = await getAllThemesUtil();
+            this.themes = await Storage.getAllThemes();
         },
 
         openSaveThemeModal() {
@@ -836,7 +786,7 @@ function blockEditor() {
             try {
                 const sanitizedName = this.newThemeName.trim().replace(/[^a-z0-9äöüß_-]/gi, '_').toLowerCase();
                 const filename = `${sanitizedName}.json`;
-                await saveThemeUtil(this.newThemeName.trim(), this.blocks);
+                await Storage.saveTheme(this.newThemeName.trim(), this.blocks);
                 await this.loadThemes(); // Aktualisiere Themes-Liste
                 this.closeSaveThemeModal();
                 
@@ -855,39 +805,119 @@ function blockEditor() {
         showLoadThemeConfirm(themeName) {
             this.confirmModal = {
                 title: 'Theme laden',
-                message: `Möchten Sie das Theme "${themeName}" laden? Alle aktuellen Änderungen gehen verloren.`,
-                onConfirm: () => this.loadTheme(themeName),
-                onCancel: () => this.closeConfirmModal()
+                message: `Möchten Sie das Theme "${themeName}" laden?`,
+                onCancel: () => this.closeConfirmModal(),
+                onExtend: () => this.extendTheme(themeName),
+                showExtend: true
             };
             this.showConfirmModal = true;
         },
 
-        async loadTheme(themeName) {
+        async extendTheme(themeName) {
             this.closeConfirmModal();
 
             try {
-                const updateCounter = (newCounter) => {
-                    this.blockIdCounter = newCounter;
+                // Lade Theme-Daten (verwende die gleiche Logik wie loadTheme)
+                const themes = await Storage.getAllThemes();
+                const theme = themes.find(t => t.name.toLowerCase() === themeName.toLowerCase());
+                
+                if (!theme) {
+                    throw new Error(`Theme "${themeName}" nicht gefunden.`);
+                }
+
+                let parsedBlocks = null;
+
+                // Versuche aus LocalStorage zu laden (ohne File System Access)
+                if (theme.data && Array.isArray(theme.data)) {
+                    parsedBlocks = theme.data;
+                }
+                
+                // Fallback: Versuche aus Datei zu laden (ohne File System Access Dialog)
+                if (!parsedBlocks && theme.filename) {
+                    try {
+                        const response = await fetch(`themes/${theme.filename}`);
+                        if (response.ok) {
+                            parsedBlocks = await response.json();
+                        }
+                    } catch (error) {
+                        // Ignoriere Fetch-Fehler
+                    }
+                }
+                
+                if (!parsedBlocks) {
+                    throw new Error(`Theme-Daten für "${themeName}" nicht verfügbar.`);
+                }
+
+                // Validiere Block-Struktur
+                if (!Array.isArray(parsedBlocks)) {
+                    throw new Error('Theme-Daten sind ungültig.');
+                }
+
+                // Berechne den maximalen Block-ID Counter für die neuen Blöcke
+                let maxId = this.blockIdCounter;
+                parsedBlocks.forEach(b => {
+                    const match = b.id.match(/block-(\d+)-/);
+                    if (match) {
+                        const idNum = parseInt(match[1]);
+                        if (idNum > maxId) {
+                            maxId = idNum;
+                        }
+                    }
+                });
+
+                // Erstelle neue IDs für die hinzuzufügenden Blöcke
+                const idOffset = maxId + 1;
+                
+                // Rekursive Funktion zum Aktualisieren aller Block-IDs
+                const updateBlockIds = (block) => {
+                    const match = block.id.match(/block-(\d+)-/);
+                    if (match) {
+                        const oldIdNum = parseInt(match[1]);
+                        const newIdNum = oldIdNum + idOffset;
+                        block.id = block.id.replace(/block-\d+-/, `block-${newIdNum}-`);
+                    } else if (block.id.startsWith('col-')) {
+                        // Column-IDs werden später durch ensureColumnStructure korrigiert
+                        // Aber wir aktualisieren sie trotzdem, falls sie block- IDs enthalten
+                        const colMatch = block.id.match(/block-(\d+)-/);
+                        if (colMatch) {
+                            const oldIdNum = parseInt(colMatch[1]);
+                            const newIdNum = oldIdNum + idOffset;
+                            block.id = block.id.replace(/block-\d+-/, `block-${newIdNum}-`);
+                        }
+                    } else {
+                        this.blockIdCounter++;
+                        block.id = `block-${this.blockIdCounter}-${Date.now()}`;
+                    }
+                    
+                    // Rekursiv alle Children aktualisieren
+                    if (block.children && Array.isArray(block.children)) {
+                        block.children.forEach(child => {
+                            updateBlockIds(child);
+                        });
+                    }
                 };
                 
-                const result = await loadThemeUtil(
-                    themeName,
-                    this.blocks,
-                    this.blockIdCounter,
-                    this.$nextTick.bind(this),
-                    initAllBlockContents,
-                    updateCounter
-                );
-                
-                if (result.blocks) {
-                    this.selectedBlockId = null;
-                    this.blockIdCounter = result.blockIdCounter;
-                    this.showToolbar = false;
-                    this.showThemeDropdown = false;
-                    this.showNotification(`Theme "${themeName}" erfolgreich geladen!`, 'success');
-                }
+                const newBlocks = parsedBlocks.map(block => {
+                    const newBlock = JSON.parse(JSON.stringify(block)); // Deep clone
+                    updateBlockIds(newBlock);
+                    return newBlock;
+                });
+
+                // Füge die neuen Blöcke zu den bestehenden hinzu
+                this.blocks.push(...newBlocks);
+                this.blockIdCounter = maxId + idOffset;
+
+                // Stelle sicher, dass die Struktur korrekt ist
+                BlockManagement.ensureColumnStructure(this.blocks);
+
+                // Initialisiere die neuen Block-Inhalte
+                this.$nextTick(() => {
+                    Utils.initAllBlockContents(newBlocks);
+                });
+
+                this.showNotification(`Theme "${themeName}" erfolgreich hinzugefügt!`, 'success');
             } catch (error) {
-                this.showNotification('Fehler beim Laden des Themes: ' + error.message, 'error');
+                this.showNotification('Fehler beim Hinzufügen des Themes: ' + error.message, 'error');
             }
         },
 
@@ -905,7 +935,7 @@ function blockEditor() {
             this.closeConfirmModal();
             
             try {
-                const deleted = await deleteThemeUtil(themeName);
+                const deleted = await Storage.deleteTheme(themeName);
                 if (deleted) {
                     await this.loadThemes(); // Aktualisiere Themes-Liste
                     this.showNotification(`Theme "${themeName}" erfolgreich gelöscht!`, 'success');
@@ -943,7 +973,7 @@ function blockEditor() {
             }
 
             try {
-                await updateThemeUtil(this.editThemeOriginalName, this.editThemeName.trim());
+                await Storage.updateTheme(this.editThemeOriginalName, this.editThemeName.trim());
                 await this.loadThemes(); // Aktualisiere Themes-Liste
                 this.closeEditThemeModal();
                 this.showNotification(`Theme erfolgreich umbenannt zu "${this.editThemeName.trim()}"!`, 'success');
@@ -973,7 +1003,7 @@ function blockEditor() {
             }
 
             try {
-                const { themeData, blocks } = await importThemeFromFileUtil(file);
+                const { themeData, blocks } = await Storage.importThemeFromFile(file);
                 await this.loadThemes(); // Aktualisiere Themes-Liste
                 this.closeImportThemeModal();
                 this.showNotification(`Theme "${themeData.name}" erfolgreich importiert!`, 'success');
@@ -982,8 +1012,9 @@ function blockEditor() {
                 this.confirmModal = {
                     title: 'Theme laden',
                     message: `Theme "${themeData.name}" erfolgreich importiert. Möchten Sie es jetzt laden?`,
-                    onConfirm: () => this.loadTheme(themeData.name),
-                    onCancel: () => this.closeConfirmModal()
+                    onCancel: () => this.closeConfirmModal(),
+                    onExtend: () => this.extendTheme(themeData.name),
+                    showExtend: true
                 };
                 this.showConfirmModal = true;
             } catch (error) {
@@ -1013,7 +1044,9 @@ function blockEditor() {
                 title: '',
                 message: '',
                 onConfirm: null,
-                onCancel: null
+                onCancel: null,
+                onExtend: null,
+                showExtend: false
             };
         },
 
@@ -1061,15 +1094,15 @@ function blockEditor() {
         },
 
         updateImageUrl(blockId, imageUrl) {
-            updateImageUrlUtil(this.blocks, blockId, imageUrl);
+            BlockManagement.updateImageUrl(this.blocks, blockId, imageUrl);
         },
 
         updateImageAlt(blockId, imageAlt) {
-            updateImageAltUtil(this.blocks, blockId, imageAlt);
+            BlockManagement.updateImageAlt(this.blocks, blockId, imageAlt);
         },
 
         updateImageTitle(blockId, imageTitle) {
-            updateImageTitleUtil(this.blocks, blockId, imageTitle);
+            BlockManagement.updateImageTitle(this.blocks, blockId, imageTitle);
         },
 
         openImageSettingsModal(blockId) {
@@ -1101,9 +1134,9 @@ function blockEditor() {
                 return;
             }
             
-            updateImageUrlUtil(this.blocks, this.imageSettingsBlockId, this.imageSettingsUrl);
-            updateImageAltUtil(this.blocks, this.imageSettingsBlockId, this.imageSettingsAlt);
-            updateImageTitleUtil(this.blocks, this.imageSettingsBlockId, this.imageSettingsTitle);
+            BlockManagement.updateImageUrl(this.blocks, this.imageSettingsBlockId, this.imageSettingsUrl);
+            BlockManagement.updateImageAlt(this.blocks, this.imageSettingsBlockId, this.imageSettingsAlt);
+            BlockManagement.updateImageTitle(this.blocks, this.imageSettingsBlockId, this.imageSettingsTitle);
             
             this.showNotification('Bild-Einstellungen erfolgreich gespeichert!', 'success');
             this.closeImageSettingsModal();
@@ -1123,7 +1156,7 @@ function blockEditor() {
                         if (this.showImageSettingsModal && this.imageSettingsBlockId === blockId) {
                             this.imageSettingsUrl = imageUrl;
                         }
-                        updateImageUrlUtil(this.blocks, blockId, imageUrl);
+                        BlockManagement.updateImageUrl(this.blocks, blockId, imageUrl);
                         
                         // Aktualisiere auch die Modal-Felder, falls das Modal geöffnet ist
                         if (this.showImageSettingsModal && this.imageSettingsBlockId === blockId) {
@@ -1236,6 +1269,37 @@ function blockEditor() {
             }
         },
 
+        getFormatState(format) {
+            if (!this.selectedRange || !this.selectedBlockId) return 'off';
+            
+            try {
+                const element = document.querySelector(`[data-block-id="${this.selectedBlockId}"]`);
+                if (!element) return 'off';
+                
+                // Speichere aktuelle Selektion
+                const currentSelection = window.getSelection();
+                const savedRanges = [];
+                for (let i = 0; i < currentSelection.rangeCount; i++) {
+                    savedRanges.push(currentSelection.getRangeAt(i).cloneRange());
+                }
+                
+                // Stelle temporär unsere Selektion wieder her
+                currentSelection.removeAllRanges();
+                currentSelection.addRange(this.selectedRange);
+                
+                // Prüfe ob Formatierung aktiv ist
+                const isActive = document.queryCommandState(format);
+                
+                // Stelle ursprüngliche Selektion wieder her
+                currentSelection.removeAllRanges();
+                savedRanges.forEach(r => currentSelection.addRange(r));
+                
+                return isActive ? 'on' : 'off';
+            } catch (e) {
+                return 'off';
+            }
+        },
+
         applyTextFormat(format) {
             if (!this.selectedRange || !this.selectedBlockId) return;
             
@@ -1268,11 +1332,12 @@ function blockEditor() {
                 if (block) {
                     this.updateBlockContent(this.selectedBlockId, element.innerHTML);
                 }
+                // Aktualisiere selectedRange für weitere Formatierungen
+                const newSelection = window.getSelection();
+                if (newSelection.rangeCount > 0) {
+                    this.selectedRange = newSelection.getRangeAt(0).cloneRange();
+                }
             });
-            
-            // Verstecke Toolbar nach Formatierung
-            this.showFloatingToolbar = false;
-            this.selectedRange = null;
         },
 
         removeFormatting() {
@@ -1468,6 +1533,180 @@ function blockEditor() {
             
             this.updateBlockClasses(blockId, currentClasses.join(' '));
             this.showNotification(`Text-Ausrichtung auf ${alignment === 'left' ? 'links' : alignment === 'center' ? 'zentriert' : alignment === 'right' ? 'rechts' : 'bündig'} gesetzt`, 'success');
+        },
+
+        applyTextAlignmentToSelection(alignment) {
+            if (!this.selectedRange || !this.selectedBlockId) return;
+            
+            const element = document.querySelector(`[data-block-id="${this.selectedBlockId}"]`);
+            if (!element) {
+                this.showFloatingToolbar = false;
+                return;
+            }
+            
+            // Stelle Selektion wieder her
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(this.selectedRange);
+            
+            // Wende Ausrichtung an
+            try {
+                document.execCommand('justifyLeft', false, null);
+                if (alignment === 'center') {
+                    document.execCommand('justifyCenter', false, null);
+                } else if (alignment === 'right') {
+                    document.execCommand('justifyRight', false, null);
+                } else if (alignment === 'left') {
+                    document.execCommand('justifyLeft', false, null);
+                }
+            } catch (e) {
+                console.warn('Text alignment command not supported:', e);
+            }
+            
+            // Aktualisiere Block-Inhalt
+            this.$nextTick(() => {
+                const { block } = this.findBlockById(this.selectedBlockId);
+                if (block) {
+                    this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                }
+            });
+            
+            // Verstecke Toolbar nicht, damit weitere Formatierungen möglich sind
+            this.selectedRange = selection.getRangeAt(0).cloneRange();
+        },
+
+        getTextAlignmentState(alignment) {
+            if (!this.selectedRange || !this.selectedBlockId) return 'off';
+            
+            try {
+                const element = document.querySelector(`[data-block-id="${this.selectedBlockId}"]`);
+                if (!element) return 'off';
+                
+                // Speichere aktuelle Selektion
+                const currentSelection = window.getSelection();
+                const savedRanges = [];
+                for (let i = 0; i < currentSelection.rangeCount; i++) {
+                    savedRanges.push(currentSelection.getRangeAt(i).cloneRange());
+                }
+                
+                // Stelle temporär unsere Selektion wieder her
+                currentSelection.removeAllRanges();
+                currentSelection.addRange(this.selectedRange);
+                
+                // Prüfe Computed Style
+                const range = currentSelection.getRangeAt(0);
+                let node = range.commonAncestorContainer;
+                if (node.nodeType === 3) {
+                    node = node.parentElement;
+                }
+                
+                const computedStyle = window.getComputedStyle(node);
+                const textAlign = computedStyle.textAlign;
+                
+                // Stelle ursprüngliche Selektion wieder her
+                currentSelection.removeAllRanges();
+                savedRanges.forEach(r => currentSelection.addRange(r));
+                
+                if (alignment === 'left' && (textAlign === 'left' || textAlign === 'start' || !textAlign)) {
+                    return 'on';
+                } else if (alignment === 'center' && textAlign === 'center') {
+                    return 'on';
+                } else if (alignment === 'right' && (textAlign === 'right' || textAlign === 'end')) {
+                    return 'on';
+                }
+                
+                return 'off';
+            } catch (e) {
+                return 'off';
+            }
+        },
+
+        applyTextColor(color) {
+            if (!this.selectedRange || !this.selectedBlockId) return;
+            
+            const element = document.querySelector(`[data-block-id="${this.selectedBlockId}"]`);
+            if (!element) {
+                this.showFloatingToolbar = false;
+                return;
+            }
+            
+            // Stelle Selektion wieder her
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(this.selectedRange);
+            
+            // Wende Textfarbe an
+            try {
+                document.execCommand('foreColor', false, color);
+            } catch (e) {
+                // Fallback: Erstelle span mit color style
+                const range = selection.getRangeAt(0);
+                const span = document.createElement('span');
+                span.style.color = color;
+                try {
+                    range.surroundContents(span);
+                } catch (e2) {
+                    // Wenn surroundContents fehlschlägt, verwende extractContents
+                    const contents = range.extractContents();
+                    span.appendChild(contents);
+                    range.insertNode(span);
+                }
+            }
+            
+            // Aktualisiere Block-Inhalt
+            this.$nextTick(() => {
+                const { block } = this.findBlockById(this.selectedBlockId);
+                if (block) {
+                    this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                }
+            });
+            
+            // Aktualisiere selectedRange
+            this.selectedRange = selection.getRangeAt(0).cloneRange();
+        },
+
+        applyBackgroundColor(color) {
+            if (!this.selectedRange || !this.selectedBlockId) return;
+            
+            const element = document.querySelector(`[data-block-id="${this.selectedBlockId}"]`);
+            if (!element) {
+                this.showFloatingToolbar = false;
+                return;
+            }
+            
+            // Stelle Selektion wieder her
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(this.selectedRange);
+            
+            // Wende Hintergrundfarbe an
+            try {
+                document.execCommand('backColor', false, color);
+            } catch (e) {
+                // Fallback: Erstelle span mit backgroundColor style
+                const range = selection.getRangeAt(0);
+                const span = document.createElement('span');
+                span.style.backgroundColor = color;
+                try {
+                    range.surroundContents(span);
+                } catch (e2) {
+                    // Wenn surroundContents fehlschlägt, verwende extractContents
+                    const contents = range.extractContents();
+                    span.appendChild(contents);
+                    range.insertNode(span);
+                }
+            }
+            
+            // Aktualisiere Block-Inhalt
+            this.$nextTick(() => {
+                const { block } = this.findBlockById(this.selectedBlockId);
+                if (block) {
+                    this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                }
+            });
+            
+            // Aktualisiere selectedRange
+            this.selectedRange = selection.getRangeAt(0).cloneRange();
         }
     }
 }

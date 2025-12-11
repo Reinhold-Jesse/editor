@@ -39,6 +39,10 @@ function blockEditor() {
         imageSettingsAlt: '',
         imageSettingsTitle: '',
         imageSettingsActiveTab: 'upload', // 'upload' oder 'url'
+        showLinkSettingsModal: false,
+        linkSettingsBlockId: null,
+        linkSettingsUrl: '',
+        linkSettingsTarget: '_self', // '_self', '_blank', etc.
         showFloatingToolbar: false,
         floatingToolbarPosition: { top: 0, left: 0 },
         selectedText: '',
@@ -1313,6 +1317,52 @@ function blockEditor() {
                 }
             };
             input.click();
+        },
+
+        openLinkSettingsModal(blockId) {
+            const { block } = this.findBlockById(blockId);
+            if (block && block.type === 'link') {
+                this.linkSettingsBlockId = blockId;
+                this.linkSettingsUrl = block.linkUrl || '';
+                this.linkSettingsTarget = block.linkTarget || '_self';
+                this.showLinkSettingsModal = true;
+                if (window.modalHelpers) window.modalHelpers.openModal();
+            }
+        },
+
+        closeLinkSettingsModal() {
+            this.showLinkSettingsModal = false;
+            this.linkSettingsBlockId = null;
+            this.linkSettingsUrl = '';
+            this.linkSettingsTarget = '_self';
+        },
+
+        saveLinkSettings() {
+            if (!this.linkSettingsBlockId) return;
+            
+            if (!this.linkSettingsUrl.trim()) {
+                this.showNotification('Bitte geben Sie eine URL ein', 'warning');
+                return;
+            }
+            
+            const { block } = this.findBlockById(this.linkSettingsBlockId);
+            if (block && block.type === 'link') {
+                block.linkUrl = this.linkSettingsUrl.trim();
+                block.linkTarget = this.linkSettingsTarget;
+                
+                // Aktualisiere auch den Block-Inhalt, falls vorhanden
+                const blockElement = this.getBlockElement(this.linkSettingsBlockId);
+                if (blockElement && blockElement.tagName === 'A') {
+                    // Wenn der Link bereits Inhalt hat, behalte ihn
+                    if (!block.content || block.content.trim() === '') {
+                        // Setze Standard-Text wenn leer
+                        block.content = this.linkSettingsUrl;
+                    }
+                }
+            }
+            
+            this.showNotification('Link-Einstellungen erfolgreich gespeichert!', 'success');
+            this.closeLinkSettingsModal();
         },
 
         handleTextSelection() {

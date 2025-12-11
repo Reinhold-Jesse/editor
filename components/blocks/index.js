@@ -14,6 +14,7 @@ import { TwoColumnBlock } from './two-column.js';
 import { ThreeColumnBlock } from './three-column.js';
 import { TableBlock } from './table.js';
 import { ChecklistBlock } from './checklist.js';
+import { LinkBlock } from './link.js';
 
 // Exportiere alle Block-Komponenten als Objekt
 // Diese müssen mit BLOCK_TYPES in block-types.js übereinstimmen!
@@ -29,7 +30,8 @@ export const BlockComponents = {
     threeColumn: ThreeColumnBlock,
     table: TableBlock,
     image: ImageBlock,
-    checklist: ChecklistBlock
+    checklist: ChecklistBlock,
+    link: LinkBlock
 };
 
 /**

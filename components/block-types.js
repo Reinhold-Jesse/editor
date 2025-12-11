@@ -94,6 +94,15 @@ export const BLOCK_TYPES = {
         isContainer: false,
         canHaveChildren: false,
         hasChecklistData: true
+    },
+    link: {
+        label: '🔗 Link',
+        tag: 'a',
+        placeholder: 'Link-Text eingeben...',
+        classes: 'block-placeholder min-h-[1.5rem] text-blue-600 hover:text-blue-800 hover:underline',
+        isContainer: true,
+        canHaveChildren: true,
+        hasLinkData: true
     }
 };
 

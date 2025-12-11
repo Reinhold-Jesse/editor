@@ -570,74 +570,16 @@
                 x-transition
                 class="mb-4 p-2 bg-gray-100 rounded-lg"
             >
-                <!-- Block-Typen -->
+                <!-- Block-Typen - Automatisch aus BLOCK_TYPES generiert -->
                 <div class="flex gap-2 flex-wrap mb-3">
-                    <button 
-                        @click="addBlock('paragraph')"
-                        class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
-                    >
-                        📝 Paragraph
-                    </button>
-                    <button 
-                        @click="addBlock('heading1')"
-                        class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
-                    >
-                        H1 Überschrift
-                    </button>
-                    <button 
-                        @click="addBlock('heading2')"
-                        class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
-                    >
-                        H2 Überschrift
-                    </button>
-                    <button 
-                        @click="addBlock('heading3')"
-                        class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
-                    >
-                        H3 Überschrift
-                    </button>
-                    <button 
-                        @click="addBlock('code')"
-                        class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
-                    >
-                        💻 Code Block
-                    </button>
-                    <button 
-                        @click="addBlock('quote')"
-                        class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
-                    >
-                        💬 Zitat
-                    </button>
-                    <button 
-                        @click="addBlock('image')"
-                        class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
-                    >
-                        🖼️ Bild
-                    </button>
-                    <button 
-                        @click="addBlock('divider')"
-                        class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
-                    >
-                        ➖ Trennlinie
-                    </button>
-                    <button 
-                        @click="addBlock('twoColumn')"
-                        class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
-                    >
-                        📊 Zwei Spalten
-                    </button>
-                    <button 
-                        @click="addBlock('threeColumn')"
-                        class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
-                    >
-                        📊 Drei Spalten
-                    </button>
-                    <button 
-                        @click="addBlock('table')"
-                        class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
-                    >
-                        📋 Tabelle
-                    </button>
+                    <template x-for="(config, blockType) in childBlockTypes" :key="blockType">
+                        <button 
+                            @click="addBlock(blockType)"
+                            class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
+                        >
+                            <span x-text="config.label || blockType"></span>
+                        </button>
+                    </template>
                 </div>
 
                 <!-- Theme-Vorlagen -->

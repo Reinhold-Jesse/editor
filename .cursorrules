@@ -110,4 +110,59 @@ function handleTextBlock(block) {
 }
 ```
 
+## Toolbar und Block-Typen
+
+### Automatische Toolbar-Generierung
+
+**WICHTIG:** Die Toolbar verwendet `x-for` mit `childBlockTypes`, um alle verfügbaren Block-Typen dynamisch zu generieren. Block-Typen werden NICHT manuell in der HTML-Datei aufgelistet.
+
+### Regeln:
+
+1. **Automatische Generierung:** Die Toolbar iteriert über `childBlockTypes` (das ist `BLOCK_TYPES` aus `block-types.js`) und generiert automatisch Buttons für alle verfügbaren Block-Typen
+2. **Keine manuellen Buttons:** Block-Typ-Buttons werden NICHT manuell in der HTML-Datei erstellt
+3. **Zentrale Definition:** Alle Block-Typen werden zentral in `BLOCK_TYPES` definiert und erscheinen automatisch in der Toolbar
+4. **Neue Block-Typen:** Wenn neue Block-Typen zu `BLOCK_TYPES` hinzugefügt werden, erscheinen sie automatisch in der Toolbar ohne HTML-Änderungen
+
+### Implementierung:
+
+```html
+<!-- Block-Typen - Automatisch aus BLOCK_TYPES generiert -->
+<div class="flex gap-2 flex-wrap mb-3">
+    <template x-for="(config, blockType) in childBlockTypes" :key="blockType">
+        <button 
+            @click="addBlock(blockType)"
+            class="px-3 py-1 bg-white rounded hover:bg-gray-200 text-sm"
+        >
+            <span x-text="config.label || blockType"></span>
+        </button>
+    </template>
+</div>
+```
+
+### Vorteile:
+
+- **Vollständigkeit:** Alle Block-Typen werden automatisch angezeigt, keine fehlenden Komponenten
+- **Wartbarkeit:** Zentrale Definition in `BLOCK_TYPES`, keine doppelte Wartung
+- **Automatische Updates:** Neue Block-Typen erscheinen automatisch in der Toolbar
+
+### Beispiele für VERBOTEN:
+
+```html
+<!-- VERBOTEN: Manuelle Button-Erstellung für Block-Typen -->
+<button @click="addBlock('paragraph')">📝 Paragraph</button>
+<button @click="addBlock('heading1')">H1 Überschrift</button>
+<!-- ... weitere manuelle Buttons ... -->
+```
+
+### Beispiele für ERLAUBT:
+
+```html
+<!-- ERLAUBT: Automatische Generierung über x-for -->
+<template x-for="(config, blockType) in childBlockTypes" :key="blockType">
+    <button @click="addBlock(blockType)">
+        <span x-text="config.label || blockType"></span>
+    </button>
+</template>
+```
+
 

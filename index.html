@@ -40,7 +40,7 @@
             x-transition:leave="transition ease-in duration-200"
             x-transition:leave-start="opacity-100 translate-y-0"
             x-transition:leave-end="opacity-0 translate-y-2"
-            class="fixed top-4 right-4 z-50 max-w-sm w-full"
+            class="fixed top-20 right-4 z-50 max-w-sm w-full"
             @click="hideNotification()"
         >
             <div 
@@ -103,6 +103,8 @@
                 </button>
             </div>
         </div>
+
+       
 
         <!-- Overlay für Sidebar (schließt Sidebar beim Klick) -->
         <div 
@@ -906,46 +908,167 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <!-- Checklist in Spalte (twoColumn) -->
+                                                <div x-show="child.type === 'checklist'" 
+                                                     :data-block-id="child.id"
+                                                     :style="child.style || ''"
+                                                     :class="['space-y-2 p-4 border border-gray-300 rounded-lg', child.classes || '']">
+                                                    <template x-for="(item, itemIndex) in (child.checklistData?.items || [])" :key="item.id">
+                                                        <div class="flex items-start gap-3 group hover:bg-gray-50 p-2 rounded transition-colors">
+                                                            <!-- Checkbox -->
+                                                            <input 
+                                                                type="checkbox"
+                                                                :checked="item.checked || false"
+                                                                @change="toggleChecklistItem(child.id, itemIndex)"
+                                                                @click.stop
+                                                                class="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                                                            />
+                                                            <!-- Text Input -->
+                                                            <div 
+                                                                :data-item-id="item.id"
+                                                                :data-block-id="child.id"
+                                                                :data-item-index="itemIndex"
+                                                                class="flex-1 block-placeholder min-h-[1.5rem] text-sm"
+                                                                contenteditable="true"
+                                                                data-placeholder="Checkliste-Eintrag..."
+                                                                x-init="$nextTick(() => { if (!$el.innerHTML && item.text) $el.innerHTML = item.text; })"
+                                                                @input="updateChecklistItemText(child.id, item.id, $event.target.innerHTML)"
+                                                                @keydown.enter.prevent="addChecklistItem(child.id, 'bottom')"
+                                                                @keydown.backspace="if (!$el.textContent.trim() && (child.checklistData?.items || []).length > 1) { $event.preventDefault(); removeChecklistItem(child.id, itemIndex); }"
+                                                                @focus="initBlockContent($event.target, { content: item.text || '' })"
+                                                            ></div>
+                                                            <!-- Actions -->
+                                                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <button 
+                                                                    @click.stop="moveChecklistItemUp(child.id, itemIndex)"
+                                                                    :disabled="itemIndex === 0"
+                                                                    :class="{'opacity-50 cursor-not-allowed': itemIndex === 0}"
+                                                                    class="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded"
+                                                                    title="Nach oben verschieben"
+                                                                >
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                                                                    </svg>
+                                                                </button>
+                                                                <button 
+                                                                    @click.stop="moveChecklistItemDown(child.id, itemIndex)"
+                                                                    :disabled="itemIndex === (child.checklistData?.items || []).length - 1"
+                                                                    :class="{'opacity-50 cursor-not-allowed': itemIndex === (child.checklistData?.items || []).length - 1}"
+                                                                    class="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded"
+                                                                    title="Nach unten verschieben"
+                                                                >
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                                    </svg>
+                                                                </button>
+                                                                <button 
+                                                                    @click.stop="removeChecklistItem(child.id, itemIndex)"
+                                                                    :disabled="(child.checklistData?.items || []).length <= 1"
+                                                                    :class="{'opacity-50 cursor-not-allowed': (child.checklistData?.items || []).length <= 1}"
+                                                                    class="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                                                                    title="Eintrag löschen"
+                                                                >
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                    <!-- Empty State -->
+                                                    <div x-show="!child.checklistData || (child.checklistData?.items || []).length === 0" 
+                                                         class="text-center text-gray-400 py-4 text-sm">
+                                                        Keine Einträge vorhanden
+                                                    </div>
+                                                </div>
                                                 <!-- Nested Container Blocks -->
                                                 <div x-show="child.type === 'twoColumn' || child.type === 'threeColumn' || child.type === 'table'">
-                                                    <!-- Render nested container recursively -->
+                                                    <!-- Render nested twoColumn container -->
                                                     <div x-show="child.type === 'twoColumn'" class="grid grid-cols-2 gap-2 p-2 border border-dashed border-gray-300 rounded min-h-[150px]">
-                                                        <div class="space-y-1">
-                                                            <div class="text-xs font-semibold text-gray-400 mb-1">Spalte 1</div>
-                                                            <template x-for="(nestedChild, nestedChildIndex) in (child.children || [])" :key="nestedChild.id">
-                                                                <div x-show="nestedChildIndex % 2 === 0" class="p-1 bg-gray-50 rounded text-xs">
-                                                                    <div x-text="nestedChild.type"></div>
-                                                                </div>
-                                                            </template>
-                                                            <select 
-                                                                @change.stop="addChildToColumn(child.id, $event.target.value, 0); $event.target.value = ''"
-                                                                @click.stop
-                                                                class="w-full mt-1 p-1 border border-dashed border-gray-300 rounded text-xs text-gray-400 hover:border-blue-400 hover:text-blue-400 bg-white cursor-pointer"
-                                                            >
-                                                                <option value="" disabled selected>+ Block</option>
-                                                                <template x-for="(type, key) in childBlockTypes" :key="key">
-                                                                    <option :value="key" x-text="type.label"></option>
+                                                        <template x-for="(nestedColumn, nestedColumnIndex) in (child.children || [])" :key="nestedColumn.id">
+                                                            <div class="space-y-1">
+                                                                <div class="text-xs font-semibold text-gray-400 mb-1" x-text="'Spalte ' + (nestedColumnIndex + 1)"></div>
+                                                                <template x-for="(nestedChild, nestedChildIndex) in (nestedColumn.children || [])" :key="nestedChild.id">
+                                                                    <div 
+                                                                        :class="{
+                                                                            'ring-2 ring-blue-500': selectedBlockId === nestedChild.id,
+                                                                            'opacity-50': draggingBlockId === nestedChild.id
+                                                                        }"
+                                                                        class="block-item group relative p-1 rounded hover:bg-gray-50 transition-all cursor-move bg-gray-50"
+                                                                        @click.stop="selectBlock(nestedChild.id)"
+                                                                        @mouseenter="hoveredBlockId = nestedChild.id"
+                                                                        @mouseleave="hoveredBlockId = null"
+                                                                        draggable="true"
+                                                                        @dragstart="handleDragStart($event, index, columnIndex, childIndex)"
+                                                                        @dragover.prevent="handleDragOver($event, index, columnIndex, childIndex)"
+                                                                        @drop="handleDrop($event, index, columnIndex, childIndex)"
+                                                                        @dragend="handleDragEnd()"
+                                                                    >
+                                                                        <div x-show="selectedBlockId === nestedChild.id" class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l"></div>
+                                                                        <div x-show="hoveredBlockId === nestedChild.id || selectedBlockId === nestedChild.id" class="absolute -left-8 top-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                                            <button @click.stop="openSidebar(nestedChild.id)" class="p-0.5 bg-blue-500 text-white rounded shadow hover:bg-blue-600 text-xs" title="Einstellungen">⚙</button>
+                                                                            <button @click.stop="removeChildFromColumn(child.id, nestedColumnIndex, nestedChildIndex)" class="p-0.5 bg-red-500 text-white rounded shadow hover:bg-red-600 text-xs" title="Löschen">×</button>
+                                                                        </div>
+                                                                        <div class="block-content">
+                                                                            <div x-show="nestedChild.type === 'paragraph'">
+                                                                                <div :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder min-h-[1rem] text-xs', nestedChild.classes || '']" contenteditable="true" data-placeholder="Inhalt..." x-init="$nextTick(() => initBlockContent($el, nestedChild))" @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></div>
+                                                                            </div>
+                                                                            <div x-show="nestedChild.type === 'heading1'">
+                                                                                <h1 :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder text-lg font-bold mb-1 min-h-[1.25rem]', nestedChild.classes || '']" contenteditable="true" data-placeholder="Überschrift..." x-init="$nextTick(() => initBlockContent($el, nestedChild))" @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></h1>
+                                                                            </div>
+                                                                            <div x-show="nestedChild.type === 'heading2'">
+                                                                                <h2 :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder text-base font-bold mb-1 min-h-[1rem]', nestedChild.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></h2>
+                                                                            </div>
+                                                                            <div x-show="nestedChild.type === 'heading3'">
+                                                                                <h3 :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder text-sm font-bold mb-1 min-h-[1rem]', nestedChild.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></h3>
+                                                                            </div>
+                                                                            <div x-show="nestedChild.type === 'code'">
+                                                                                <pre :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder bg-gray-900 text-green-400 p-2 rounded font-mono text-xs min-h-[2rem] whitespace-pre-wrap', nestedChild.classes || '']" contenteditable="true" data-placeholder="Code..." @input="updateBlockContent(nestedChild.id, $event.target.textContent)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild, true)"></pre>
+                                                                            </div>
+                                                                            <div x-show="nestedChild.type === 'quote'">
+                                                                                <blockquote :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder border-l-4 border-blue-500 pl-2 italic text-gray-700 min-h-[1rem] text-xs', nestedChild.classes || '']" contenteditable="true" data-placeholder="Zitat..." @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></blockquote>
+                                                                            </div>
+                                                                            <div x-show="nestedChild.type === 'image'" class="relative w-full">
+                                                                                <img 
+                                                                                    x-show="nestedChild.imageUrl"
+                                                                                    :data-block-id="nestedChild.id"
+                                                                                    :src="nestedChild.imageUrl"
+                                                                                    :alt="nestedChild.imageAlt || ''"
+                                                                                    :title="nestedChild.imageTitle || ''"
+                                                                                    :style="nestedChild.style || ''"
+                                                                                    :class="['w-full h-auto rounded', nestedChild.classes || '']"
+                                                                                    @click.stop="openImageSettingsModal(nestedChild.id)"
+                                                                                    class="cursor-pointer"
+                                                                                />
+                                                                                <div 
+                                                                                    x-show="!nestedChild.imageUrl"
+                                                                                    :data-block-id="nestedChild.id"
+                                                                                    class="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 min-h-[100px] cursor-pointer hover:bg-gray-100 transition-colors w-full"
+                                                                                    @click.stop="openImageSettingsModal(nestedChild.id)"
+                                                                                >
+                                                                                    <div class="text-center text-gray-500">
+                                                                                        <svg class="w-6 h-6 mx-auto mb-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                                                        </svg>
+                                                                                        <p class="text-xs font-medium">Bild</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
                                                                 </template>
-                                                            </select>
-                                                        </div>
-                                                        <div class="space-y-1">
-                                                            <div class="text-xs font-semibold text-gray-400 mb-1">Spalte 2</div>
-                                                            <template x-for="(nestedChild, nestedChildIndex) in (child.children || [])" :key="nestedChild.id">
-                                                                <div x-show="nestedChildIndex % 2 === 1" class="p-1 bg-gray-50 rounded text-xs">
-                                                                    <div x-text="nestedChild.type"></div>
-                                                                </div>
-                                                            </template>
-                                                            <select 
-                                                                @change.stop="addChildToColumn(child.id, $event.target.value, 1); $event.target.value = ''"
-                                                                @click.stop
-                                                                class="w-full mt-1 p-1 border border-dashed border-gray-300 rounded text-xs text-gray-400 hover:border-blue-400 hover:text-blue-400 bg-white cursor-pointer"
-                                                            >
-                                                                <option value="" disabled selected>+ Block</option>
-                                                                <template x-for="(type, key) in childBlockTypes" :key="key">
-                                                                    <option :value="key" x-text="type.label"></option>
-                                                                </template>
-                                                            </select>
-                                                        </div>
+                                                                <select 
+                                                                    @change.stop="addChildToColumn(child.id, $event.target.value, nestedColumnIndex); $event.target.value = ''"
+                                                                    @click.stop
+                                                                    class="w-full mt-1 p-1 border border-dashed border-gray-300 rounded text-xs text-gray-400 hover:border-blue-400 hover:text-blue-400 bg-white cursor-pointer"
+                                                                >
+                                                                    <option value="" disabled selected>+ Block</option>
+                                                                    <template x-for="(type, key) in childBlockTypes" :key="key">
+                                                                        <option :value="key" x-text="type.label"></option>
+                                                                    </template>
+                                                                </select>
+                                                            </div>
+                                                        </template>
                                                     </div>
                                                     <div x-show="child.type === 'threeColumn'" 
                                                          class="grid grid-cols-3 gap-2 p-2 border border-dashed border-gray-300 rounded min-h-[150px]">
@@ -953,8 +1076,72 @@
                                                             <div class="space-y-1">
                                                                 <div class="text-xs font-semibold text-gray-400 mb-1" x-text="'Spalte ' + (nestedColumnIndex + 1)"></div>
                                                                 <template x-for="(nestedChild, nestedChildIndex) in (nestedColumn.children || [])" :key="nestedChild.id">
-                                                                    <div class="p-1 bg-gray-50 rounded text-xs">
-                                                                        <div x-text="nestedChild.type"></div>
+                                                                    <div 
+                                                                        :class="{
+                                                                            'ring-2 ring-blue-500': selectedBlockId === nestedChild.id,
+                                                                            'opacity-50': draggingBlockId === nestedChild.id
+                                                                        }"
+                                                                        class="block-item group relative p-1 rounded hover:bg-gray-50 transition-all cursor-move bg-gray-50"
+                                                                        @click.stop="selectBlock(nestedChild.id)"
+                                                                        @mouseenter="hoveredBlockId = nestedChild.id"
+                                                                        @mouseleave="hoveredBlockId = null"
+                                                                        draggable="true"
+                                                                        @dragstart="handleDragStart($event, index, columnIndex, childIndex)"
+                                                                        @dragover.prevent="handleDragOver($event, index, columnIndex, childIndex)"
+                                                                        @drop="handleDrop($event, index, columnIndex, childIndex)"
+                                                                        @dragend="handleDragEnd()"
+                                                                    >
+                                                                        <div x-show="selectedBlockId === nestedChild.id" class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l"></div>
+                                                                        <div x-show="hoveredBlockId === nestedChild.id || selectedBlockId === nestedChild.id" class="absolute -left-8 top-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                                            <button @click.stop="openSidebar(nestedChild.id)" class="p-0.5 bg-blue-500 text-white rounded shadow hover:bg-blue-600 text-xs" title="Einstellungen">⚙</button>
+                                                                            <button @click.stop="removeChildFromColumn(child.id, nestedColumnIndex, nestedChildIndex)" class="p-0.5 bg-red-500 text-white rounded shadow hover:bg-red-600 text-xs" title="Löschen">×</button>
+                                                                        </div>
+                                                                        <div class="block-content">
+                                                                            <div x-show="nestedChild.type === 'paragraph'">
+                                                                                <div :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder min-h-[1rem] text-xs', nestedChild.classes || '']" contenteditable="true" data-placeholder="Inhalt..." x-init="$nextTick(() => initBlockContent($el, nestedChild))" @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></div>
+                                                                            </div>
+                                                                            <div x-show="nestedChild.type === 'heading1'">
+                                                                                <h1 :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder text-lg font-bold mb-1 min-h-[1.25rem]', nestedChild.classes || '']" contenteditable="true" data-placeholder="Überschrift..." x-init="$nextTick(() => initBlockContent($el, nestedChild))" @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></h1>
+                                                                            </div>
+                                                                            <div x-show="nestedChild.type === 'heading2'">
+                                                                                <h2 :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder text-base font-bold mb-1 min-h-[1rem]', nestedChild.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></h2>
+                                                                            </div>
+                                                                            <div x-show="nestedChild.type === 'heading3'">
+                                                                                <h3 :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder text-sm font-bold mb-1 min-h-[1rem]', nestedChild.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></h3>
+                                                                            </div>
+                                                                            <div x-show="nestedChild.type === 'code'">
+                                                                                <pre :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder bg-gray-900 text-green-400 p-2 rounded font-mono text-xs min-h-[2rem] whitespace-pre-wrap', nestedChild.classes || '']" contenteditable="true" data-placeholder="Code..." @input="updateBlockContent(nestedChild.id, $event.target.textContent)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild, true)"></pre>
+                                                                            </div>
+                                                                            <div x-show="nestedChild.type === 'quote'">
+                                                                                <blockquote :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder border-l-4 border-blue-500 pl-2 italic text-gray-700 min-h-[1rem] text-xs', nestedChild.classes || '']" contenteditable="true" data-placeholder="Zitat..." @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></blockquote>
+                                                                            </div>
+                                                                            <div x-show="nestedChild.type === 'image'" class="relative w-full">
+                                                                                <img 
+                                                                                    x-show="nestedChild.imageUrl"
+                                                                                    :data-block-id="nestedChild.id"
+                                                                                    :src="nestedChild.imageUrl"
+                                                                                    :alt="nestedChild.imageAlt || ''"
+                                                                                    :title="nestedChild.imageTitle || ''"
+                                                                                    :style="nestedChild.style || ''"
+                                                                                    :class="['w-full h-auto rounded', nestedChild.classes || '']"
+                                                                                    @click.stop="openImageSettingsModal(nestedChild.id)"
+                                                                                    class="cursor-pointer"
+                                                                                />
+                                                                                <div 
+                                                                                    x-show="!nestedChild.imageUrl"
+                                                                                    :data-block-id="nestedChild.id"
+                                                                                    class="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 min-h-[100px] cursor-pointer hover:bg-gray-100 transition-colors w-full"
+                                                                                    @click.stop="openImageSettingsModal(nestedChild.id)"
+                                                                                >
+                                                                                    <div class="text-center text-gray-500">
+                                                                                        <svg class="w-6 h-6 mx-auto mb-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                                                        </svg>
+                                                                                        <p class="text-xs font-medium">Bild</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
                                                                 </template>
                                                                 <select 
@@ -1216,6 +1403,79 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <!-- Checklist in Spalte -->
+                                                <div x-show="child.type === 'checklist'" 
+                                                     :data-block-id="child.id"
+                                                     :style="child.style || ''"
+                                                     :class="['space-y-2 p-4 border border-gray-300 rounded-lg', child.classes || '']">
+                                                    <template x-for="(item, itemIndex) in (child.checklistData?.items || [])" :key="item.id">
+                                                        <div class="flex items-start gap-3 group hover:bg-gray-50 p-2 rounded transition-colors">
+                                                            <!-- Checkbox -->
+                                                            <input 
+                                                                type="checkbox"
+                                                                :checked="item.checked || false"
+                                                                @change="toggleChecklistItem(child.id, itemIndex)"
+                                                                @click.stop
+                                                                class="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                                                            />
+                                                            <!-- Text Input -->
+                                                            <div 
+                                                                :data-item-id="item.id"
+                                                                :data-block-id="child.id"
+                                                                :data-item-index="itemIndex"
+                                                                class="flex-1 block-placeholder min-h-[1.5rem] text-sm"
+                                                                contenteditable="true"
+                                                                data-placeholder="Checkliste-Eintrag..."
+                                                                x-init="$nextTick(() => { if (!$el.innerHTML && item.text) $el.innerHTML = item.text; })"
+                                                                @input="updateChecklistItemText(child.id, item.id, $event.target.innerHTML)"
+                                                                @keydown.enter.prevent="addChecklistItem(child.id, 'bottom')"
+                                                                @keydown.backspace="if (!$el.textContent.trim() && (child.checklistData?.items || []).length > 1) { $event.preventDefault(); removeChecklistItem(child.id, itemIndex); }"
+                                                                @focus="initBlockContent($event.target, { content: item.text || '' })"
+                                                            ></div>
+                                                            <!-- Actions -->
+                                                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <button 
+                                                                    @click.stop="moveChecklistItemUp(child.id, itemIndex)"
+                                                                    :disabled="itemIndex === 0"
+                                                                    :class="{'opacity-50 cursor-not-allowed': itemIndex === 0}"
+                                                                    class="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded"
+                                                                    title="Nach oben verschieben"
+                                                                >
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                                                                    </svg>
+                                                                </button>
+                                                                <button 
+                                                                    @click.stop="moveChecklistItemDown(child.id, itemIndex)"
+                                                                    :disabled="itemIndex === (child.checklistData?.items || []).length - 1"
+                                                                    :class="{'opacity-50 cursor-not-allowed': itemIndex === (child.checklistData?.items || []).length - 1}"
+                                                                    class="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded"
+                                                                    title="Nach unten verschieben"
+                                                                >
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                                    </svg>
+                                                                </button>
+                                                                <button 
+                                                                    @click.stop="removeChecklistItem(child.id, itemIndex)"
+                                                                    :disabled="(child.checklistData?.items || []).length <= 1"
+                                                                    :class="{'opacity-50 cursor-not-allowed': (child.checklistData?.items || []).length <= 1}"
+                                                                    class="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                                                                    title="Eintrag löschen"
+                                                                >
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                    <!-- Empty State -->
+                                                    <div x-show="!child.checklistData || (child.checklistData?.items || []).length === 0" 
+                                                         class="text-center text-gray-400 py-4 text-sm">
+                                                        Keine Einträge vorhanden
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </template>
@@ -1410,7 +1670,17 @@
         </div>
 
         <!-- JSON Display (for debugging) -->
-        <div class="mt-8 bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-xs overflow-auto max-h-64">
+        <div class="mt-8 bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-xs overflow-auto max-h-64 relative">
+             <!-- Copy JSON to Clipboard Button -->
+        <button
+        @click="copyJSONToClipboard()"
+        class="absolute top-4 right-4 z-[60] p-3  text-slate-400  hover:text-green-400 transition-colors hover:shadow-xl"
+        title="Editor JSON in Zwischenablage kopieren"
+    >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+        </svg>
+    </button>
             <pre x-text="JSON.stringify(blocks, null, 2)"></pre>
         </div>
     </div>

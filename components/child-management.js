@@ -1,6 +1,7 @@
 // Child Block Management Functions - als Objekt organisiert
 import { Utils } from './utils.js';
 import { BlockTypes } from './block-types.js';
+import { initializeBlock } from './block-components.js';
 
 export const ChildManagement = {
     addChild(blocks, parentBlockId, blockIdCounter, childType) {
@@ -24,17 +25,15 @@ export const ChildManagement = {
                 createdAt: new Date().toISOString()
             };
             
-            // Initialize image data if it's an image
-            if (childType === 'image') {
-                childBlock.imageUrl = '';
-                childBlock.imageAlt = '';
-                childBlock.imageTitle = '';
-            }
+            // Dynamische Initialisierung über Block-Komponenten
+            initializeBlock(childBlock, blockIdCounter);
             
             // Initialize children array ONLY for container blocks
             // Spalten werden später von ensureColumnStructure() erstellt
             if (BlockTypes.isContainerBlock(childType)) {
-                childBlock.children = [];
+                if (!childBlock.children) {
+                    childBlock.children = [];
+                }
             }
             // Non-container blocks should NOT have children array
             
@@ -62,17 +61,15 @@ export const ChildManagement = {
                 createdAt: new Date().toISOString()
             };
             
-            // Initialize image data if it's an image
-            if (childType === 'image') {
-                childBlock.imageUrl = '';
-                childBlock.imageAlt = '';
-                childBlock.imageTitle = '';
-            }
+            // Dynamische Initialisierung über Block-Komponenten
+            initializeBlock(childBlock, blockIdCounter);
             
             // Initialize children array ONLY for container blocks
             // Spalten werden später von ensureColumnStructure() erstellt
             if (BlockTypes.isContainerBlock(childType)) {
-                childBlock.children = [];
+                if (!childBlock.children) {
+                    childBlock.children = [];
+                }
             }
             // Non-container blocks should NOT have children array
             
@@ -146,17 +143,15 @@ export const ChildManagement = {
                 createdAt: new Date().toISOString()
             };
             
-            // Initialize image data if it's an image
-            if (childType === 'image') {
-                childBlock.imageUrl = '';
-                childBlock.imageAlt = '';
-                childBlock.imageTitle = '';
-            }
+            // Dynamische Initialisierung über Block-Komponenten
+            initializeBlock(childBlock, blockIdCounter);
             
             // Initialize children array ONLY for container blocks
             // Spalten werden später von ensureColumnStructure() erstellt
             if (BlockTypes.isContainerBlock(childType)) {
-                childBlock.children = [];
+                if (!childBlock.children) {
+                    childBlock.children = [];
+                }
             }
             // Non-container blocks should NOT have children array
             
@@ -200,17 +195,15 @@ export const ChildManagement = {
                 createdAt: new Date().toISOString()
             };
             
-            // Initialize image data if it's an image
-            if (childType === 'image') {
-                childBlock.imageUrl = '';
-                childBlock.imageAlt = '';
-                childBlock.imageTitle = '';
-            }
+            // Dynamische Initialisierung über Block-Komponenten
+            initializeBlock(childBlock, blockIdCounter);
             
             // Initialize children array ONLY for container blocks
             // Spalten werden später von ensureColumnStructure() erstellt
             if (BlockTypes.isContainerBlock(childType)) {
-                childBlock.children = [];
+                if (!childBlock.children) {
+                    childBlock.children = [];
+                }
             }
             // Non-container blocks should NOT have children array
             

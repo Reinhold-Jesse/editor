@@ -1,6 +1,7 @@
 // Storage and Import/Export Functions - als Objekt organisiert
 import { Utils } from './utils.js';
 import { BlockManagement } from './block-management.js';
+import { renderJSONBlocks } from './json-renderer.js';
 
 export const Storage = {
     saveToJSON(blocks) {
@@ -16,13 +17,14 @@ export const Storage = {
         if (saved) {
             try {
                 const parsedBlocks = JSON.parse(saved);
-                blocks.splice(0, blocks.length, ...parsedBlocks);
                 
-                // Stelle sicher, dass Column-Blöcke die richtige Anzahl von Spalten haben
-                BlockManagement.ensureColumnStructure(blocks);
+                // Rendere alle Blöcke aus dem JSON (zentrale Funktion)
+                const renderedBlocks = renderJSONBlocks(parsedBlocks, blockIdCounter);
+                
+                blocks.splice(0, blocks.length, ...renderedBlocks);
                 
                 // Sicherstellen, dass blockIdCounter aktualisiert wird
-                const maxId = Math.max(...parsedBlocks.map(b => {
+                const maxId = Math.max(...renderedBlocks.map(b => {
                     const match = b.id.match(/block-(\d+)-/);
                     return match ? parseInt(match[1]) : 0;
                 }));
@@ -35,7 +37,7 @@ export const Storage = {
                 });
                 
                 // Notification wird vom block-editor.js angezeigt
-                return { blocks: parsedBlocks, blockIdCounter: newCounter };
+                return { blocks: renderedBlocks, blockIdCounter: newCounter };
             } catch (e) {
                 // Notification wird vom block-editor.js angezeigt
                 return { blocks: null, blockIdCounter: blockIdCounter };
@@ -63,14 +65,14 @@ export const Storage = {
                 }
             }
 
-            blocks.splice(0, blocks.length, ...parsedBlocks);
+            // Rendere alle Blöcke aus dem JSON (zentrale Funktion)
+            const renderedBlocks = renderJSONBlocks(parsedBlocks, blockIdCounter);
             
-            // Stelle sicher, dass threeColumn Blöcke genau 3 Spalten haben
-            BlockManagement.ensureColumnStructure(blocks);
+            blocks.splice(0, blocks.length, ...renderedBlocks);
             
             // Berechne den maximalen Block-ID Counter
             let maxId = 0;
-            parsedBlocks.forEach(b => {
+            renderedBlocks.forEach(b => {
                 const match = b.id.match(/block-(\d+)-/);
                 if (match) {
                     const idNum = parseInt(match[1]);
@@ -305,14 +307,14 @@ export const Storage = {
             throw new Error('Theme-Daten sind ungültig.');
         }
 
-        blocks.splice(0, blocks.length, ...parsedBlocks);
+        // Rendere alle Blöcke aus dem JSON (zentrale Funktion)
+        const renderedBlocks = renderJSONBlocks(parsedBlocks, blockIdCounter);
         
-        // Stelle sicher, dass threeColumn Blöcke genau 3 Spalten haben
-        BlockManagement.ensureColumnStructure(blocks);
+        blocks.splice(0, blocks.length, ...renderedBlocks);
         
         // Berechne den maximalen Block-ID Counter
         let maxId = 0;
-        parsedBlocks.forEach(b => {
+        renderedBlocks.forEach(b => {
             const match = b.id.match(/block-(\d+)-/);
             if (match) {
                 const idNum = parseInt(match[1]);
@@ -333,7 +335,7 @@ export const Storage = {
             initAllBlockContents(blocks);
         });
 
-        return { blocks: parsedBlocks, blockIdCounter: newCounter };
+        return { blocks: renderedBlocks, blockIdCounter: newCounter };
     },
 
     async deleteTheme(themeName) {
@@ -412,6 +414,9 @@ export const Storage = {
                         }
                     }
 
+                    // Rendere alle Blöcke aus dem JSON (zentrale Funktion)
+                    const renderedBlocks = renderJSONBlocks(parsedBlocks, 0);
+
                     // Extrahiere Theme-Namen aus Dateinamen
                     const filename = file.name.replace('.json', '');
                     const themeName = filename.replace(/[_-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -419,7 +424,7 @@ export const Storage = {
                     const themeData = {
                         name: themeName,
                         filename: file.name,
-                        data: parsedBlocks, // Speichere auch Daten im LocalStorage
+                        data: renderedBlocks, // Speichere gerenderte Daten im LocalStorage
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString()
                     };
@@ -436,7 +441,7 @@ export const Storage = {
                         
                         localStorage.setItem('blockEditorThemes', JSON.stringify(themes));
 
-                        resolve({ themeData, blocks: parsedBlocks });
+                        resolve({ themeData, blocks: renderedBlocks });
                     }).catch(error => {
                         reject(new Error(`Fehler beim Laden der Themes: ${error.message}`));
                     });

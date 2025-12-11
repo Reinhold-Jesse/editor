@@ -7,6 +7,7 @@ import { Storage } from './components/storage.js';
 import { TableManagement } from './components/table-management.js';
 import { ChecklistManagement } from './components/checklist-management.js';
 import { BLOCK_TYPES, BlockTypes } from './components/block-types.js';
+import { renderJSONBlocks } from './components/json-renderer.js';
 
 function blockEditor() {
     return {
@@ -775,7 +776,7 @@ function blockEditor() {
                 // Moderne Clipboard API verwenden falls verfügbar
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     await navigator.clipboard.writeText(json);
-                    this.showNotification('JSON erfolgreich in die Zwischenablage kopiert!', 'success');
+                    this.showNotification('wurde in Zwischenablage kopiert', 'success');
                 } else {
                     // Fallback für ältere Browser
                     const textarea = document.createElement('textarea');
@@ -787,7 +788,7 @@ function blockEditor() {
                     textarea.setSelectionRange(0, 99999);
                     document.execCommand('copy');
                     document.body.removeChild(textarea);
-                    this.showNotification('JSON erfolgreich in die Zwischenablage kopiert!', 'success');
+                    this.showNotification('wurde in Zwischenablage kopiert', 'success');
                 }
             } catch (err) {
                 console.error('Fehler beim Kopieren:', err);
@@ -1028,16 +1029,16 @@ function blockEditor() {
                     return newBlock;
                 });
 
-                // Füge die neuen Blöcke zu den bestehenden hinzu
-                this.blocks.push(...newBlocks);
-                this.blockIdCounter = maxId + idOffset;
+                // Rendere alle Blöcke aus dem JSON (zentrale Funktion)
+                const renderedBlocks = renderJSONBlocks(newBlocks, this.blockIdCounter);
 
-                // Stelle sicher, dass die Struktur korrekt ist
-                BlockManagement.ensureColumnStructure(this.blocks);
+                // Füge die neuen Blöcke zu den bestehenden hinzu
+                this.blocks.push(...renderedBlocks);
+                this.blockIdCounter = maxId + idOffset;
 
                 // Initialisiere die neuen Block-Inhalte
                 this.$nextTick(() => {
-                    Utils.initAllBlockContents(newBlocks);
+                    Utils.initAllBlockContents(renderedBlocks);
                 });
 
                 this.showNotification(`Theme "${themeName}" erfolgreich hinzugefügt!`, 'success');

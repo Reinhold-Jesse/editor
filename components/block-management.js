@@ -1,8 +1,7 @@
 // Block Management Functions - als Objekt organisiert
 import { Utils } from './utils.js';
-import { TableManagement } from './table-management.js';
-import { ChecklistManagement } from './checklist-management.js';
 import { BlockTypes } from './block-types.js';
+import { initializeBlock, ensureBlockInitialized, cleanupBlock } from './block-components.js';
 
 export const BlockManagement = {
     createBlock(blockIdCounter, type, content = '') {
@@ -15,31 +14,15 @@ export const BlockManagement = {
             createdAt: new Date().toISOString()
         };
         
-        // Initialize table data if it's a table
-        if (type === 'table') {
-            const tableData = TableManagement.initializeTable(blockIdCounter, 3, 3, true, false);
-            block.tableData = tableData;
-            block.tableData.lastCellIdCounter = tableData.lastCellIdCounter;
-        }
-        
-        // Initialize image data if it's an image
-        if (type === 'image') {
-            block.imageUrl = '';
-            block.imageAlt = '';
-            block.imageTitle = '';
-        }
-        
-        // Initialize checklist data if it's a checklist
-        if (type === 'checklist') {
-            const checklistData = ChecklistManagement.initializeChecklist(blockIdCounter, 3);
-            block.checklistData = checklistData;
-            block.checklistData.lastItemIdCounter = checklistData.lastItemIdCounter;
-        }
+        // Dynamische Initialisierung über Block-Komponenten
+        initializeBlock(block, blockIdCounter);
         
         // Initialize children array ONLY for container blocks
         // Spalten werden später von ensureColumnStructure() erstellt
         if (BlockTypes.isContainerBlock(type)) {
-            block.children = [];
+            if (!block.children) {
+                block.children = [];
+            }
         }
         // Non-container blocks should NOT have children array
         
@@ -86,47 +69,17 @@ export const BlockManagement = {
             const oldContent = block.content;
             const oldType = block.type;
             
+            // Cleanup alte Block-Daten
+            if (oldType !== newType) {
+                cleanupBlock(block, oldType);
+            }
+            
             block.type = newType;
             block.content = oldContent;
             block.updatedAt = new Date().toISOString();
             
-            // Initialize image data if changing to image type
-            if (newType === 'image' && oldType !== 'image') {
-                block.imageUrl = '';
-                block.imageAlt = '';
-                block.imageTitle = '';
-            }
-            
-            // Clean up image data if changing away from image type
-            if (oldType === 'image' && newType !== 'image') {
-                delete block.imageUrl;
-                delete block.imageAlt;
-                delete block.imageTitle;
-            }
-            
-            // Initialize table data if changing to table type
-            if (newType === 'table' && oldType !== 'table') {
-                const tableData = TableManagement.initializeTable(blockId, 3, 3, true, false);
-                block.tableData = tableData;
-                block.tableData.lastCellIdCounter = tableData.lastCellIdCounter;
-            }
-            
-            // Clean up table data if changing away from table type
-            if (oldType === 'table' && newType !== 'table') {
-                delete block.tableData;
-            }
-            
-            // Initialize checklist data if changing to checklist type
-            if (newType === 'checklist' && oldType !== 'checklist') {
-                const checklistData = ChecklistManagement.initializeChecklist(blockId, 3);
-                block.checklistData = checklistData;
-                block.checklistData.lastItemIdCounter = checklistData.lastItemIdCounter;
-            }
-            
-            // Clean up checklist data if changing away from checklist type
-            if (oldType === 'checklist' && newType !== 'checklist') {
-                delete block.checklistData;
-            }
+            // Dynamische Initialisierung für neuen Block-Typ
+            initializeBlock(block, blockIdCounter);
             
             // Clean up column structure if changing away from column layouts
             if ((oldType === 'twoColumn' || oldType === 'threeColumn') && newType !== 'twoColumn' && newType !== 'threeColumn') {
@@ -208,9 +161,13 @@ export const BlockManagement = {
 
     // Stellt sicher, dass Column-Blöcke die richtige Anzahl von Spalten haben
     ensureColumnStructure(blocks) {
-        const self = this;
         function fixBlockColumns(block) {
             if (!block) return;
+            
+            // Stelle sicher, dass Block initialisiert ist (dynamisch über Block-Komponenten)
+            const match = block.id.match(/block-(\d+)-/);
+            const blockIdCounter = match ? parseInt(match[1]) : 0;
+            ensureBlockInitialized(block, blockIdCounter);
             
             // Für Container-Blöcke: Stelle sicher, dass die richtige Struktur vorhanden ist
             if (BlockTypes.isContainerBlock(block.type)) {

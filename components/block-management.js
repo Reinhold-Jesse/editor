@@ -29,28 +29,9 @@ export const BlockManagement = {
         }
         
         // Initialize children array ONLY for container blocks
+        // Spalten werden später von ensureColumnStructure() erstellt
         if (BlockTypes.isContainerBlock(type)) {
-            const columnCount = BlockTypes.getColumnCount(type);
-            if (columnCount > 0) {
-                // Initialize column structure for twoColumn and threeColumn
-                block.children = [];
-                for (let i = 0; i < columnCount; i++) {
-                    block.children.push({
-                        id: Utils.generateId(blockIdCounter + i + 1),
-                        type: 'column',
-                        content: '',
-                        style: '',
-                        classes: '',
-                        children: [],
-                        createdAt: new Date().toISOString()
-                    });
-                }
-            } else if (type === 'table') {
-                block.children = [];
-            } else {
-                // Other container blocks
-                block.children = [];
-            }
+            block.children = [];
         }
         // Non-container blocks should NOT have children array
         
@@ -60,12 +41,8 @@ export const BlockManagement = {
     addBlock(blocks, selectedBlockId, blockIdCounter, type, content = '') {
         const block = this.createBlock(blockIdCounter, type, content);
         
-        if (selectedBlockId) {
-            const index = blocks.findIndex(b => b.id === selectedBlockId);
-            blocks.splice(index + 1, 0, block);
-        } else {
-            blocks.push(block);
-        }
+        // Immer am Ende einfügen, unabhängig vom ausgewählten Block
+        blocks.push(block);
         
         return block;
     },
@@ -131,41 +108,17 @@ export const BlockManagement = {
                 delete block.tableData;
             }
             
-            // Initialize or fix column structure if changing to twoColumn or threeColumn
-            const columnCount = BlockTypes.getColumnCount(newType);
-            if (columnCount > 0) {
-                // Wenn zu twoColumn oder threeColumn geändert wird
-                if (!block.children) {
-                    block.children = [];
-                }
-                
-                // Stelle sicher, dass genau die richtige Anzahl von Spalten vorhanden ist
-                const currentColumnCount = block.children.length;
-                
-                // Entferne überschüssige Spalten
-                if (currentColumnCount > columnCount) {
-                    block.children = block.children.slice(0, columnCount);
-                }
-                
-                // Füge fehlende Spalten hinzu
-                while (block.children.length < columnCount) {
-                    const columnIndex = block.children.length;
-                    block.children.push({
-                        id: Utils.generateId(blockIdCounter + columnIndex + 1),
-                        type: 'column',
-                        content: '',
-                        style: '',
-                        classes: '',
-                        children: [],
-                        createdAt: new Date().toISOString()
-                    });
-                }
-            }
-            
             // Clean up column structure if changing away from column layouts
             if ((oldType === 'twoColumn' || oldType === 'threeColumn') && newType !== 'twoColumn' && newType !== 'threeColumn') {
                 delete block.children;
             }
+            
+            // Initialize children array for container blocks (wenn noch nicht vorhanden)
+            if (BlockTypes.isContainerBlock(newType) && !block.children) {
+                block.children = [];
+            }
+            
+            // Spalten werden später von ensureColumnStructure() erstellt/korrigiert
         }
     },
 

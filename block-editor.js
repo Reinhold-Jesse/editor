@@ -69,8 +69,15 @@ function blockEditor() {
             onExtend: null, // Neue Option für "Erweitern"
             showExtend: false // Zeigt ob "Erweitern" Button angezeigt werden soll
         },
+        // Performance-Optimierungen
+        textSelectionTimeout: null, // Debounce-Timeout für Text-Selektion
+        elementCache: new Map(), // Cache für DOM-Elemente
+        eventListeners: [], // Array für Event Listener Cleanup
 
         init() {
+            // Stelle sicher, dass Column-Blöcke die richtige Anzahl von Spalten haben (falls Blöcke bereits vorhanden sind)
+            BlockManagement.ensureColumnStructure(this.blocks);
+            
             // Start mit einem leeren Paragraph
             if (this.blocks.length === 0) {
                 this.addBlock('paragraph');
@@ -82,16 +89,30 @@ function blockEditor() {
                 this.initAllBlockContents();
             });
             
-            // Event Listener für Text-Selektion
-            document.addEventListener('mouseup', () => {
-                setTimeout(() => this.handleTextSelection(), 10);
-            });
-            document.addEventListener('keyup', () => {
-                setTimeout(() => this.handleTextSelection(), 10);
-            });
+            // Optimierte Event Listener mit Debouncing für Text-Selektion
+            const handleTextSelectionDebounced = () => {
+                if (this.textSelectionTimeout) {
+                    clearTimeout(this.textSelectionTimeout);
+                }
+                this.textSelectionTimeout = setTimeout(() => {
+                    this.handleTextSelection();
+                }, 10);
+            };
+            
+            const mouseupHandler = () => handleTextSelectionDebounced();
+            const keyupHandler = () => handleTextSelectionDebounced();
+            
+            document.addEventListener('mouseup', mouseupHandler);
+            document.addEventListener('keyup', keyupHandler);
+            
+            // Speichere Event Listener für Cleanup
+            this.eventListeners.push(
+                { element: document, event: 'mouseup', handler: mouseupHandler },
+                { element: document, event: 'keyup', handler: keyupHandler }
+            );
             
             // Event Listener für Rechtsklick (Context-Menu)
-            document.addEventListener('contextmenu', (e) => {
+            const contextmenuHandler = (e) => {
                 const selection = window.getSelection();
                 const selectedText = selection.toString().trim();
                 
@@ -144,10 +165,13 @@ function blockEditor() {
                         }
                     }
                 }
-            });
+            };
+            
+            document.addEventListener('contextmenu', contextmenuHandler);
+            this.eventListeners.push({ element: document, event: 'contextmenu', handler: contextmenuHandler });
             
             // Event Listener für Link-Klicks (Bearbeitung)
-            document.addEventListener('click', (e) => {
+            const clickHandler = (e) => {
                 // Prüfe ob ein Link angeklickt wurde (mit Ctrl/Cmd für Bearbeitung)
                 const linkElement = e.target.closest('a[href]');
                 if (linkElement && linkElement.closest('[data-block-id]')) {
@@ -175,7 +199,68 @@ function blockEditor() {
                         this.showFloatingToolbar = false;
                     }
                 }
+            };
+            
+            document.addEventListener('click', clickHandler);
+            this.eventListeners.push({ element: document, event: 'click', handler: clickHandler });
+        },
+        
+        // Cleanup-Funktion für Event Listener (wird von Alpine.js automatisch aufgerufen)
+        destroy() {
+            // Cleanup Event Listener
+            this.eventListeners.forEach(({ element, event, handler }) => {
+                element.removeEventListener(event, handler);
             });
+            this.eventListeners = [];
+            
+            // Cleanup Timeouts
+            if (this.textSelectionTimeout) {
+                clearTimeout(this.textSelectionTimeout);
+                this.textSelectionTimeout = null;
+            }
+            if (this.notificationTimeout) {
+                clearTimeout(this.notificationTimeout);
+                this.notificationTimeout = null;
+            }
+            
+            // Clear Element Cache
+            this.elementCache.clear();
+        },
+        
+        // Optimierte Helper-Funktion für DOM-Element-Abfragen mit Caching
+        getBlockElement(blockId) {
+            if (!blockId) return null;
+            
+            // Prüfe Cache
+            if (this.elementCache.has(blockId)) {
+                const cached = this.elementCache.get(blockId);
+                // Prüfe ob Element noch im DOM ist
+                if (document.contains(cached)) {
+                    return cached;
+                } else {
+                    // Element nicht mehr im DOM, entferne aus Cache
+                    this.elementCache.delete(blockId);
+                }
+            }
+            
+            // Element nicht im Cache, suche im DOM
+            const element = document.querySelector(`[data-block-id="${blockId}"]`);
+            if (element) {
+                this.elementCache.set(blockId, element);
+            }
+            return element;
+        },
+        
+        // Cache invalidieren für einen Block
+        invalidateBlockCache(blockId) {
+            if (blockId) {
+                this.elementCache.delete(blockId);
+            }
+        },
+        
+        // Cache komplett leeren (z.B. nach größeren DOM-Änderungen)
+        clearElementCache() {
+            this.elementCache.clear();
         },
 
         initAllBlockContents() {
@@ -226,7 +311,7 @@ function blockEditor() {
             
             // Focus auf den neuen Block
             this.$nextTick(() => {
-                const element = document.querySelector(`[data-block-id="${block.id}"]`);
+                const element = this.getBlockElement(block.id);
                 if (element) {
                     element.focus();
                     // Setze Cursor ans Ende
@@ -250,7 +335,7 @@ function blockEditor() {
             this.selectedBlockId = block.id;
             
             this.$nextTick(() => {
-                const element = document.querySelector(`[data-block-id="${block.id}"]`);
+                const element = this.getBlockElement(block.id);
                 if (element) {
                     element.focus();
                     // Setze Cursor ans Ende
@@ -266,11 +351,15 @@ function blockEditor() {
 
         updateBlockContent(blockId, content) {
             BlockManagement.updateBlockContent(this.blocks, blockId, content);
+            // Cache bleibt gültig, da nur Inhalt geändert wird
         },
 
         deleteBlock(blockId) {
             const result = BlockManagement.deleteBlock(this.blocks, blockId);
             if (result.deleted) {
+                // Invalidiere Cache für gelöschten Block
+                this.invalidateBlockCache(blockId);
+                
                 this.selectedBlockId = null;
                 
                 // Wenn keine Blöcke mehr vorhanden, einen neuen Paragraph hinzufügen
@@ -421,9 +510,12 @@ function blockEditor() {
             // Stelle sicher, dass Column-Blöcke die richtige Anzahl von Spalten haben
             BlockManagement.ensureColumnStructure(this.blocks);
             
+            // Invalidiere Cache für diesen Block (DOM-Struktur hat sich geändert)
+            this.invalidateBlockCache(blockId);
+            
             // Focus auf den Block nach Typ-Änderung
             this.$nextTick(() => {
-                const element = document.querySelector(`[data-block-id="${blockId}"]`);
+                const element = this.getBlockElement(blockId);
                 if (element) {
                     element.focus();
                 }
@@ -461,7 +553,7 @@ function blockEditor() {
                 this.selectedBlockId = childBlock.id;
                 
                 this.$nextTick(() => {
-                    const element = document.querySelector(`[data-block-id="${childBlock.id}"]`);
+                    const element = this.getBlockElement(childBlock.id);
                     if (element) {
                         element.focus();
                     }
@@ -479,7 +571,7 @@ function blockEditor() {
                 this.selectedBlockId = childBlock.id;
                 
                 this.$nextTick(() => {
-                    const element = document.querySelector(`[data-block-id="${childBlock.id}"]`);
+                    const element = this.getBlockElement(childBlock.id);
                     if (element) {
                         element.focus();
                     }
@@ -513,7 +605,7 @@ function blockEditor() {
                 this.selectedBlockId = childBlock.id;
                 
                 this.$nextTick(() => {
-                    const element = document.querySelector(`[data-block-id="${childBlock.id}"]`);
+                    const element = this.getBlockElement(childBlock.id);
                     if (element) {
                         element.focus();
                     }
@@ -539,6 +631,8 @@ function blockEditor() {
             if (result.blocks) {
                 this.selectedBlockId = null;
                 this.blockIdCounter = result.blockIdCounter;
+                // Cache komplett leeren nach JSON-Laden (DOM wurde komplett neu aufgebaut)
+                this.clearElementCache();
             }
         },
 
@@ -620,6 +714,8 @@ function blockEditor() {
                 );
                 
                 const blockCount = this.importJSONPreview?.blockCount || 0;
+                // Cache komplett leeren nach JSON-Import (DOM wurde komplett neu aufgebaut)
+                this.clearElementCache();
                 this.showNotification(`Erfolgreich ${blockCount} Block(s) importiert!`, 'success');
                 this.closeImportModal();
             } catch (error) {
@@ -1273,7 +1369,7 @@ function blockEditor() {
             if (!this.selectedRange || !this.selectedBlockId) return 'off';
             
             try {
-                const element = document.querySelector(`[data-block-id="${this.selectedBlockId}"]`);
+                const element = this.getBlockElement(this.selectedBlockId);
                 if (!element) return 'off';
                 
                 // Speichere aktuelle Selektion
@@ -1303,7 +1399,7 @@ function blockEditor() {
         applyTextFormat(format) {
             if (!this.selectedRange || !this.selectedBlockId) return;
             
-            const element = document.querySelector(`[data-block-id="${this.selectedBlockId}"]`);
+            const element = this.getBlockElement(this.selectedBlockId);
             if (!element) {
                 this.showFloatingToolbar = false;
                 return;
@@ -1343,7 +1439,7 @@ function blockEditor() {
         removeFormatting() {
             if (!this.selectedRange || !this.selectedBlockId) return;
             
-            const element = document.querySelector(`[data-block-id="${this.selectedBlockId}"]`);
+            const element = this.getBlockElement(this.selectedBlockId);
             if (!element) {
                 this.showFloatingToolbar = false;
                 return;
@@ -1403,7 +1499,7 @@ function blockEditor() {
             element.setAttribute('href', this.linkInputUrl);
             
             // Aktualisiere Block-Inhalt
-            const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
+            const blockElement = this.getBlockElement(blockId);
             if (blockElement) {
                 this.$nextTick(() => {
                     const { block } = this.findBlockById(blockId);
@@ -1430,7 +1526,7 @@ function blockEditor() {
             element.parentNode.replaceChild(textNode, element);
             
             // Aktualisiere Block-Inhalt
-            const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
+            const blockElement = this.getBlockElement(blockId);
             if (blockElement) {
                 this.$nextTick(() => {
                     const { block } = this.findBlockById(blockId);
@@ -1473,7 +1569,7 @@ function blockEditor() {
                 return;
             }
             
-            const element = document.querySelector(`[data-block-id="${this.selectedBlockId}"]`);
+            const element = this.getBlockElement(this.selectedBlockId);
             if (!element) {
                 this.closeLinkInputModal();
                 return;
@@ -1538,7 +1634,7 @@ function blockEditor() {
         applyTextAlignmentToSelection(alignment) {
             if (!this.selectedRange || !this.selectedBlockId) return;
             
-            const element = document.querySelector(`[data-block-id="${this.selectedBlockId}"]`);
+            const element = this.getBlockElement(this.selectedBlockId);
             if (!element) {
                 this.showFloatingToolbar = false;
                 return;
@@ -1579,7 +1675,7 @@ function blockEditor() {
             if (!this.selectedRange || !this.selectedBlockId) return 'off';
             
             try {
-                const element = document.querySelector(`[data-block-id="${this.selectedBlockId}"]`);
+                const element = this.getBlockElement(this.selectedBlockId);
                 if (!element) return 'off';
                 
                 // Speichere aktuelle Selektion
@@ -1624,7 +1720,7 @@ function blockEditor() {
         applyTextColor(color) {
             if (!this.selectedRange || !this.selectedBlockId) return;
             
-            const element = document.querySelector(`[data-block-id="${this.selectedBlockId}"]`);
+            const element = this.getBlockElement(this.selectedBlockId);
             if (!element) {
                 this.showFloatingToolbar = false;
                 return;
@@ -1668,7 +1764,7 @@ function blockEditor() {
         applyBackgroundColor(color) {
             if (!this.selectedRange || !this.selectedBlockId) return;
             
-            const element = document.querySelector(`[data-block-id="${this.selectedBlockId}"]`);
+            const element = this.getBlockElement(this.selectedBlockId);
             if (!element) {
                 this.showFloatingToolbar = false;
                 return;

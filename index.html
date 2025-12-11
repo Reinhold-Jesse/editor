@@ -862,22 +862,10 @@
 
                             <!-- Two Column -->
                             <div x-show="block.type === 'twoColumn'" 
-                                 x-init="const colCount = getColumnCountForBlock('twoColumn'); 
-                                         if (!block.children) block.children = []; 
-                                         while (block.children.length < colCount) { 
-                                             const idx = block.children.length; 
-                                             block.children.push({ id: 'col-' + block.id + '-' + idx, type: 'column', children: [], createdAt: new Date().toISOString() }); 
-                                         } 
-                                         if (block.children.length > colCount) { 
-                                             block.children = block.children.slice(0, colCount); 
-                                         }"
                                  class="grid grid-cols-2 gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]">
                                 <template x-for="(column, columnIndex) in (block.children || [])" :key="column.id">
                                     <div class="space-y-2">
                                         <div class="text-xs font-semibold text-gray-500 mb-2" x-text="'Spalte ' + (columnIndex + 1)"></div>
-                                        <div x-show="!column.children || column.children.length === 0" class="text-xs text-gray-400 italic mb-2 p-2 border border-dashed border-gray-300 rounded bg-gray-50">
-                                            Leer - Block hinzufügen
-                                        </div>
                                         <template x-for="(child, childIndex) in (column.children || [])" :key="child.id">
                                             <div 
                                             :class="{
@@ -986,15 +974,6 @@
                                                         </div>
                                                     </div>
                                                     <div x-show="child.type === 'threeColumn'" 
-                                                         x-init="const colCount = getColumnCountForBlock('threeColumn'); 
-                                                                 if (!child.children) child.children = []; 
-                                                                 while (child.children.length < colCount) { 
-                                                                     const idx = child.children.length; 
-                                                                     child.children.push({ id: 'col-' + child.id + '-' + idx, type: 'column', children: [], createdAt: new Date().toISOString() }); 
-                                                                 } 
-                                                                 if (child.children.length > colCount) { 
-                                                                     child.children = child.children.slice(0, colCount); 
-                                                                 }"
                                                          class="grid grid-cols-3 gap-2 p-2 border border-dashed border-gray-300 rounded min-h-[150px]">
                                                         <template x-for="(nestedColumn, nestedColumnIndex) in (child.children || [])" :key="nestedColumn.id">
                                                             <div class="space-y-1">
@@ -1119,22 +1098,10 @@
 
                             <!-- Three Column -->
                             <div x-show="block.type === 'threeColumn'" 
-                                 x-init="const colCount = getColumnCountForBlock('threeColumn'); 
-                                         if (!block.children) block.children = []; 
-                                         while (block.children.length < colCount) { 
-                                             const idx = block.children.length; 
-                                             block.children.push({ id: 'col-' + block.id + '-' + idx, type: 'column', children: [], createdAt: new Date().toISOString() }); 
-                                         } 
-                                         if (block.children.length > colCount) { 
-                                             block.children = block.children.slice(0, colCount); 
-                                         }"
                                  class="grid grid-cols-3 gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]">
                                 <template x-for="(column, columnIndex) in (block.children || [])" :key="column.id">
                                     <div class="space-y-2">
                                         <div class="text-xs font-semibold text-gray-500 mb-2" x-text="'Spalte ' + (columnIndex + 1)"></div>
-                                        <div x-show="!column.children || column.children.length === 0" class="text-xs text-gray-400 italic mb-2 p-2 border border-dashed border-gray-300 rounded bg-gray-50">
-                                            Leer - Block hinzufügen
-                                        </div>
                                         <template x-for="(child, childIndex) in (column.children || [])" :key="child.id">
                                             <div 
                                             :class="{

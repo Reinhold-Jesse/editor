@@ -1,6 +1,7 @@
 // Block Management Functions - als Objekt organisiert
 import { Utils } from './utils.js';
 import { TableManagement } from './table-management.js';
+import { ChecklistManagement } from './checklist-management.js';
 import { BlockTypes } from './block-types.js';
 
 export const BlockManagement = {
@@ -26,6 +27,13 @@ export const BlockManagement = {
             block.imageUrl = '';
             block.imageAlt = '';
             block.imageTitle = '';
+        }
+        
+        // Initialize checklist data if it's a checklist
+        if (type === 'checklist') {
+            const checklistData = ChecklistManagement.initializeChecklist(blockIdCounter, 3);
+            block.checklistData = checklistData;
+            block.checklistData.lastItemIdCounter = checklistData.lastItemIdCounter;
         }
         
         // Initialize children array ONLY for container blocks
@@ -106,6 +114,18 @@ export const BlockManagement = {
             // Clean up table data if changing away from table type
             if (oldType === 'table' && newType !== 'table') {
                 delete block.tableData;
+            }
+            
+            // Initialize checklist data if changing to checklist type
+            if (newType === 'checklist' && oldType !== 'checklist') {
+                const checklistData = ChecklistManagement.initializeChecklist(blockId, 3);
+                block.checklistData = checklistData;
+                block.checklistData.lastItemIdCounter = checklistData.lastItemIdCounter;
+            }
+            
+            // Clean up checklist data if changing away from checklist type
+            if (oldType === 'checklist' && newType !== 'checklist') {
+                delete block.checklistData;
             }
             
             // Clean up column structure if changing away from column layouts
@@ -224,10 +244,15 @@ export const BlockManagement = {
                     if (!block.children) {
                         block.children = [];
                     }
+                } else if (block.type === 'checklist') {
+                    // Checklist-Blöcke: sollten KEINE children haben (verwenden checklistData.items)
+                    if (block.children && block.children.length > 0) {
+                        delete block.children;
+                    }
                 }
             } else {
                 // Entferne children Array von nicht-Container-Blöcken
-                // image, divider und andere void/non-container Blöcke sollten KEINE children haben
+                // image, divider, checklist und andere void/non-container Blöcke sollten KEINE children haben
                 if (block.children && block.children.length > 0) {
                     // Nur Container-Blöcke sollten children haben
                     delete block.children;

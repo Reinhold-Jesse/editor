@@ -85,6 +85,15 @@ export const BLOCK_TYPES = {
         isVoid: true,
         hasImageData: true,
         canHaveChildren: false
+    },
+    checklist: {
+        label: '☑️ Checkliste',
+        tag: 'div',
+        placeholder: '',
+        classes: 'space-y-2 p-4 border border-gray-300 rounded-lg',
+        isContainer: false,
+        canHaveChildren: false,
+        hasChecklistData: true
     }
 };
 

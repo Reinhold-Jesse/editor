@@ -5,6 +5,7 @@ import { ChildManagement } from './components/child-management.js';
 import { DragDrop } from './components/drag-drop.js';
 import { Storage } from './components/storage.js';
 import { TableManagement } from './components/table-management.js';
+import { ChecklistManagement } from './components/checklist-management.js';
 import { BLOCK_TYPES, BlockTypes } from './components/block-types.js';
 
 function blockEditor() {
@@ -837,6 +838,34 @@ function blockEditor() {
             TableManagement.toggleTableFooter(this.blocks, blockId);
         },
 
+        // Checklist Management Functions
+        addChecklistItem(blockId, position = 'bottom') {
+            const result = ChecklistManagement.addChecklistItem(this.blocks, blockId, this.blockIdCounter, position);
+            if (result) {
+                this.blockIdCounter = result.lastItemIdCounter + 1;
+            }
+        },
+
+        removeChecklistItem(blockId, itemIndex) {
+            ChecklistManagement.removeChecklistItem(this.blocks, blockId, itemIndex);
+        },
+
+        toggleChecklistItem(blockId, itemIndex) {
+            ChecklistManagement.toggleChecklistItem(this.blocks, blockId, itemIndex);
+        },
+
+        updateChecklistItemText(blockId, itemId, text) {
+            ChecklistManagement.updateChecklistItemText(this.blocks, blockId, itemId, text);
+        },
+
+        moveChecklistItemUp(blockId, itemIndex) {
+            ChecklistManagement.moveChecklistItemUp(this.blocks, blockId, itemIndex);
+        },
+
+        moveChecklistItemDown(blockId, itemIndex) {
+            ChecklistManagement.moveChecklistItemDown(this.blocks, blockId, itemIndex);
+        },
+
         getSelectedTableCell() {
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
@@ -1410,6 +1439,11 @@ function blockEditor() {
             selection.removeAllRanges();
             selection.addRange(this.selectedRange);
             
+            // Prüfe ob es ein Checklist-Eintrag ist
+            const checklistItemElement = selection.anchorNode ? 
+                (selection.anchorNode.nodeType === 3 ? selection.anchorNode.parentElement : selection.anchorNode).closest('[data-item-id]') : null;
+            const isChecklistItem = checklistItemElement !== null;
+            
             // Prüfe ob Formatierung bereits aktiv ist (Toggle-Verhalten)
             const isActive = document.queryCommandState(format);
             
@@ -1422,11 +1456,17 @@ function blockEditor() {
                 document.execCommand(format, false, null);
             }
             
-            // Aktualisiere Block-Inhalt
+            // Aktualisiere Block-Inhalt oder Checklist-Eintrag
             this.$nextTick(() => {
-                const { block } = this.findBlockById(this.selectedBlockId);
-                if (block) {
-                    this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                if (isChecklistItem) {
+                    const itemId = checklistItemElement.getAttribute('data-item-id');
+                    const blockId = checklistItemElement.getAttribute('data-block-id');
+                    this.updateChecklistItemText(blockId, itemId, checklistItemElement.innerHTML);
+                } else {
+                    const { block } = this.findBlockById(this.selectedBlockId);
+                    if (block) {
+                        this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                    }
                 }
                 // Aktualisiere selectedRange für weitere Formatierungen
                 const newSelection = window.getSelection();
@@ -1450,15 +1490,27 @@ function blockEditor() {
             selection.removeAllRanges();
             selection.addRange(this.selectedRange);
             
+            // Prüfe ob es ein Checklist-Eintrag ist
+            const checklistItemElement = selection.anchorNode ? 
+                (selection.anchorNode.nodeType === 3 ? selection.anchorNode.parentElement : selection.anchorNode).closest('[data-item-id]') : null;
+            const isChecklistItem = checklistItemElement !== null;
+            const targetElement = isChecklistItem ? checklistItemElement : element;
+            
             // Entferne alle Formatierungen
             document.execCommand('removeFormat', false, null);
             document.execCommand('unlink', false, null);
             
-            // Aktualisiere Block-Inhalt
+            // Aktualisiere Block-Inhalt oder Checklist-Eintrag
             this.$nextTick(() => {
-                const { block } = this.findBlockById(this.selectedBlockId);
-                if (block) {
-                    this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                if (isChecklistItem) {
+                    const itemId = checklistItemElement.getAttribute('data-item-id');
+                    const blockId = checklistItemElement.getAttribute('data-block-id');
+                    this.updateChecklistItemText(blockId, itemId, checklistItemElement.innerHTML);
+                } else {
+                    const { block } = this.findBlockById(this.selectedBlockId);
+                    if (block) {
+                        this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                    }
                 }
             });
             
@@ -1602,11 +1654,22 @@ function blockEditor() {
                 document.execCommand('createLink', false, this.linkInputUrl);
             }
             
-            // Aktualisiere Block-Inhalt
+            // Prüfe ob es ein Checklist-Eintrag ist
+            const checklistItemElement = selection.anchorNode ? 
+                (selection.anchorNode.nodeType === 3 ? selection.anchorNode.parentElement : selection.anchorNode).closest('[data-item-id]') : null;
+            const isChecklistItem = checklistItemElement !== null;
+            
+            // Aktualisiere Block-Inhalt oder Checklist-Eintrag
             this.$nextTick(() => {
-                const { block } = this.findBlockById(this.selectedBlockId);
-                if (block) {
-                    this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                if (isChecklistItem) {
+                    const itemId = checklistItemElement.getAttribute('data-item-id');
+                    const blockId = checklistItemElement.getAttribute('data-block-id');
+                    this.updateChecklistItemText(blockId, itemId, checklistItemElement.innerHTML);
+                } else {
+                    const { block } = this.findBlockById(this.selectedBlockId);
+                    if (block) {
+                        this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                    }
                 }
             });
             
@@ -1659,11 +1722,22 @@ function blockEditor() {
                 console.warn('Text alignment command not supported:', e);
             }
             
-            // Aktualisiere Block-Inhalt
+            // Prüfe ob es ein Checklist-Eintrag ist
+            const checklistItemElement = selection.anchorNode ? 
+                (selection.anchorNode.nodeType === 3 ? selection.anchorNode.parentElement : selection.anchorNode).closest('[data-item-id]') : null;
+            const isChecklistItem = checklistItemElement !== null;
+            
+            // Aktualisiere Block-Inhalt oder Checklist-Eintrag
             this.$nextTick(() => {
-                const { block } = this.findBlockById(this.selectedBlockId);
-                if (block) {
-                    this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                if (isChecklistItem) {
+                    const itemId = checklistItemElement.getAttribute('data-item-id');
+                    const blockId = checklistItemElement.getAttribute('data-block-id');
+                    this.updateChecklistItemText(blockId, itemId, checklistItemElement.innerHTML);
+                } else {
+                    const { block } = this.findBlockById(this.selectedBlockId);
+                    if (block) {
+                        this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                    }
                 }
             });
             
@@ -1749,11 +1823,22 @@ function blockEditor() {
                 }
             }
             
-            // Aktualisiere Block-Inhalt
+            // Prüfe ob es ein Checklist-Eintrag ist
+            const checklistItemElement = selection.anchorNode ? 
+                (selection.anchorNode.nodeType === 3 ? selection.anchorNode.parentElement : selection.anchorNode).closest('[data-item-id]') : null;
+            const isChecklistItem = checklistItemElement !== null;
+            
+            // Aktualisiere Block-Inhalt oder Checklist-Eintrag
             this.$nextTick(() => {
-                const { block } = this.findBlockById(this.selectedBlockId);
-                if (block) {
-                    this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                if (isChecklistItem) {
+                    const itemId = checklistItemElement.getAttribute('data-item-id');
+                    const blockId = checklistItemElement.getAttribute('data-block-id');
+                    this.updateChecklistItemText(blockId, itemId, checklistItemElement.innerHTML);
+                } else {
+                    const { block } = this.findBlockById(this.selectedBlockId);
+                    if (block) {
+                        this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                    }
                 }
             });
             
@@ -1775,6 +1860,11 @@ function blockEditor() {
             selection.removeAllRanges();
             selection.addRange(this.selectedRange);
             
+            // Prüfe ob es ein Checklist-Eintrag ist
+            const checklistItemElement = selection.anchorNode ? 
+                (selection.anchorNode.nodeType === 3 ? selection.anchorNode.parentElement : selection.anchorNode).closest('[data-item-id]') : null;
+            const isChecklistItem = checklistItemElement !== null;
+            
             // Wende Hintergrundfarbe an
             try {
                 document.execCommand('backColor', false, color);
@@ -1793,11 +1883,17 @@ function blockEditor() {
                 }
             }
             
-            // Aktualisiere Block-Inhalt
+            // Aktualisiere Block-Inhalt oder Checklist-Eintrag
             this.$nextTick(() => {
-                const { block } = this.findBlockById(this.selectedBlockId);
-                if (block) {
-                    this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                if (isChecklistItem) {
+                    const itemId = checklistItemElement.getAttribute('data-item-id');
+                    const blockId = checklistItemElement.getAttribute('data-block-id');
+                    this.updateChecklistItemText(blockId, itemId, checklistItemElement.innerHTML);
+                } else {
+                    const { block } = this.findBlockById(this.selectedBlockId);
+                    if (block) {
+                        this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                    }
                 }
             });
             

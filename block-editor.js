@@ -43,7 +43,6 @@ function blockEditor() {
         floatingToolbarPosition: { top: 0, left: 0 },
         selectedText: '',
         selectedRange: null,
-        selectedBlockId: null,
         showLinkInputModal: false,
         linkInputUrl: '',
         editingLink: null,
@@ -644,6 +643,7 @@ function blockEditor() {
             this.importJSONValid = false;
             this.importJSONError = null;
             this.importJSONPreview = null;
+            if (window.modalHelpers) window.modalHelpers.openModal();
         },
 
         closeImportModal() {
@@ -652,6 +652,7 @@ function blockEditor() {
             this.importJSONValid = false;
             this.importJSONError = null;
             this.importJSONPreview = null;
+            if (window.modalHelpers) window.modalHelpers.closeModal();
         },
 
         validateImportJSON() {
@@ -730,12 +731,14 @@ function blockEditor() {
             const json = JSON.stringify(this.blocks, null, 2);
             this.exportJSONText = json;
             this.showExportModal = true;
+            if (window.modalHelpers) window.modalHelpers.openModal();
         },
 
         closeExportModal() {
             this.showExportModal = false;
             this.exportJSONText = '';
             this.exportCopied = false;
+            if (window.modalHelpers) window.modalHelpers.closeModal();
         },
 
         async copyExportJSON() {
@@ -895,12 +898,14 @@ function blockEditor() {
             this.newThemeName = '';
             this.saveThemeError = null;
             this.showSaveThemeModal = true;
+            if (window.modalHelpers) window.modalHelpers.openModal();
         },
 
         closeSaveThemeModal() {
             this.showSaveThemeModal = false;
             this.newThemeName = '';
             this.saveThemeError = null;
+            if (window.modalHelpers) window.modalHelpers.closeModal();
         },
 
         async saveTheme() {
@@ -937,6 +942,8 @@ function blockEditor() {
                 showExtend: true
             };
             this.showConfirmModal = true;
+            if (window.modalHelpers) window.modalHelpers.openModal();
+            if (window.modalHelpers) window.modalHelpers.openModal();
         },
 
         async extendTheme(themeName) {
@@ -1055,6 +1062,7 @@ function blockEditor() {
                 onCancel: () => this.closeConfirmModal()
             };
             this.showConfirmModal = true;
+            if (window.modalHelpers) window.modalHelpers.openModal();
         },
 
         async deleteTheme(themeName) {
@@ -1078,6 +1086,7 @@ function blockEditor() {
             this.editThemeName = themeName;
             this.editThemeError = null;
             this.showEditThemeModal = true;
+            if (window.modalHelpers) window.modalHelpers.openModal();
         },
 
         closeEditThemeModal() {
@@ -1085,6 +1094,7 @@ function blockEditor() {
             this.editThemeName = '';
             this.editThemeOriginalName = '';
             this.editThemeError = null;
+            if (window.modalHelpers) window.modalHelpers.closeModal();
         },
 
         async updateTheme() {
@@ -1111,10 +1121,12 @@ function blockEditor() {
 
         openImportThemeModal() {
             this.showImportThemeModal = true;
+            if (window.modalHelpers) window.modalHelpers.openModal();
         },
 
         closeImportThemeModal() {
             this.showImportThemeModal = false;
+            if (window.modalHelpers) window.modalHelpers.closeModal();
         },
 
         async handleThemeFileImport(event) {
@@ -1143,6 +1155,7 @@ function blockEditor() {
                     showExtend: true
                 };
                 this.showConfirmModal = true;
+            if (window.modalHelpers) window.modalHelpers.openModal();
             } catch (error) {
                 this.showNotification('Fehler beim Importieren des Themes: ' + error.message, 'error');
             }
@@ -1174,6 +1187,7 @@ function blockEditor() {
                 onExtend: null,
                 showExtend: false
             };
+            if (window.modalHelpers) window.modalHelpers.closeModal();
         },
 
         confirmAction() {
@@ -1240,6 +1254,7 @@ function blockEditor() {
                 this.imageSettingsTitle = block.imageTitle || '';
                 this.imageSettingsActiveTab = 'upload';
                 this.showImageSettingsModal = true;
+                if (window.modalHelpers) window.modalHelpers.openModal();
             }
         },
 
@@ -1600,6 +1615,7 @@ function blockEditor() {
             
             this.linkInputUrl = '';
             this.showLinkInputModal = true;
+            if (window.modalHelpers) window.modalHelpers.openModal();
         },
 
         closeLinkInputModal() {
@@ -1607,6 +1623,7 @@ function blockEditor() {
             this.linkInputUrl = '';
             this.editingLink = null;
             this.editingLinkElement = null;
+            if (window.modalHelpers) window.modalHelpers.closeModal();
         },
 
         applyLinkToSelection() {

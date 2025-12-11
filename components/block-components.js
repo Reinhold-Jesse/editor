@@ -182,7 +182,7 @@ export function cleanupBlock(block, oldType) {
 /**
  * Gibt die passende Block-Komponente für einen Block-Typ zurück
  */
-function getBlockComponent(blockType) {
+export function getBlockComponent(blockType) {
     // Spezifische Komponenten
     if (blockType === 'image') {
         return BlockComponents.image;

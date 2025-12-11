@@ -1,5 +1,5 @@
 // JSON Renderer - Zentrale Funktion für das Rendering aller Elemente aus dem JSON
-import { BlockComponents } from './block-components.js';
+import { BlockComponents, getBlockComponent } from './block-components.js';
 import { BlockManagement } from './block-management.js';
 import { BLOCK_TYPES } from './block-types.js';
 
@@ -43,21 +43,7 @@ export function renderJSONBlocks(blocks, blockIdCounter = 0) {
         }
 
         // Initialisiere Block-Komponente
-        let component = null;
-        if (block.type === 'image') {
-            component = BlockComponents.image;
-        } else if (block.type === 'table') {
-            component = BlockComponents.table;
-        } else if (block.type === 'checklist') {
-            component = BlockComponents.checklist;
-        } else if (block.type === 'divider') {
-            component = BlockComponents.divider;
-        } else if (block.type === 'twoColumn' || block.type === 'threeColumn' || block.type === 'column') {
-            component = BlockComponents.container;
-        } else {
-            component = BlockComponents.default;
-        }
-
+        const component = getBlockComponent(block.type);
         if (component) {
             block = component.ensureInitialized(block, blockIdCounter);
         }

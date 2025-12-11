@@ -9,6 +9,20 @@
         import './block-editor.js';
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.2/dist/cdn.min.js"></script>
+    <script>
+        // Wiederverwendbare Modal-Helper-Funktionen
+        document.addEventListener('alpine:init', () => {
+            // Helper für Modal-Overflow-Management
+            window.modalHelpers = {
+                openModal() {
+                    document.body.style.overflow = 'hidden';
+                },
+                closeModal() {
+                    document.body.style.overflow = '';
+                }
+            };
+        });
+    </script>
     <style>
         [contenteditable="true"]:focus {
             outline: none;

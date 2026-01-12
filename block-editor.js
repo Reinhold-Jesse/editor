@@ -656,16 +656,6 @@ function blockEditor() {
             this.showNotification('Daten erfolgreich gespeichert!', 'success');
         },
 
-        loadFromJSON() {
-            const result = Storage.loadFromJSON(this.blocks, this.blockIdCounter, this.$nextTick.bind(this), Utils.initAllBlockContents);
-            if (result.blocks) {
-                this.selectedBlockId = null;
-                this.blockIdCounter = result.blockIdCounter;
-                // Cache komplett leeren nach JSON-Laden (DOM wurde komplett neu aufgebaut)
-                this.clearElementCache();
-            }
-        },
-
         importJSON() {
             this.showImportModal = true;
             this.importJSONText = '';
@@ -1760,6 +1750,286 @@ function blockEditor() {
          */
         renderImageChild(child, parentBlock, childIndex) {
             const component = getBlockComponent('image');
+            if (component && component.renderChildHTML) {
+                return component.renderChildHTML(child, {
+                    block: parentBlock,
+                    childIndex: childIndex,
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Paragraph-Block mit allen Optionen
+         * @param {object} block - Der Block-Objekt
+         * @returns {string} HTML-String für den Block
+         */
+        renderParagraphBlock(block) {
+            const component = getBlockComponent('paragraph');
+            if (component && component.renderHTML) {
+                return component.renderHTML(block, {
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId,
+                    childBlockTypes: this.childBlockTypes,
+                    index: this.blocks.findIndex(b => b.id === block.id)
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Child-Paragraph-Block
+         * @param {object} child - Der Child-Block-Objekt
+         * @param {object} parentBlock - Der Parent-Block-Objekt
+         * @param {number} childIndex - Der Index des Child-Blocks
+         * @returns {string} HTML-String für den Child-Block
+         */
+        renderParagraphChild(child, parentBlock, childIndex) {
+            const component = getBlockComponent('paragraph');
+            if (component && component.renderChildHTML) {
+                return component.renderChildHTML(child, {
+                    block: parentBlock,
+                    childIndex: childIndex,
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Heading1-Block mit allen Optionen
+         * @param {object} block - Der Block-Objekt
+         * @returns {string} HTML-String für den Block
+         */
+        renderHeading1Block(block) {
+            const component = getBlockComponent('heading1');
+            if (component && component.renderHTML) {
+                return component.renderHTML(block, {
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId,
+                    childBlockTypes: this.childBlockTypes,
+                    index: this.blocks.findIndex(b => b.id === block.id)
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Heading2-Block mit allen Optionen
+         * @param {object} block - Der Block-Objekt
+         * @returns {string} HTML-String für den Block
+         */
+        renderHeading2Block(block) {
+            const component = getBlockComponent('heading2');
+            if (component && component.renderHTML) {
+                return component.renderHTML(block, {
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId,
+                    childBlockTypes: this.childBlockTypes,
+                    index: this.blocks.findIndex(b => b.id === block.id)
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Heading3-Block mit allen Optionen
+         * @param {object} block - Der Block-Objekt
+         * @returns {string} HTML-String für den Block
+         */
+        renderHeading3Block(block) {
+            const component = getBlockComponent('heading3');
+            if (component && component.renderHTML) {
+                return component.renderHTML(block, {
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId,
+                    childBlockTypes: this.childBlockTypes,
+                    index: this.blocks.findIndex(b => b.id === block.id)
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Child-Heading1-Block
+         * @param {object} child - Der Child-Block-Objekt
+         * @param {object} parentBlock - Der Parent-Block-Objekt
+         * @param {number} childIndex - Der Index des Child-Blocks
+         * @returns {string} HTML-String für den Child-Block
+         */
+        renderHeading1Child(child, parentBlock, childIndex) {
+            const component = getBlockComponent('heading1');
+            if (component && component.renderChildHTML) {
+                return component.renderChildHTML(child, {
+                    block: parentBlock,
+                    childIndex: childIndex,
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Child-Heading2-Block
+         * @param {object} child - Der Child-Block-Objekt
+         * @param {object} parentBlock - Der Parent-Block-Objekt
+         * @param {number} childIndex - Der Index des Child-Blocks
+         * @returns {string} HTML-String für den Child-Block
+         */
+        renderHeading2Child(child, parentBlock, childIndex) {
+            const component = getBlockComponent('heading2');
+            if (component && component.renderChildHTML) {
+                return component.renderChildHTML(child, {
+                    block: parentBlock,
+                    childIndex: childIndex,
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Child-Heading3-Block
+         * @param {object} child - Der Child-Block-Objekt
+         * @param {object} parentBlock - Der Parent-Block-Objekt
+         * @param {number} childIndex - Der Index des Child-Blocks
+         * @returns {string} HTML-String für den Child-Block
+         */
+        renderHeading3Child(child, parentBlock, childIndex) {
+            const component = getBlockComponent('heading3');
+            if (component && component.renderChildHTML) {
+                return component.renderChildHTML(child, {
+                    block: parentBlock,
+                    childIndex: childIndex,
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Code-Block mit allen Optionen
+         * @param {object} block - Der Block-Objekt
+         * @returns {string} HTML-String für den Block
+         */
+        renderCodeBlock(block) {
+            const component = getBlockComponent('code');
+            if (component && component.renderHTML) {
+                return component.renderHTML(block, {
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId,
+                    childBlockTypes: this.childBlockTypes,
+                    index: this.blocks.findIndex(b => b.id === block.id)
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Child-Code-Block
+         * @param {object} child - Der Child-Block-Objekt
+         * @param {object} parentBlock - Der Parent-Block-Objekt
+         * @param {number} childIndex - Der Index des Child-Blocks
+         * @returns {string} HTML-String für den Child-Block
+         */
+        renderCodeChild(child, parentBlock, childIndex) {
+            const component = getBlockComponent('code');
+            if (component && component.renderChildHTML) {
+                return component.renderChildHTML(child, {
+                    block: parentBlock,
+                    childIndex: childIndex,
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Quote-Block mit allen Optionen
+         * @param {object} block - Der Block-Objekt
+         * @returns {string} HTML-String für den Block
+         */
+        renderQuoteBlock(block) {
+            const component = getBlockComponent('quote');
+            if (component && component.renderHTML) {
+                return component.renderHTML(block, {
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId,
+                    childBlockTypes: this.childBlockTypes,
+                    index: this.blocks.findIndex(b => b.id === block.id)
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Child-Quote-Block
+         * @param {object} child - Der Child-Block-Objekt
+         * @param {object} parentBlock - Der Parent-Block-Objekt
+         * @param {number} childIndex - Der Index des Child-Blocks
+         * @returns {string} HTML-String für den Child-Block
+         */
+        renderQuoteChild(child, parentBlock, childIndex) {
+            const component = getBlockComponent('quote');
+            if (component && component.renderChildHTML) {
+                return component.renderChildHTML(child, {
+                    block: parentBlock,
+                    childIndex: childIndex,
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Divider-Block mit allen Optionen
+         * @param {object} block - Der Block-Objekt
+         * @returns {string} HTML-String für den Block
+         */
+        renderDividerBlock(block) {
+            const component = getBlockComponent('divider');
+            if (component && component.renderHTML) {
+                return component.renderHTML(block, {
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId,
+                    childBlockTypes: this.childBlockTypes,
+                    index: this.blocks.findIndex(b => b.id === block.id)
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Child-Divider-Block
+         * @param {object} child - Der Child-Block-Objekt
+         * @param {object} parentBlock - Der Parent-Block-Objekt
+         * @param {number} childIndex - Der Index des Child-Blocks
+         * @returns {string} HTML-String für den Child-Block
+         */
+        renderDividerChild(child, parentBlock, childIndex) {
+            const component = getBlockComponent('divider');
             if (component && component.renderChildHTML) {
                 return component.renderChildHTML(child, {
                     block: parentBlock,

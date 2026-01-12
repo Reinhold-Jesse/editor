@@ -41,7 +41,6 @@
 
 ### ✅ `components/storage.js`
 - `saveToJSON()` - In localStorage speichern
-- `loadFromJSON()` - Aus localStorage laden
 - `importJSON()` - JSON importieren
 - `exportJSON()` - JSON exportieren
 

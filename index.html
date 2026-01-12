@@ -287,18 +287,12 @@
                                     @click.stop
                                     class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 >
-                                    <option value="paragraph">📝 Paragraph</option>
-                                    <option value="heading1">H1 Überschrift</option>
-                                    <option value="heading2">H2 Überschrift</option>
-                                    <option value="heading3">H3 Überschrift</option>
-                                    <option value="code">💻 Code Block</option>
-                                    <option value="quote">💬 Zitat</option>
-                                    <option value="image">🖼️ Bild</option>
-                                    <option value="divider">➖ Trennlinie</option>
-                                    <option value="twoColumn">📊 Zwei Spalten</option>
-                                    <option value="threeColumn">📊 Drei Spalten</option>
-                                    <option value="table">📋 Tabelle</option>
-                                    <option value="checklist">☑️ Checkliste</option>
+                                    <template x-for="(config, blockType) in childBlockTypes" :key="blockType">
+                                        <option :value="blockType">
+                                            <span x-text="config.icon ? config.icon + ' ' : ''"></span>
+                                            <span x-text="config.label || blockType"></span>
+                                        </option>
+                                    </template>
                                 </select>
                             </div>
 
@@ -316,7 +310,10 @@
                                     placeholder="z.B. text-red-500 bg-yellow-200 p-4 rounded-lg"
                                     class="w-full p-2 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 />
-                                <div class="mt-2 flex gap-2">
+                                <div 
+                                    class="mt-2 flex gap-2"
+                                    x-show="block.classes && block.classes.trim().length > 0"
+                                >
                                     <button 
                                         @click.stop="clearBlockClasses(block.id)"
                                         class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
@@ -342,7 +339,10 @@
                                     placeholder="z.B. color: red; background-color: yellow; padding: 10px;"
                                     class="w-full p-2 border border-gray-300 rounded-lg font-mono text-sm h-32 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 ></textarea>
-                                <div class="mt-2 flex gap-2">
+                                <div 
+                                    class="mt-2 flex gap-2"
+                                    x-show="block.style && block.style.trim().length > 0"
+                                >
                                     <button 
                                         @click.stop="clearBlockStyle(block.id)"
                                         class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
@@ -577,12 +577,6 @@
                             Speichern
                         </button>
                         <button 
-                            @click="loadFromJSON()" 
-                            class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                        >
-                            Laden
-                        </button>
-                        <button 
                             @click="exportJSON()" 
                             class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                         >
@@ -741,134 +735,36 @@
                         <!-- Block Content -->
                         <div class="block-content">
                             <!-- Paragraph -->
-                            <div x-show="block.type === 'paragraph'">
-                                <div 
-                                    :data-block-id="block.id"
-                                    :style="block.style || ''"
-                                    :class="['block-placeholder min-h-[1.5rem]', block.classes || '']"
-                                    contenteditable="true"
-                                    data-placeholder="Schreibe einen Absatz..."
-                                    x-init="$nextTick(() => initBlockContent($el, block))"
-                                    @input="updateBlockContent(block.id, $event.target.innerHTML)"
-                                    @keydown.enter.prevent="addBlockAfter(block.id, 'paragraph')"
-                                    @keydown.backspace="handleBackspace(block.id, $event)"
-                                    @focus="initBlockContent($event.target, block)"
-                                ></div>
-                            </div>
+                            <!-- Paragraph Block - Verwendet zentrale Rendering-Methode aus paragraph.js -->
+                            <div x-show="block.type === 'paragraph'" x-html="renderParagraphBlock(block)"></div>
 
                             <!-- Heading 1 -->
-                            <div x-show="block.type === 'heading1'">
-                                <h1 
-                                    :data-block-id="block.id"
-                                    :style="block.style || ''"
-                                    :class="['block-placeholder text-3xl font-bold mb-2 min-h-[2rem]', block.classes || '']"
-                                    contenteditable="true"
-                                    data-placeholder="Überschrift 1..."
-                                    x-init="$nextTick(() => initBlockContent($el, block))"
-                                    @input="updateBlockContent(block.id, $event.target.innerHTML)"
-                                    @keydown.enter.prevent="addBlockAfter(block.id, 'paragraph')"
-                                    @keydown.backspace="handleBackspace(block.id, $event)"
-                                    @focus="initBlockContent($event.target, block)"
-                                ></h1>
-                            </div>
+                            <!-- Heading1 Block - Verwendet zentrale Rendering-Methode aus heading.js -->
+                            <div x-show="block.type === 'heading1'" x-html="renderHeading1Block(block)"></div>
 
                             <!-- Heading 2 -->
-                            <div x-show="block.type === 'heading2'">
-                                <h2 
-                                    :data-block-id="block.id"
-                                    :style="block.style || ''"
-                                    :class="['block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]', block.classes || '']"
-                                    contenteditable="true"
-                                    data-placeholder="Überschrift 2..."
-                                    x-init="$nextTick(() => initBlockContent($el, block))"
-                                    @input="updateBlockContent(block.id, $event.target.innerHTML)"
-                                    @keydown.enter.prevent="addBlockAfter(block.id, 'paragraph')"
-                                    @keydown.backspace="handleBackspace(block.id, $event)"
-                                    @focus="initBlockContent($event.target, block)"
-                                ></h2>
-                            </div>
+                            <!-- Heading2 Block - Verwendet zentrale Rendering-Methode aus heading.js -->
+                            <div x-show="block.type === 'heading2'" x-html="renderHeading2Block(block)"></div>
 
                             <!-- Heading 3 -->
-                            <div x-show="block.type === 'heading3'">
-                                <h3 
-                                    :data-block-id="block.id"
-                                    :style="block.style || ''"
-                                    :class="['block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]', block.classes || '']"
-                                    contenteditable="true"
-                                    data-placeholder="Überschrift 3..."
-                                    x-init="$nextTick(() => initBlockContent($el, block))"
-                                    @input="updateBlockContent(block.id, $event.target.innerHTML)"
-                                    @keydown.enter.prevent="addBlockAfter(block.id, 'paragraph')"
-                                    @keydown.backspace="handleBackspace(block.id, $event)"
-                                    @focus="initBlockContent($event.target, block)"
-                                ></h3>
-                            </div>
+                            <!-- Heading3 Block - Verwendet zentrale Rendering-Methode aus heading.js -->
+                            <div x-show="block.type === 'heading3'" x-html="renderHeading3Block(block)"></div>
 
                             <!-- Code Block -->
-                            <div x-show="block.type === 'code'">
-                                <pre 
-                                    :data-block-id="block.id"
-                                    :style="block.style || ''"
-                                    :class="['block-placeholder bg-gray-900 text-green-400 p-4 rounded font-mono text-sm min-h-[4rem] whitespace-pre-wrap', block.classes || '']"
-                                    contenteditable="true"
-                                    data-placeholder="Schreibe Code..."
-                                    x-init="$nextTick(() => initBlockContent($el, block, true))"
-                                    @input="updateBlockContent(block.id, $event.target.textContent)"
-                                    @keydown.enter.prevent="addBlockAfter(block.id, 'paragraph')"
-                                    @keydown.backspace="handleBackspace(block.id, $event)"
-                                    @focus="initBlockContent($event.target, block, true)"
-                                ></pre>
-                            </div>
+                            <!-- Code Block - Verwendet zentrale Rendering-Methode aus code.js -->
+                            <div x-show="block.type === 'code'" x-html="renderCodeBlock(block)"></div>
 
                             <!-- Quote -->
-                            <div x-show="block.type === 'quote'">
-                                <blockquote 
-                                    :data-block-id="block.id"
-                                    :style="block.style || ''"
-                                    :class="['block-placeholder border-l-4 border-blue-500 pl-4 italic text-gray-700 min-h-[1.5rem]', block.classes || '']"
-                                    contenteditable="true"
-                                    data-placeholder="Zitat..."
-                                    x-init="$nextTick(() => initBlockContent($el, block))"
-                                    @input="updateBlockContent(block.id, $event.target.innerHTML)"
-                                    @keydown.enter.prevent="addBlockAfter(block.id, 'paragraph')"
-                                    @keydown.backspace="handleBackspace(block.id, $event)"
-                                    @focus="initBlockContent($event.target, block)"
-                                ></blockquote>
-                            </div>
+                            <!-- Quote Block - Verwendet zentrale Rendering-Methode aus quote.js -->
+                            <div x-show="block.type === 'quote'" x-html="renderQuoteBlock(block)"></div>
 
                             <!-- Image -->
-                            <div x-show="block.type === 'image'" class="relative w-full">
-                                <img 
-                                    x-show="block.imageUrl"
-                                    :data-block-id="block.id"
-                                    :src="block.imageUrl"
-                                    :alt="block.imageAlt || ''"
-                                    :title="block.imageTitle || ''"
-                                    :style="block.style || ''"
-                                    :class="['w-full h-auto rounded', block.classes || '']"
-                                    @click.stop="openImageSettingsModal(block.id)"
-                                    class="cursor-pointer"
-                                />
-                                <div 
-                                    x-show="!block.imageUrl"
-                                    :data-block-id="block.id"
-                                    class="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 bg-gray-50 min-h-[200px] cursor-pointer hover:bg-gray-100 transition-colors w-full"
-                                    @click.stop="openImageSettingsModal(block.id)"
-                                >
-                                    <div class="text-center text-gray-500">
-                                        <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                        </svg>
-                                        <p class="text-sm font-medium">Bild auswählen</p>
-                                        <p class="text-xs text-gray-400 mt-1">Klicken Sie hier, um ein Bild hinzuzufügen</p>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- Image Block - Verwendet zentrale Rendering-Methode aus image.js -->
+                            <div x-show="block.type === 'image'" x-html="renderImageBlock(block)"></div>
 
                             <!-- Divider -->
-                            <div x-show="block.type === 'divider'">
-                                <hr class="border-t-2 border-gray-300 my-4">
-                            </div>
+                            <!-- Divider Block - Verwendet zentrale Rendering-Methode aus divider.js -->
+                            <div x-show="block.type === 'divider'" x-html="renderDividerBlock(block)"></div>
 
                             <!-- Link -->
                             <!-- Link Block - Verwendet zentrale Rendering-Methode aus link.js -->
@@ -902,50 +798,20 @@
                                                 <button @click.stop="removeChildFromColumn(block.id, columnIndex, childIndex)" class="p-1 bg-red-500 text-white rounded shadow hover:bg-red-600" title="Löschen">×</button>
                                             </div>
                                             <div class="block-content">
-                                                <div x-show="child.type === 'paragraph'">
-                                                    <div :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder min-h-[1.5rem] text-sm', child.classes || '']" contenteditable="true" data-placeholder="Inhalt..." x-init="$nextTick(() => initBlockContent($el, child))" @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></div>
-                                                </div>
-                                                <div x-show="child.type === 'heading1'">
-                                                    <h1 :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]', child.classes || '']" contenteditable="true" data-placeholder="Überschrift..." x-init="$nextTick(() => initBlockContent($el, child))" @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h1>
-                                                </div>
-                                                <div x-show="child.type === 'heading2'">
-                                                    <h2 :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]', child.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h2>
-                                                </div>
-                                                <div x-show="child.type === 'heading3'">
-                                                    <h3 :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder text-lg font-bold mb-2 min-h-[1.5rem]', child.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h3>
-                                                </div>
-                                                <div x-show="child.type === 'code'">
-                                                    <pre :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder bg-gray-900 text-green-400 p-3 rounded font-mono text-xs min-h-[3rem] whitespace-pre-wrap', child.classes || '']" contenteditable="true" data-placeholder="Code..." @input="updateBlockContent(child.id, $event.target.textContent)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child, true)"></pre>
-                                                </div>
-                                                <div x-show="child.type === 'quote'">
-                                                    <blockquote :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder border-l-4 border-blue-500 pl-3 italic text-gray-700 min-h-[1.5rem] text-sm', child.classes || '']" contenteditable="true" data-placeholder="Zitat..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></blockquote>
-                                                </div>
-                                                <div x-show="child.type === 'image'" class="relative w-full">
-                                                    <img 
-                                                        x-show="child.imageUrl"
-                                                        :data-block-id="child.id"
-                                                        :src="child.imageUrl"
-                                                        :alt="child.imageAlt || ''"
-                                                        :title="child.imageTitle || ''"
-                                                        :style="child.style || ''"
-                                                        :class="['w-full h-auto rounded', child.classes || '']"
-                                                        @click.stop="openImageSettingsModal(child.id)"
-                                                        class="cursor-pointer"
-                                                    />
-                                                    <div 
-                                                        x-show="!child.imageUrl"
-                                                        :data-block-id="child.id"
-                                                        class="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 min-h-[150px] cursor-pointer hover:bg-gray-100 transition-colors w-full"
-                                                        @click.stop="openImageSettingsModal(child.id)"
-                                                    >
-                                                        <div class="text-center text-gray-500">
-                                                            <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                                            </svg>
-                                                            <p class="text-xs font-medium">Bild auswählen</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                <!-- Paragraph in Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus paragraph.js -->
+                                                <div x-show="child.type === 'paragraph'" x-html="renderParagraphChild(child, column, childIndex)"></div>
+                                                <!-- Heading1 in Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus heading.js -->
+                                                <div x-show="child.type === 'heading1'" x-html="renderHeading1Child(child, column, childIndex)"></div>
+                                                <!-- Heading2 in Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus heading.js -->
+                                                <div x-show="child.type === 'heading2'" x-html="renderHeading2Child(child, column, childIndex)"></div>
+                                                <!-- Heading3 in Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus heading.js -->
+                                                <div x-show="child.type === 'heading3'" x-html="renderHeading3Child(child, column, childIndex)"></div>
+                                                <!-- Code in Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus code.js -->
+                                                <div x-show="child.type === 'code'" x-html="renderCodeChild(child, column, childIndex)"></div>
+                                                <!-- Quote in Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus quote.js -->
+                                                <div x-show="child.type === 'quote'" x-html="renderQuoteChild(child, column, childIndex)"></div>
+                                                <!-- Image in Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus image.js -->
+                                                <div x-show="child.type === 'image'" x-html="renderImageChild(child, column, childIndex)"></div>
                                                 <!-- Link in Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus link.js -->
                                                 <div x-show="child.type === 'link'" x-html="renderLinkChild(child, column, childIndex)"></div>
                                                 <!-- Checklist in Spalte (twoColumn) -->
@@ -1050,50 +916,20 @@
                                                                             <button @click.stop="removeChildFromColumn(child.id, nestedColumnIndex, nestedChildIndex)" class="p-0.5 bg-red-500 text-white rounded shadow hover:bg-red-600 text-xs" title="Löschen">×</button>
                                                                         </div>
                                                                         <div class="block-content">
-                                                                            <div x-show="nestedChild.type === 'paragraph'">
-                                                                                <div :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder min-h-[1rem] text-xs', nestedChild.classes || '']" contenteditable="true" data-placeholder="Inhalt..." x-init="$nextTick(() => initBlockContent($el, nestedChild))" @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></div>
-                                                                            </div>
-                                                                            <div x-show="nestedChild.type === 'heading1'">
-                                                                                <h1 :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder text-lg font-bold mb-1 min-h-[1.25rem]', nestedChild.classes || '']" contenteditable="true" data-placeholder="Überschrift..." x-init="$nextTick(() => initBlockContent($el, nestedChild))" @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></h1>
-                                                                            </div>
-                                                                            <div x-show="nestedChild.type === 'heading2'">
-                                                                                <h2 :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder text-base font-bold mb-1 min-h-[1rem]', nestedChild.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></h2>
-                                                                            </div>
-                                                                            <div x-show="nestedChild.type === 'heading3'">
-                                                                                <h3 :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder text-sm font-bold mb-1 min-h-[1rem]', nestedChild.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></h3>
-                                                                            </div>
-                                                                            <div x-show="nestedChild.type === 'code'">
-                                                                                <pre :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder bg-gray-900 text-green-400 p-2 rounded font-mono text-xs min-h-[2rem] whitespace-pre-wrap', nestedChild.classes || '']" contenteditable="true" data-placeholder="Code..." @input="updateBlockContent(nestedChild.id, $event.target.textContent)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild, true)"></pre>
-                                                                            </div>
-                                                                            <div x-show="nestedChild.type === 'quote'">
-                                                                                <blockquote :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder border-l-4 border-blue-500 pl-2 italic text-gray-700 min-h-[1rem] text-xs', nestedChild.classes || '']" contenteditable="true" data-placeholder="Zitat..." @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></blockquote>
-                                                                            </div>
-                                                                            <div x-show="nestedChild.type === 'image'" class="relative w-full">
-                                                                                <img 
-                                                                                    x-show="nestedChild.imageUrl"
-                                                                                    :data-block-id="nestedChild.id"
-                                                                                    :src="nestedChild.imageUrl"
-                                                                                    :alt="nestedChild.imageAlt || ''"
-                                                                                    :title="nestedChild.imageTitle || ''"
-                                                                                    :style="nestedChild.style || ''"
-                                                                                    :class="['w-full h-auto rounded', nestedChild.classes || '']"
-                                                                                    @click.stop="openImageSettingsModal(nestedChild.id)"
-                                                                                    class="cursor-pointer"
-                                                                                />
-                                                                                <div 
-                                                                                    x-show="!nestedChild.imageUrl"
-                                                                                    :data-block-id="nestedChild.id"
-                                                                                    class="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 min-h-[100px] cursor-pointer hover:bg-gray-100 transition-colors w-full"
-                                                                                    @click.stop="openImageSettingsModal(nestedChild.id)"
-                                                                                >
-                                                                                    <div class="text-center text-gray-500">
-                                                                                        <svg class="w-6 h-6 mx-auto mb-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                                                                        </svg>
-                                                                                        <p class="text-xs font-medium">Bild</p>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
+                                                                            <!-- Paragraph in verschachtelter Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus paragraph.js -->
+                                                                            <div x-show="nestedChild.type === 'paragraph'" x-html="renderParagraphChild(nestedChild, nestedColumn, nestedChildIndex)"></div>
+                                                                            <!-- Heading1 in verschachtelter Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus heading.js -->
+                                                                            <div x-show="nestedChild.type === 'heading1'" x-html="renderHeading1Child(nestedChild, nestedColumn, nestedChildIndex)"></div>
+                                                                            <!-- Heading2 in verschachtelter Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus heading.js -->
+                                                                            <div x-show="nestedChild.type === 'heading2'" x-html="renderHeading2Child(nestedChild, nestedColumn, nestedChildIndex)"></div>
+                                                                            <!-- Heading3 in verschachtelter Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus heading.js -->
+                                                                            <div x-show="nestedChild.type === 'heading3'" x-html="renderHeading3Child(nestedChild, nestedColumn, nestedChildIndex)"></div>
+                                                                            <!-- Code in verschachtelter Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus code.js -->
+                                                                            <div x-show="nestedChild.type === 'code'" x-html="renderCodeChild(nestedChild, nestedColumn, nestedChildIndex)"></div>
+                                                                            <!-- Quote in verschachtelter Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus quote.js -->
+                                                                            <div x-show="nestedChild.type === 'quote'" x-html="renderQuoteChild(nestedChild, nestedColumn, nestedChildIndex)"></div>
+                                                                            <!-- Image in verschachtelter Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus image.js -->
+                                                                            <div x-show="nestedChild.type === 'image'" x-html="renderImageChild(nestedChild, nestedColumn, nestedChildIndex)"></div>
                                                                         </div>
                                                                     </div>
                                                                 </template>
@@ -1137,50 +973,20 @@
                                                                             <button @click.stop="removeChildFromColumn(child.id, nestedColumnIndex, nestedChildIndex)" class="p-0.5 bg-red-500 text-white rounded shadow hover:bg-red-600 text-xs" title="Löschen">×</button>
                                                                         </div>
                                                                         <div class="block-content">
-                                                                            <div x-show="nestedChild.type === 'paragraph'">
-                                                                                <div :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder min-h-[1rem] text-xs', nestedChild.classes || '']" contenteditable="true" data-placeholder="Inhalt..." x-init="$nextTick(() => initBlockContent($el, nestedChild))" @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></div>
-                                                                            </div>
-                                                                            <div x-show="nestedChild.type === 'heading1'">
-                                                                                <h1 :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder text-lg font-bold mb-1 min-h-[1.25rem]', nestedChild.classes || '']" contenteditable="true" data-placeholder="Überschrift..." x-init="$nextTick(() => initBlockContent($el, nestedChild))" @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></h1>
-                                                                            </div>
-                                                                            <div x-show="nestedChild.type === 'heading2'">
-                                                                                <h2 :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder text-base font-bold mb-1 min-h-[1rem]', nestedChild.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></h2>
-                                                                            </div>
-                                                                            <div x-show="nestedChild.type === 'heading3'">
-                                                                                <h3 :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder text-sm font-bold mb-1 min-h-[1rem]', nestedChild.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></h3>
-                                                                            </div>
-                                                                            <div x-show="nestedChild.type === 'code'">
-                                                                                <pre :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder bg-gray-900 text-green-400 p-2 rounded font-mono text-xs min-h-[2rem] whitespace-pre-wrap', nestedChild.classes || '']" contenteditable="true" data-placeholder="Code..." @input="updateBlockContent(nestedChild.id, $event.target.textContent)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild, true)"></pre>
-                                                                            </div>
-                                                                            <div x-show="nestedChild.type === 'quote'">
-                                                                                <blockquote :data-block-id="nestedChild.id" :style="nestedChild.style || ''" :class="['block-placeholder border-l-4 border-blue-500 pl-2 italic text-gray-700 min-h-[1rem] text-xs', nestedChild.classes || '']" contenteditable="true" data-placeholder="Zitat..." @input="updateBlockContent(nestedChild.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(nestedChild.id, $event)" @focus="initBlockContent($event.target, nestedChild)"></blockquote>
-                                                                            </div>
-                                                                            <div x-show="nestedChild.type === 'image'" class="relative w-full">
-                                                                                <img 
-                                                                                    x-show="nestedChild.imageUrl"
-                                                                                    :data-block-id="nestedChild.id"
-                                                                                    :src="nestedChild.imageUrl"
-                                                                                    :alt="nestedChild.imageAlt || ''"
-                                                                                    :title="nestedChild.imageTitle || ''"
-                                                                                    :style="nestedChild.style || ''"
-                                                                                    :class="['w-full h-auto rounded', nestedChild.classes || '']"
-                                                                                    @click.stop="openImageSettingsModal(nestedChild.id)"
-                                                                                    class="cursor-pointer"
-                                                                                />
-                                                                                <div 
-                                                                                    x-show="!nestedChild.imageUrl"
-                                                                                    :data-block-id="nestedChild.id"
-                                                                                    class="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 min-h-[100px] cursor-pointer hover:bg-gray-100 transition-colors w-full"
-                                                                                    @click.stop="openImageSettingsModal(nestedChild.id)"
-                                                                                >
-                                                                                    <div class="text-center text-gray-500">
-                                                                                        <svg class="w-6 h-6 mx-auto mb-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                                                                        </svg>
-                                                                                        <p class="text-xs font-medium">Bild</p>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
+                                                                            <!-- Paragraph in verschachtelter Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus paragraph.js -->
+                                                                            <div x-show="nestedChild.type === 'paragraph'" x-html="renderParagraphChild(nestedChild, nestedColumn, nestedChildIndex)"></div>
+                                                                            <!-- Heading1 in verschachtelter Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus heading.js -->
+                                                                            <div x-show="nestedChild.type === 'heading1'" x-html="renderHeading1Child(nestedChild, nestedColumn, nestedChildIndex)"></div>
+                                                                            <!-- Heading2 in verschachtelter Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus heading.js -->
+                                                                            <div x-show="nestedChild.type === 'heading2'" x-html="renderHeading2Child(nestedChild, nestedColumn, nestedChildIndex)"></div>
+                                                                            <!-- Heading3 in verschachtelter Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus heading.js -->
+                                                                            <div x-show="nestedChild.type === 'heading3'" x-html="renderHeading3Child(nestedChild, nestedColumn, nestedChildIndex)"></div>
+                                                                            <!-- Code in verschachtelter Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus code.js -->
+                                                                            <div x-show="nestedChild.type === 'code'" x-html="renderCodeChild(nestedChild, nestedColumn, nestedChildIndex)"></div>
+                                                                            <!-- Quote in verschachtelter Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus quote.js -->
+                                                                            <div x-show="nestedChild.type === 'quote'" x-html="renderQuoteChild(nestedChild, nestedColumn, nestedChildIndex)"></div>
+                                                                            <!-- Image in verschachtelter Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus image.js -->
+                                                                            <div x-show="nestedChild.type === 'image'" x-html="renderImageChild(nestedChild, nestedColumn, nestedChildIndex)"></div>
                                                                         </div>
                                                                     </div>
                                                                 </template>
@@ -1399,50 +1205,20 @@
                                                 <button @click.stop="removeChildFromColumn(block.id, columnIndex, childIndex)" class="p-1 bg-red-500 text-white rounded shadow hover:bg-red-600" title="Löschen">×</button>
                                             </div>
                                             <div class="block-content">
-                                                <div x-show="child.type === 'paragraph'">
-                                                    <div :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder min-h-[1.5rem] text-sm', child.classes || '']" contenteditable="true" data-placeholder="Inhalt..." x-init="$nextTick(() => initBlockContent($el, child))" @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></div>
-                                                </div>
-                                                <div x-show="child.type === 'heading1'">
-                                                    <h1 :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]', child.classes || '']" contenteditable="true" data-placeholder="Überschrift..." x-init="$nextTick(() => initBlockContent($el, child))" @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h1>
-                                                </div>
-                                                <div x-show="child.type === 'heading2'">
-                                                    <h2 :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]', child.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h2>
-                                                </div>
-                                                <div x-show="child.type === 'heading3'">
-                                                    <h3 :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder text-lg font-bold mb-2 min-h-[1.5rem]', child.classes || '']" contenteditable="true" data-placeholder="Überschrift..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></h3>
-                                                </div>
-                                                <div x-show="child.type === 'code'">
-                                                    <pre :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder bg-gray-900 text-green-400 p-3 rounded font-mono text-xs min-h-[3rem] whitespace-pre-wrap', child.classes || '']" contenteditable="true" data-placeholder="Code..." @input="updateBlockContent(child.id, $event.target.textContent)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child, true)"></pre>
-                                                </div>
-                                                <div x-show="child.type === 'quote'">
-                                                    <blockquote :data-block-id="child.id" :style="child.style || ''" :class="['block-placeholder border-l-4 border-blue-500 pl-3 italic text-gray-700 min-h-[1.5rem] text-sm', child.classes || '']" contenteditable="true" data-placeholder="Zitat..." @input="updateBlockContent(child.id, $event.target.innerHTML)" @keydown.backspace="handleBackspace(child.id, $event)" @focus="initBlockContent($event.target, child)"></blockquote>
-                                                </div>
-                                                <div x-show="child.type === 'image'" class="relative w-full">
-                                                    <img 
-                                                        x-show="child.imageUrl"
-                                                        :data-block-id="child.id"
-                                                        :src="child.imageUrl"
-                                                        :alt="child.imageAlt || ''"
-                                                        :title="child.imageTitle || ''"
-                                                        :style="child.style || ''"
-                                                        :class="['w-full h-auto rounded', child.classes || '']"
-                                                        @click.stop="openImageSettingsModal(child.id)"
-                                                        class="cursor-pointer"
-                                                    />
-                                                    <div 
-                                                        x-show="!child.imageUrl"
-                                                        :data-block-id="child.id"
-                                                        class="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 min-h-[150px] cursor-pointer hover:bg-gray-100 transition-colors w-full"
-                                                        @click.stop="openImageSettingsModal(child.id)"
-                                                    >
-                                                        <div class="text-center text-gray-500">
-                                                            <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                                            </svg>
-                                                            <p class="text-xs font-medium">Bild auswählen</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                <!-- Paragraph in Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus paragraph.js -->
+                                                <div x-show="child.type === 'paragraph'" x-html="renderParagraphChild(child, column, childIndex)"></div>
+                                                <!-- Heading1 in Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus heading.js -->
+                                                <div x-show="child.type === 'heading1'" x-html="renderHeading1Child(child, column, childIndex)"></div>
+                                                <!-- Heading2 in Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus heading.js -->
+                                                <div x-show="child.type === 'heading2'" x-html="renderHeading2Child(child, column, childIndex)"></div>
+                                                <!-- Heading3 in Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus heading.js -->
+                                                <div x-show="child.type === 'heading3'" x-html="renderHeading3Child(child, column, childIndex)"></div>
+                                                <!-- Code in Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus code.js -->
+                                                <div x-show="child.type === 'code'" x-html="renderCodeChild(child, column, childIndex)"></div>
+                                                <!-- Quote in Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus quote.js -->
+                                                <div x-show="child.type === 'quote'" x-html="renderQuoteChild(child, column, childIndex)"></div>
+                                                <!-- Image in Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus image.js -->
+                                                <div x-show="child.type === 'image'" x-html="renderImageChild(child, column, childIndex)"></div>
                                                 <!-- Link in Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus link.js -->
                                                 <div x-show="child.type === 'link'" x-html="renderLinkChild(child, column, childIndex)"></div>
                                                 <!-- Checklist in Spalte -->
@@ -1536,7 +1312,6 @@
                             </div>
                         </div>
                             </div>
-                        </div>
 
                         <!-- Children Blocks (Verschachtelt) - für normale Container -->
                         <div x-show="block.children && block.children.length > 0 && block.type !== 'twoColumn' && block.type !== 'threeColumn' && block.type !== 'link'" class="ml-8 mt-2 space-y-2 border-l-2 border-gray-300 pl-4">
@@ -1604,96 +1379,23 @@
 
                                     <!-- Child Block Content -->
                                     <div class="block-content">
-                                        <!-- Child Paragraph -->
-                                        <div x-show="child.type === 'paragraph'">
-                                            <div 
-                                                :data-block-id="child.id"
-                                                :style="child.style || ''"
-                                                :class="['block-placeholder min-h-[1.5rem] text-sm', child.classes || '']"
-                                                contenteditable="true"
-                                                data-placeholder="Child Absatz..."
-                                                @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                @keydown.backspace="handleBackspace(child.id, $event)"
-                                                @focus="initBlockContent($event.target, child)"
-                                            ></div>
-                                        </div>
+                                        <!-- Child Paragraph - Verwendet zentrale Rendering-Methode aus paragraph.js -->
+                                        <div x-show="child.type === 'paragraph'" x-html="renderParagraphChild(child, block, childIndex)"></div>
 
-                                        <!-- Child Heading 1 -->
-                                        <div x-show="child.type === 'heading1'">
-                                            <h1 
-                                                :data-block-id="child.id"
-                                                :style="child.style || ''"
-                                                :class="['block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]', child.classes || '']"
-                                                contenteditable="true"
-                                                data-placeholder="Child Überschrift 1..."
-                                                x-init="$nextTick(() => initBlockContent($el, child))"
-                                                @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                @keydown.backspace="handleBackspace(child.id, $event)"
-                                                @focus="initBlockContent($event.target, child)"
-                                            ></h1>
-                                        </div>
+                                        <!-- Child Heading 1 - Verwendet zentrale Rendering-Methode aus heading.js -->
+                                        <div x-show="child.type === 'heading1'" x-html="renderHeading1Child(child, block, childIndex)"></div>
 
-                                        <!-- Child Heading 2 -->
-                                        <div x-show="child.type === 'heading2'">
-                                            <h2 
-                                                :data-block-id="child.id"
-                                                :style="child.style || ''"
-                                                :class="['block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]', child.classes || '']"
-                                                contenteditable="true"
-                                                data-placeholder="Child Überschrift 2..."
-                                                @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                @keydown.backspace="handleBackspace(child.id, $event)"
-                                                @focus="initBlockContent($event.target, child)"
-                                            ></h2>
-                                        </div>
+                                        <!-- Child Heading 2 - Verwendet zentrale Rendering-Methode aus heading.js -->
+                                        <div x-show="child.type === 'heading2'" x-html="renderHeading2Child(child, block, childIndex)"></div>
 
-                                        <!-- Child Heading 3 -->
-                                        <div x-show="child.type === 'heading3'">
-                                            <h3 
-                                                :data-block-id="child.id"
-                                                :style="child.style || ''"
-                                                :class="['block-placeholder text-lg font-bold mb-2 min-h-[1.5rem]', child.classes || '']"
-                                                contenteditable="true"
-                                                data-placeholder="Child Überschrift 3..."
-                                                @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                @keydown.backspace="handleBackspace(child.id, $event)"
-                                                @focus="initBlockContent($event.target, child)"
-                                            ></h3>
-                                        </div>
+                                        <!-- Child Heading 3 - Verwendet zentrale Rendering-Methode aus heading.js -->
+                                        <div x-show="child.type === 'heading3'" x-html="renderHeading3Child(child, block, childIndex)"></div>
 
-                                        <!-- Child Code Block -->
-                                        <div x-show="child.type === 'code'">
-                                            <pre 
-                                                :data-block-id="child.id"
-                                                :style="child.style || ''"
-                                                :class="['block-placeholder bg-gray-900 text-green-400 p-3 rounded font-mono text-xs min-h-[3rem] whitespace-pre-wrap', child.classes || '']"
-                                                contenteditable="true"
-                                                data-placeholder="Child Code..."
-                                                @input="updateBlockContent(child.id, $event.target.textContent)"
-                                                @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                @keydown.backspace="handleBackspace(child.id, $event)"
-                                                @focus="initBlockContent($event.target, child, true)"
-                                            ></pre>
-                                        </div>
+                                        <!-- Child Code Block - Verwendet zentrale Rendering-Methode aus code.js -->
+                                        <div x-show="child.type === 'code'" x-html="renderCodeChild(child, block, childIndex)"></div>
 
-                                        <!-- Child Quote -->
-                                        <div x-show="child.type === 'quote'">
-                                            <blockquote 
-                                                :data-block-id="child.id"
-                                                :style="child.style || ''"
-                                                :class="['block-placeholder border-l-4 border-blue-500 pl-3 italic text-gray-700 min-h-[1.5rem] text-sm', child.classes || '']"
-                                                contenteditable="true"
-                                                data-placeholder="Child Zitat..."
-                                                @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                @keydown.backspace="handleBackspace(child.id, $event)"
-                                                @focus="initBlockContent($event.target, child)"
-                                            ></blockquote>
-                                        </div>
+                                        <!-- Child Quote - Verwendet zentrale Rendering-Methode aus quote.js -->
+                                        <div x-show="child.type === 'quote'" x-html="renderQuoteChild(child, block, childIndex)"></div>
                                     </div>
                                 </div>
                             </template>
@@ -1728,7 +1430,7 @@
     </div>
             
         </div>
-    </div>
+        </div>
 
     <!-- JSON Import Modal -->
     <div 
@@ -2833,6 +2535,9 @@
                 </button>
             </div>
         </div>
+    </div>
+
+    </div>
     </div>
 
 

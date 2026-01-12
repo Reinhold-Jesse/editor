@@ -12,42 +12,6 @@ export const Storage = {
         // Notification wird vom block-editor.js angezeigt
     },
 
-    loadFromJSON(blocks, blockIdCounter, $nextTick, initAllBlockContents) {
-        const saved = localStorage.getItem('blockEditorData');
-        if (saved) {
-            try {
-                const parsedBlocks = JSON.parse(saved);
-                
-                // Rendere alle Blöcke aus dem JSON (zentrale Funktion)
-                const renderedBlocks = renderJSONBlocks(parsedBlocks, blockIdCounter);
-                
-                blocks.splice(0, blocks.length, ...renderedBlocks);
-                
-                // Sicherstellen, dass blockIdCounter aktualisiert wird
-                const maxId = Math.max(...renderedBlocks.map(b => {
-                    const match = b.id.match(/block-(\d+)-/);
-                    return match ? parseInt(match[1]) : 0;
-                }));
-                
-                const newCounter = maxId || 0;
-                
-                // Initialisiere Block-Inhalte nach dem Rendering
-                $nextTick(() => {
-                    initAllBlockContents(blocks);
-                });
-                
-                // Notification wird vom block-editor.js angezeigt
-                return { blocks: renderedBlocks, blockIdCounter: newCounter };
-            } catch (e) {
-                // Notification wird vom block-editor.js angezeigt
-                return { blocks: null, blockIdCounter: blockIdCounter };
-            }
-        } else {
-            // Notification wird vom block-editor.js angezeigt
-            return { blocks: null, blockIdCounter: blockIdCounter };
-        }
-    },
-
     importJSON(jsonText, blocks, blockIdCounter, $nextTick, initAllBlockContents, updateCounter) {
         try {
             const parsedBlocks = JSON.parse(jsonText);
@@ -575,7 +539,6 @@ export const Storage = {
 
 // Legacy Exports für Rückwärtskompatibilität
 export const saveToJSON = Storage.saveToJSON.bind(Storage);
-export const loadFromJSON = Storage.loadFromJSON.bind(Storage);
 export const importJSON = Storage.importJSON.bind(Storage);
 export const exportJSON = Storage.exportJSON.bind(Storage);
 export const saveTheme = Storage.saveTheme.bind(Storage);

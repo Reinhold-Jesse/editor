@@ -814,79 +814,8 @@
                                                 <div x-show="child.type === 'image'" x-html="renderImageChild(child, column, childIndex)"></div>
                                                 <!-- Link in Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus link.js -->
                                                 <div x-show="child.type === 'link'" x-html="renderLinkChild(child, column, childIndex)"></div>
-                                                <!-- Checklist in Spalte (twoColumn) -->
-                                                <div x-show="child.type === 'checklist'" 
-                                                     :data-block-id="child.id"
-                                                     :style="child.style || ''"
-                                                     :class="['space-y-2 p-4 border border-gray-300 rounded-lg', child.classes || '']">
-                                                    <template x-for="(item, itemIndex) in (child.checklistData?.items || [])" :key="item.id">
-                                                        <div class="flex items-start gap-3 group hover:bg-gray-50 p-2 rounded transition-colors">
-                                                            <!-- Checkbox -->
-                                                            <input 
-                                                                type="checkbox"
-                                                                :checked="item.checked || false"
-                                                                @change="toggleChecklistItem(child.id, itemIndex)"
-                                                                @click.stop
-                                                                class="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                                                            />
-                                                            <!-- Text Input -->
-                                                            <div 
-                                                                :data-item-id="item.id"
-                                                                :data-block-id="child.id"
-                                                                :data-item-index="itemIndex"
-                                                                class="flex-1 block-placeholder min-h-[1.5rem] text-sm"
-                                                                contenteditable="true"
-                                                                data-placeholder="Checkliste-Eintrag..."
-                                                                x-init="$nextTick(() => { if (!$el.innerHTML && item.text) $el.innerHTML = item.text; })"
-                                                                @input="updateChecklistItemText(child.id, item.id, $event.target.innerHTML)"
-                                                                @keydown.enter.prevent="addChecklistItem(child.id, 'bottom')"
-                                                                @keydown.backspace="if (!$el.textContent.trim() && (child.checklistData?.items || []).length > 1) { $event.preventDefault(); removeChecklistItem(child.id, itemIndex); }"
-                                                                @focus="initBlockContent($event.target, { content: item.text || '' })"
-                                                            ></div>
-                                                            <!-- Actions -->
-                                                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <button 
-                                                                    @click.stop="moveChecklistItemUp(child.id, itemIndex)"
-                                                                    :disabled="itemIndex === 0"
-                                                                    :class="{'opacity-50 cursor-not-allowed': itemIndex === 0}"
-                                                                    class="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded"
-                                                                    title="Nach oben verschieben"
-                                                                >
-                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                                                    </svg>
-                                                                </button>
-                                                                <button 
-                                                                    @click.stop="moveChecklistItemDown(child.id, itemIndex)"
-                                                                    :disabled="itemIndex === (child.checklistData?.items || []).length - 1"
-                                                                    :class="{'opacity-50 cursor-not-allowed': itemIndex === (child.checklistData?.items || []).length - 1}"
-                                                                    class="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded"
-                                                                    title="Nach unten verschieben"
-                                                                >
-                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                                                    </svg>
-                                                                </button>
-                                                                <button 
-                                                                    @click.stop="removeChecklistItem(child.id, itemIndex)"
-                                                                    :disabled="(child.checklistData?.items || []).length <= 1"
-                                                                    :class="{'opacity-50 cursor-not-allowed': (child.checklistData?.items || []).length <= 1}"
-                                                                    class="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
-                                                                    title="Eintrag löschen"
-                                                                >
-                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                                    </svg>
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </template>
-                                                    <!-- Empty State -->
-                                                    <div x-show="!child.checklistData || (child.checklistData?.items || []).length === 0" 
-                                                         class="text-center text-gray-400 py-4 text-sm">
-                                                        Keine Einträge vorhanden
-                                                    </div>
-                                                </div>
+                                                <!-- Checklist in Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus checklist.js -->
+                                                <div x-show="child.type === 'checklist'" x-html="renderChecklistChild(child, column, childIndex)"></div>
                                                 <!-- Nested Container Blocks -->
                                                 <div x-show="child.type === 'twoColumn' || child.type === 'threeColumn' || child.type === 'table'">
                                                     <!-- Render nested twoColumn container -->
@@ -1026,156 +955,12 @@
                             </div>
 
                             <!-- Table -->
-                            <div x-show="block.type === 'table'" class="overflow-x-auto">
-                                <table 
-                                    :data-block-id="block.id"
-                                    :style="block.style || ''"
-                                    :class="['w-full border-collapse border border-gray-300', block.classes || '']"
-                                >
-                                    <!-- Header -->
-                                    <thead x-show="block.tableData && block.tableData.hasHeader">
-                                        <template x-for="(row, rowIndex) in (block.tableData?.cells || []).filter(r => r[0]?.isHeader)" :key="rowIndex">
-                                            <tr>
-                                                <template x-for="(cell, colIndex) in row" :key="cell.id">
-                                                    <th 
-                                                        x-show="!cell.merged"
-                                                        :colspan="cell.colspan > 1 ? cell.colspan : null"
-                                                        :rowspan="cell.rowspan > 1 ? cell.rowspan : null"
-                                                        :data-cell-id="cell.id"
-                                                        :data-block-id="block.id"
-                                                        :data-row-index="rowIndex"
-                                                        :data-col-index="colIndex"
-                                                        class="border border-gray-300 p-2 bg-gray-100 font-semibold text-left min-w-[100px] min-h-[40px]"
-                                                        contenteditable="true"
-                                                        @input="updateTableCellContent(block.id, cell.id, $event.target.innerHTML)"
-                                                        @focus="selectBlock(block.id); initTableCellContent($event.target, cell)"
-                                                    ></th>
-                                                </template>
-                                            </tr>
-                                        </template>
-                                    </thead>
-                                    
-                                    <!-- Body -->
-                                    <tbody>
-                                        <template x-for="(row, rowIndex) in (block.tableData?.cells || []).filter(r => !r[0]?.isHeader && !r[0]?.isFooter)" :key="rowIndex">
-                                            <tr>
-                                                <template x-for="(cell, colIndex) in row" :key="cell.id">
-                                                    <td 
-                                                        x-show="!cell.merged"
-                                                        :colspan="cell.colspan > 1 ? cell.colspan : null"
-                                                        :rowspan="cell.rowspan > 1 ? cell.rowspan : null"
-                                                        :data-cell-id="cell.id"
-                                                        :data-block-id="block.id"
-                                                        :data-row-index="rowIndex"
-                                                        :data-col-index="colIndex"
-                                                        class="border border-gray-300 p-2 min-w-[100px] min-h-[40px]"
-                                                        contenteditable="true"
-                                                        @input="updateTableCellContent(block.id, cell.id, $event.target.innerHTML)"
-                                                        @focus="selectBlock(block.id); initTableCellContent($event.target, cell)"
-                                                    ></td>
-                                                </template>
-                                            </tr>
-                                        </template>
-                                    </tbody>
-                                    
-                                    <!-- Footer -->
-                                    <tfoot x-show="block.tableData && block.tableData.hasFooter">
-                                        <template x-for="(row, rowIndex) in (block.tableData?.cells || []).filter(r => r[0]?.isFooter)" :key="rowIndex">
-                                            <tr>
-                                                <template x-for="(cell, colIndex) in row" :key="cell.id">
-                                                    <td 
-                                                        x-show="!cell.merged"
-                                                        :colspan="cell.colspan > 1 ? cell.colspan : null"
-                                                        :rowspan="cell.rowspan > 1 ? cell.rowspan : null"
-                                                        :data-cell-id="cell.id"
-                                                        :data-block-id="block.id"
-                                                        :data-row-index="rowIndex"
-                                                        :data-col-index="colIndex"
-                                                        class="border border-gray-300 p-2 bg-gray-50 font-semibold min-w-[100px] min-h-[40px]"
-                                                        contenteditable="true"
-                                                        @input="updateTableCellContent(block.id, cell.id, $event.target.innerHTML)"
-                                                        @focus="selectBlock(block.id); initTableCellContent($event.target, cell)"
-                                                    ></td>
-                                                </template>
-                                            </tr>
-                                        </template>
-                                    </tfoot>
-                                </table>
-                            </div>
+                            <!-- Table Block - Verwendet zentrale Rendering-Methode aus table.js -->
+                            <div x-show="block.type === 'table'" x-html="renderTableBlock(block)"></div>
 
                             <!-- Checklist -->
-                            <div x-show="block.type === 'checklist'" 
-                                 :data-block-id="block.id"
-                                 :style="block.style || ''"
-                                 :class="['space-y-2 p-4 border border-gray-300 rounded-lg', block.classes || '']">
-                                <template x-for="(item, itemIndex) in (block.checklistData?.items || [])" :key="item.id">
-                                    <div class="flex items-start gap-3 group hover:bg-gray-50 p-2 rounded transition-colors">
-                                        <!-- Checkbox -->
-                                        <input 
-                                            type="checkbox"
-                                            :checked="item.checked || false"
-                                            @change="toggleChecklistItem(block.id, itemIndex)"
-                                            @click.stop
-                                            class="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                                        />
-                                        <!-- Text Input -->
-                                        <div 
-                                            :data-item-id="item.id"
-                                            :data-block-id="block.id"
-                                            :data-item-index="itemIndex"
-                                            class="flex-1 block-placeholder min-h-[1.5rem] text-sm"
-                                            contenteditable="true"
-                                            data-placeholder="Checkliste-Eintrag..."
-                                            x-init="$nextTick(() => { if (!$el.innerHTML && item.text) $el.innerHTML = item.text; })"
-                                            @input="updateChecklistItemText(block.id, item.id, $event.target.innerHTML)"
-                                            @keydown.enter.prevent="addChecklistItem(block.id, 'bottom')"
-                                            @keydown.backspace="if (!$el.textContent.trim() && (block.checklistData?.items || []).length > 1) { $event.preventDefault(); removeChecklistItem(block.id, itemIndex); }"
-                                            @focus="initBlockContent($event.target, { content: item.text || '' })"
-                                        ></div>
-                                        <!-- Actions -->
-                                        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button 
-                                                @click.stop="moveChecklistItemUp(block.id, itemIndex)"
-                                                :disabled="itemIndex === 0"
-                                                :class="{'opacity-50 cursor-not-allowed': itemIndex === 0}"
-                                                class="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded"
-                                                title="Nach oben verschieben"
-                                            >
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                                </svg>
-                                            </button>
-                                            <button 
-                                                @click.stop="moveChecklistItemDown(block.id, itemIndex)"
-                                                :disabled="itemIndex === (block.checklistData?.items || []).length - 1"
-                                                :class="{'opacity-50 cursor-not-allowed': itemIndex === (block.checklistData?.items || []).length - 1}"
-                                                class="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded"
-                                                title="Nach unten verschieben"
-                                            >
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                                </svg>
-                                            </button>
-                                            <button 
-                                                @click.stop="removeChecklistItem(block.id, itemIndex)"
-                                                :disabled="(block.checklistData?.items || []).length <= 1"
-                                                :class="{'opacity-50 cursor-not-allowed': (block.checklistData?.items || []).length <= 1}"
-                                                class="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
-                                                title="Eintrag löschen"
-                                            >
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </template>
-                                <!-- Empty State -->
-                                <div x-show="!block.checklistData || (block.checklistData?.items || []).length === 0" 
-                                     class="text-center text-gray-400 py-4 text-sm">
-                                    Keine Einträge vorhanden
-                                </div>
-                            </div>
+                            <!-- Checklist Block - Verwendet zentrale Rendering-Methode aus checklist.js -->
+                            <div x-show="block.type === 'checklist'" x-html="renderChecklistBlock(block)"></div>
 
                             <!-- Three Column -->
                             <div x-show="block.type === 'threeColumn'" 
@@ -1221,79 +1006,8 @@
                                                 <div x-show="child.type === 'image'" x-html="renderImageChild(child, column, childIndex)"></div>
                                                 <!-- Link in Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus link.js -->
                                                 <div x-show="child.type === 'link'" x-html="renderLinkChild(child, column, childIndex)"></div>
-                                                <!-- Checklist in Spalte -->
-                                                <div x-show="child.type === 'checklist'" 
-                                                     :data-block-id="child.id"
-                                                     :style="child.style || ''"
-                                                     :class="['space-y-2 p-4 border border-gray-300 rounded-lg', child.classes || '']">
-                                                    <template x-for="(item, itemIndex) in (child.checklistData?.items || [])" :key="item.id">
-                                                        <div class="flex items-start gap-3 group hover:bg-gray-50 p-2 rounded transition-colors">
-                                                            <!-- Checkbox -->
-                                                            <input 
-                                                                type="checkbox"
-                                                                :checked="item.checked || false"
-                                                                @change="toggleChecklistItem(child.id, itemIndex)"
-                                                                @click.stop
-                                                                class="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                                                            />
-                                                            <!-- Text Input -->
-                                                            <div 
-                                                                :data-item-id="item.id"
-                                                                :data-block-id="child.id"
-                                                                :data-item-index="itemIndex"
-                                                                class="flex-1 block-placeholder min-h-[1.5rem] text-sm"
-                                                                contenteditable="true"
-                                                                data-placeholder="Checkliste-Eintrag..."
-                                                                x-init="$nextTick(() => { if (!$el.innerHTML && item.text) $el.innerHTML = item.text; })"
-                                                                @input="updateChecklistItemText(child.id, item.id, $event.target.innerHTML)"
-                                                                @keydown.enter.prevent="addChecklistItem(child.id, 'bottom')"
-                                                                @keydown.backspace="if (!$el.textContent.trim() && (child.checklistData?.items || []).length > 1) { $event.preventDefault(); removeChecklistItem(child.id, itemIndex); }"
-                                                                @focus="initBlockContent($event.target, { content: item.text || '' })"
-                                                            ></div>
-                                                            <!-- Actions -->
-                                                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <button 
-                                                                    @click.stop="moveChecklistItemUp(child.id, itemIndex)"
-                                                                    :disabled="itemIndex === 0"
-                                                                    :class="{'opacity-50 cursor-not-allowed': itemIndex === 0}"
-                                                                    class="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded"
-                                                                    title="Nach oben verschieben"
-                                                                >
-                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                                                    </svg>
-                                                                </button>
-                                                                <button 
-                                                                    @click.stop="moveChecklistItemDown(child.id, itemIndex)"
-                                                                    :disabled="itemIndex === (child.checklistData?.items || []).length - 1"
-                                                                    :class="{'opacity-50 cursor-not-allowed': itemIndex === (child.checklistData?.items || []).length - 1}"
-                                                                    class="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded"
-                                                                    title="Nach unten verschieben"
-                                                                >
-                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                                                    </svg>
-                                                                </button>
-                                                                <button 
-                                                                    @click.stop="removeChecklistItem(child.id, itemIndex)"
-                                                                    :disabled="(child.checklistData?.items || []).length <= 1"
-                                                                    :class="{'opacity-50 cursor-not-allowed': (child.checklistData?.items || []).length <= 1}"
-                                                                    class="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
-                                                                    title="Eintrag löschen"
-                                                                >
-                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                                    </svg>
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </template>
-                                                    <!-- Empty State -->
-                                                    <div x-show="!child.checklistData || (child.checklistData?.items || []).length === 0" 
-                                                         class="text-center text-gray-400 py-4 text-sm">
-                                                        Keine Einträge vorhanden
-                                                    </div>
-                                                </div>
+                                                <!-- Checklist in Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus checklist.js -->
+                                                <div x-show="child.type === 'checklist'" x-html="renderChecklistChild(child, column, childIndex)"></div>
                                             </div>
                                         </div>
                                     </template>
@@ -1418,7 +1132,7 @@
              <!-- Copy JSON to Clipboard Button -->
         <button
         @click="copyJSONToClipboard()"
-        class="absolute top-4 right-4 z-[60] p-3  text-slate-400  hover:text-green-400 transition-colors hover:shadow-xl"
+        class="absolute top-4 right-4 z-[10] p-3  text-slate-400  hover:text-green-400 transition-colors hover:shadow-xl"
         title="Editor JSON in Zwischenablage kopieren"
     >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

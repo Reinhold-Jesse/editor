@@ -24,10 +24,12 @@ export const TableBlock = {
     
     // HTML-Template für Rendering
     renderHTML(block, context = {}) {
+        const blockId = block.id || '';
+        
         return `
             <div x-show="block.type === 'table'" class="overflow-x-auto">
                 <table 
-                    :data-block-id="block.id"
+                    data-block-id="${blockId}"
                     :style="block.style || ''"
                     :class="['w-full border-collapse border border-gray-300', block.classes || '']"
                 >
@@ -41,13 +43,16 @@ export const TableBlock = {
                                         :colspan="cell.colspan > 1 ? cell.colspan : null"
                                         :rowspan="cell.rowspan > 1 ? cell.rowspan : null"
                                         :data-cell-id="cell.id"
-                                        :data-block-id="block.id"
+                                        data-block-id="${blockId}"
                                         :data-row-index="rowIndex"
                                         :data-col-index="colIndex"
                                         class="border border-gray-300 p-2 bg-gray-100 font-semibold text-left min-w-[100px] min-h-[40px]"
                                         contenteditable="true"
-                                        @input="updateTableCellContent(block.id, cell.id, $event.target.innerHTML)"
-                                        @focus="selectBlock(block.id); initTableCellContent($event.target, cell)"
+                                        x-init="$nextTick(() => { if (cell.content !== undefined && cell.content !== null) $el.innerHTML = cell.content || ''; })"
+                                        x-effect="if (cell.content !== undefined && cell.content !== null && document.activeElement !== $el && $el.innerHTML !== (cell.content || '')) { $el.innerHTML = cell.content || ''; }"
+                                        @input="updateTableCellContent('${blockId}', cell.id, $event.target.innerHTML)"
+                                        @blur="updateTableCellContent('${blockId}', cell.id, $event.target.innerHTML)"
+                                        @focus="selectBlock('${blockId}'); initTableCellContent($event.target, cell)"
                                     ></th>
                                 </template>
                             </tr>
@@ -64,13 +69,16 @@ export const TableBlock = {
                                         :colspan="cell.colspan > 1 ? cell.colspan : null"
                                         :rowspan="cell.rowspan > 1 ? cell.rowspan : null"
                                         :data-cell-id="cell.id"
-                                        :data-block-id="block.id"
+                                        data-block-id="${blockId}"
                                         :data-row-index="rowIndex"
                                         :data-col-index="colIndex"
                                         class="border border-gray-300 p-2 min-w-[100px] min-h-[40px]"
                                         contenteditable="true"
-                                        @input="updateTableCellContent(block.id, cell.id, $event.target.innerHTML)"
-                                        @focus="selectBlock(block.id); initTableCellContent($event.target, cell)"
+                                        x-init="$nextTick(() => { if (cell.content !== undefined && cell.content !== null) $el.innerHTML = cell.content || ''; })"
+                                        x-effect="if (cell.content !== undefined && cell.content !== null && document.activeElement !== $el && $el.innerHTML !== (cell.content || '')) { $el.innerHTML = cell.content || ''; }"
+                                        @input="updateTableCellContent('${blockId}', cell.id, $event.target.innerHTML)"
+                                        @blur="updateTableCellContent('${blockId}', cell.id, $event.target.innerHTML)"
+                                        @focus="selectBlock('${blockId}'); initTableCellContent($event.target, cell)"
                                     ></td>
                                 </template>
                             </tr>
@@ -87,13 +95,16 @@ export const TableBlock = {
                                         :colspan="cell.colspan > 1 ? cell.colspan : null"
                                         :rowspan="cell.rowspan > 1 ? cell.rowspan : null"
                                         :data-cell-id="cell.id"
-                                        :data-block-id="block.id"
+                                        data-block-id="${blockId}"
                                         :data-row-index="rowIndex"
                                         :data-col-index="colIndex"
                                         class="border border-gray-300 p-2 bg-gray-50 font-semibold min-w-[100px] min-h-[40px]"
                                         contenteditable="true"
-                                        @input="updateTableCellContent(block.id, cell.id, $event.target.innerHTML)"
-                                        @focus="selectBlock(block.id); initTableCellContent($event.target, cell)"
+                                        x-init="$nextTick(() => { if (cell.content !== undefined && cell.content !== null) $el.innerHTML = cell.content || ''; })"
+                                        x-effect="if (cell.content !== undefined && cell.content !== null && document.activeElement !== $el && $el.innerHTML !== (cell.content || '')) { $el.innerHTML = cell.content || ''; }"
+                                        @input="updateTableCellContent('${blockId}', cell.id, $event.target.innerHTML)"
+                                        @blur="updateTableCellContent('${blockId}', cell.id, $event.target.innerHTML)"
+                                        @focus="selectBlock('${blockId}'); initTableCellContent($event.target, cell)"
                                     ></td>
                                 </template>
                             </tr>

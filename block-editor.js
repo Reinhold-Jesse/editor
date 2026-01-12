@@ -2042,6 +2042,86 @@ function blockEditor() {
             return '';
         },
         
+        /**
+         * Rendert einen Table-Block mit allen Optionen
+         * @param {object} block - Der Block-Objekt
+         * @returns {string} HTML-String für den Block
+         */
+        renderTableBlock(block) {
+            const component = getBlockComponent('table');
+            if (component && component.renderHTML) {
+                return component.renderHTML(block, {
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId,
+                    childBlockTypes: this.childBlockTypes,
+                    index: this.blocks.findIndex(b => b.id === block.id)
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Child-Table-Block
+         * @param {object} child - Der Child-Block-Objekt
+         * @param {object} parentBlock - Der Parent-Block-Objekt
+         * @param {number} childIndex - Der Index des Child-Blocks
+         * @returns {string} HTML-String für den Child-Block
+         */
+        renderTableChild(child, parentBlock, childIndex) {
+            const component = getBlockComponent('table');
+            if (component && component.renderChildHTML) {
+                return component.renderChildHTML(child, {
+                    block: parentBlock,
+                    childIndex: childIndex,
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Checklist-Block mit allen Optionen
+         * @param {object} block - Der Block-Objekt
+         * @returns {string} HTML-String für den Block
+         */
+        renderChecklistBlock(block) {
+            const component = getBlockComponent('checklist');
+            if (component && component.renderHTML) {
+                return component.renderHTML(block, {
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId,
+                    childBlockTypes: this.childBlockTypes,
+                    index: this.blocks.findIndex(b => b.id === block.id)
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Child-Checklist-Block
+         * @param {object} child - Der Child-Block-Objekt
+         * @param {object} parentBlock - Der Parent-Block-Objekt
+         * @param {number} childIndex - Der Index des Child-Blocks
+         * @returns {string} HTML-String für den Child-Block
+         */
+        renderChecklistChild(child, parentBlock, childIndex) {
+            const component = getBlockComponent('checklist');
+            if (component && component.renderChildHTML) {
+                return component.renderChildHTML(child, {
+                    block: parentBlock,
+                    childIndex: childIndex,
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId
+                });
+            }
+            return '';
+        },
+        
         closeLinkSettingsModal() {
             this.closeLinkModal();
         },

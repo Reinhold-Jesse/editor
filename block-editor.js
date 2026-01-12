@@ -8,6 +8,7 @@ import { TableManagement } from './components/table-management.js';
 import { ChecklistManagement } from './components/checklist-management.js';
 import { BLOCK_TYPES, BlockTypes } from './components/block-types.js';
 import { renderJSONBlocks } from './components/json-renderer.js';
+import { getBlockComponent } from './components/blocks/index.js';
 
 function blockEditor() {
     return {
@@ -75,7 +76,10 @@ function blockEditor() {
             onConfirm: null,
             onCancel: null,
             onExtend: null, // Neue Option für "Erweitern"
-            showExtend: false // Zeigt ob "Erweitern" Button angezeigt werden soll
+            showExtend: false, // Zeigt ob "Erweitern" Button angezeigt werden soll
+            showLinkFollow: false, // Zeigt ob "Link folgen" und "Bearbeiten" Buttons angezeigt werden sollen
+            linkFollowUrl: null, // URL für Link-Follow
+            linkFollowTarget: '_self' // Target für Link-Follow
         },
         // Performance-Optimierungen
         textSelectionTimeout: null, // Debounce-Timeout für Text-Selektion
@@ -1244,7 +1248,10 @@ function blockEditor() {
                 onConfirm: null,
                 onCancel: null,
                 onExtend: null,
-                showExtend: false
+                showExtend: false,
+                showLinkFollow: false,
+                linkFollowUrl: null,
+                linkFollowTarget: '_self'
             };
             if (window.modalHelpers) window.modalHelpers.closeModal();
         },
@@ -1385,6 +1392,7 @@ function blockEditor() {
                 url: '',
                 target: '_self',
                 text: '',
+                linkText: '', // Optionaler Link-Text für Link-Blöcke
                 element: null,
                 range: null
             };
@@ -1397,6 +1405,7 @@ function blockEditor() {
                     this.linkModal.url = block.linkUrl || '';
                     this.linkModal.target = block.linkTarget || '_self';
                     this.linkModal.text = block.content || '';
+                    this.linkModal.linkText = block.linkText || '';
                 } else {
                     return; // Ungültiger Block
                 }
@@ -1432,6 +1441,7 @@ function blockEditor() {
                 url: '',
                 target: '_self',
                 text: '',
+                linkText: '',
                 element: null,
                 range: null
             };
@@ -1457,12 +1467,26 @@ function blockEditor() {
                     block.linkUrl = url;
                     block.linkTarget = target;
                     
-                    // Aktualisiere auch den Block-Inhalt, falls vorhanden
-                    const blockElement = this.getBlockElement(this.linkModal.blockId);
-                    if (blockElement && blockElement.tagName === 'A') {
+                    // Speichere optionalen Link-Text
+                    if (this.linkModal.linkText && this.linkModal.linkText.trim() !== '') {
+                        block.linkText = this.linkModal.linkText.trim();
+                        // Setze auch block.content auf linkText, damit es beim Rendering angezeigt wird
+                        block.content = block.linkText;
+                    } else {
+                        // Wenn kein Link-Text gesetzt, entferne das Feld
+                        block.linkText = '';
+                        // Falls block.content leer ist, setze URL als Fallback
                         if (!block.content || block.content.trim() === '') {
                             block.content = url;
                         }
+                    }
+                    
+                    // Aktualisiere auch das DOM-Element
+                    const blockElement = this.getBlockElement(this.linkModal.blockId);
+                    if (blockElement && blockElement.tagName === 'A') {
+                        // Verwende linkText falls vorhanden, sonst content, sonst URL
+                        const displayText = block.linkText || block.content || url;
+                        blockElement.textContent = displayText;
                     }
                 }
                 this.showNotification('Link-Einstellungen erfolgreich gespeichert!', 'success');
@@ -1619,6 +1643,93 @@ function blockEditor() {
         // Rückwärtskompatibilität: Alte Funktionen als Wrapper
         openLinkSettingsModal(blockId) {
             this.openLinkModal('block', { blockId });
+        },
+        
+        /**
+         * Öffnet ein Modal, das fragt, ob man dem Link folgen möchte oder den Block bearbeiten möchte
+         * @param {string} blockId - Die ID des Link-Blocks
+         * @param {Event} event - Das Klick-Event (optional)
+         */
+        openLinkFollowModal(blockId, event = null) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            const { block } = this.findBlockById(blockId);
+            if (!block || block.type !== 'link' || !block.linkUrl) {
+                return;
+            }
+            
+            const linkUrl = block.linkUrl;
+            const linkText = block.linkText || block.content || linkUrl;
+            const linkTarget = block.linkTarget || '_self';
+            
+            this.confirmModal = {
+                title: '🔗 Link öffnen?',
+                message: `Möchten Sie dem Link folgen oder den Block bearbeiten?<br><br><strong>Link-Text:</strong> ${linkText}<br><strong>URL:</strong> ${linkUrl}`,
+                onConfirm: () => {
+                    // Link öffnen
+                    if (linkTarget === '_blank') {
+                        window.open(linkUrl, '_blank', 'noopener,noreferrer');
+                    } else {
+                        window.location.href = linkUrl;
+                    }
+                    this.closeConfirmModal();
+                },
+                onCancel: () => {
+                    // Block bearbeiten
+                    this.closeConfirmModal();
+                    this.openLinkSettingsModal(blockId);
+                },
+                onExtend: null,
+                showExtend: false,
+                showLinkFollow: true,
+                linkFollowUrl: linkUrl,
+                linkFollowTarget: linkTarget
+            };
+            this.showConfirmModal = true;
+            if (window.modalHelpers) window.modalHelpers.openModal();
+        },
+        
+        /**
+         * Rendert einen Link-Block mit allen Optionen
+         * @param {object} block - Der Block-Objekt
+         * @returns {string} HTML-String für den Block
+         */
+        renderLinkBlock(block) {
+            const component = getBlockComponent('link');
+            if (component && component.renderHTML) {
+                return component.renderHTML(block, {
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId,
+                    childBlockTypes: this.childBlockTypes,
+                    index: this.blocks.findIndex(b => b.id === block.id)
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Child-Link-Block
+         * @param {object} child - Der Child-Block-Objekt
+         * @param {object} parentBlock - Der Parent-Block-Objekt
+         * @param {number} childIndex - Der Index des Child-Blocks
+         * @returns {string} HTML-String für den Child-Block
+         */
+        renderLinkChild(child, parentBlock, childIndex) {
+            const component = getBlockComponent('link');
+            if (component && component.renderChildHTML) {
+                return component.renderChildHTML(child, {
+                    block: parentBlock,
+                    childIndex: childIndex,
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId
+                });
+            }
+            return '';
         },
         
         closeLinkSettingsModal() {

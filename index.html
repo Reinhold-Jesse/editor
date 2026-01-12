@@ -871,460 +871,8 @@
                             </div>
 
                             <!-- Link -->
-                            <div x-show="block.type === 'link'" class="relative w-full border-2 border-blue-200 border-dashed rounded-lg p-4 bg-blue-50/30">
-                                <!-- URL-Hinweis wenn keine URL gesetzt -->
-                                <div 
-                                    x-show="!block.linkUrl || block.linkUrl.trim() === ''"
-                                    class="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700 flex items-center gap-2"
-                                >
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    <span>Keine URL gesetzt. </span>
-                                    <button 
-                                        @click.stop="openLinkSettingsModal(block.id)"
-                                        class="text-yellow-800 underline font-semibold hover:text-yellow-900"
-                                    >
-                                        URL hinzufügen
-                                    </button>
-                                </div>
-                                
-                                <!-- Wenn keine Children vorhanden, zeige Platzhalter -->
-                                <div 
-                                    x-show="!block.children || block.children.length === 0"
-                                    class="space-y-2 min-h-[100px]"
-                                >
-                                    <div class="text-gray-400 italic py-4 text-center border-2 border-dashed border-gray-300 rounded-lg">
-                                        Keine Inhalte vorhanden
-                                    </div>
-                                    
-                                    <!-- "+ Block hinzufügen" Dropdown -->
-                                    <select 
-                                        @change.stop="addChild(block.id, $event.target.value); $event.target.value = ''"
-                                        @click.stop
-                                        class="w-full mt-2 p-2 border border-dashed border-gray-400 rounded text-xs text-gray-500 hover:border-blue-500 hover:text-blue-500 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    >
-                                        <option value="" disabled selected>+ Block hinzufügen</option>
-                                        <template x-for="(type, key) in childBlockTypes" :key="key">
-                                            <option :value="key" x-text="type.label"></option>
-                                        </template>
-                                    </select>
-                                </div>
-                                
-                                <!-- Children Blocks für Link-Blöcke (mit <a> Tag wenn URL gesetzt) -->
-                                <div x-show="block.children && block.children.length > 0" class="mt-2 space-y-2">
-                                    <!-- Wenn URL gesetzt, wrappe Children in <a> Tag -->
-                                    <a 
-                                        x-show="block.linkUrl && block.linkUrl.trim() !== ''"
-                                        :href="block.linkUrl"
-                                        :target="block.linkTarget || '_self'"
-                                        class="block w-full no-underline text-inherit"
-                                        @click.stop="openLinkSettingsModal(block.id)"
-                                    >
-                                        <div class="space-y-2">
-                                            <template x-for="(child, childIndex) in block.children" :key="child.id">
-                                                <!-- Verwende die gleiche Child-Rendering-Logik wie in der zentralen Sektion -->
-                                                <div 
-                                                    :class="{
-                                                        'ring-2 ring-blue-500': selectedBlockId === child.id,
-                                                        'opacity-50': draggingBlockId === child.id
-                                                    }"
-                                                    class="block-item group relative p-2 rounded-lg hover:bg-gray-50 transition-all cursor-move bg-gray-50"
-                                                    @click.stop="selectBlock(child.id)"
-                                                    @mouseenter="hoveredBlockId = child.id"
-                                                    @mouseleave="hoveredBlockId = null"
-                                                    draggable="true"
-                                                    @dragstart="handleDragStart($event, index, childIndex)"
-                                                    @dragover.prevent="handleDragOver($event, index, childIndex)"
-                                                    @drop="handleDrop($event, index, childIndex)"
-                                                    @dragend="handleDragEnd()"
-                                                >
-                                                    <!-- Visual Indicator für ausgewählten Child Block -->
-                                                    <div 
-                                                        x-show="selectedBlockId === child.id"
-                                                        class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l"
-                                                    ></div>
-
-                                                    <!-- Child Block Controls -->
-                                                    <div 
-                                                        x-show="hoveredBlockId === child.id || selectedBlockId === child.id"
-                                                        class="absolute -left-10 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                                    >
-                                                        <button 
-                                                            @click.stop="openSidebar(child.id)"
-                                                            class="p-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 text-xs"
-                                                            title="Einstellungen öffnen"
-                                                        >
-                                                            ⚙
-                                                        </button>
-                                                        <button 
-                                                            @click.stop="moveChildBlock(block.id, childIndex, 'up')"
-                                                            :disabled="childIndex === 0"
-                                                            :class="childIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''"
-                                                            class="p-1 bg-white rounded shadow hover:bg-gray-100"
-                                                            title="Nach oben"
-                                                        >
-                                                            ↑
-                                                        </button>
-                                                        <button 
-                                                            @click.stop="moveChildBlock(block.id, childIndex, 'down')"
-                                                            :disabled="childIndex === (block.children.length - 1)"
-                                                            :class="childIndex === (block.children.length - 1) ? 'opacity-50 cursor-not-allowed' : ''"
-                                                            class="p-1 bg-white rounded shadow hover:bg-gray-100"
-                                                            title="Nach unten"
-                                                        >
-                                                            ↓
-                                                        </button>
-                                                        <button 
-                                                            @click.stop="removeChild(block.id, childIndex)"
-                                                            class="p-1 bg-red-500 text-white rounded shadow hover:bg-red-600"
-                                                            title="Löschen"
-                                                        >
-                                                            ×
-                                                        </button>
-                                                    </div>
-
-                                                    <!-- Child Block Content - verwendet die zentrale Rendering-Logik -->
-                                                    <div class="block-content">
-                                                        <!-- Child Paragraph -->
-                                                        <div x-show="child.type === 'paragraph'">
-                                                            <div 
-                                                                :data-block-id="child.id"
-                                                                :style="child.style || ''"
-                                                                :class="['block-placeholder min-h-[1.5rem] text-sm', child.classes || '']"
-                                                                contenteditable="true"
-                                                                data-placeholder="Child Absatz..."
-                                                                @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                                @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                                @keydown.backspace="handleBackspace(child.id, $event)"
-                                                                @focus="initBlockContent($event.target, child)"
-                                                            ></div>
-                                                        </div>
-
-                                                        <!-- Child Heading 1 -->
-                                                        <div x-show="child.type === 'heading1'">
-                                                            <h1 
-                                                                :data-block-id="child.id"
-                                                                :style="child.style || ''"
-                                                                :class="['block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]', child.classes || '']"
-                                                                contenteditable="true"
-                                                                data-placeholder="Child Überschrift 1..."
-                                                                x-init="$nextTick(() => initBlockContent($el, child))"
-                                                                @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                                @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                                @keydown.backspace="handleBackspace(child.id, $event)"
-                                                                @focus="initBlockContent($event.target, child)"
-                                                            ></h1>
-                                                        </div>
-
-                                                        <!-- Child Heading 2 -->
-                                                        <div x-show="child.type === 'heading2'">
-                                                            <h2 
-                                                                :data-block-id="child.id"
-                                                                :style="child.style || ''"
-                                                                :class="['block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]', child.classes || '']"
-                                                                contenteditable="true"
-                                                                data-placeholder="Child Überschrift 2..."
-                                                                @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                                @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                                @keydown.backspace="handleBackspace(child.id, $event)"
-                                                                @focus="initBlockContent($event.target, child)"
-                                                            ></h2>
-                                                        </div>
-
-                                                        <!-- Child Heading 3 -->
-                                                        <div x-show="child.type === 'heading3'">
-                                                            <h3 
-                                                                :data-block-id="child.id"
-                                                                :style="child.style || ''"
-                                                                :class="['block-placeholder text-lg font-bold mb-2 min-h-[1.5rem]', child.classes || '']"
-                                                                contenteditable="true"
-                                                                data-placeholder="Child Überschrift 3..."
-                                                                @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                                @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                                @keydown.backspace="handleBackspace(child.id, $event)"
-                                                                @focus="initBlockContent($event.target, child)"
-                                                            ></h3>
-                                                        </div>
-
-                                                        <!-- Child Code Block -->
-                                                        <div x-show="child.type === 'code'">
-                                                            <pre 
-                                                                :data-block-id="child.id"
-                                                                :style="child.style || ''"
-                                                                :class="['block-placeholder bg-gray-900 text-green-400 p-3 rounded font-mono text-xs min-h-[3rem] whitespace-pre-wrap', child.classes || '']"
-                                                                contenteditable="true"
-                                                                data-placeholder="Child Code..."
-                                                                @input="updateBlockContent(child.id, $event.target.textContent)"
-                                                                @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                                @keydown.backspace="handleBackspace(child.id, $event)"
-                                                                @focus="initBlockContent($event.target, child, true)"
-                                                            ></pre>
-                                                        </div>
-
-                                                        <!-- Child Quote -->
-                                                        <div x-show="child.type === 'quote'">
-                                                            <blockquote 
-                                                                :data-block-id="child.id"
-                                                                :style="child.style || ''"
-                                                                :class="['block-placeholder border-l-4 border-blue-500 pl-3 italic text-gray-700 min-h-[1.5rem] text-sm', child.classes || '']"
-                                                                contenteditable="true"
-                                                                data-placeholder="Child Zitat..."
-                                                                @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                                @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                                @keydown.backspace="handleBackspace(child.id, $event)"
-                                                                @focus="initBlockContent($event.target, child)"
-                                                            ></blockquote>
-                                                        </div>
-
-                                                        <!-- Child Image -->
-                                                        <div x-show="child.type === 'image'" class="relative w-full">
-                                                            <img 
-                                                                x-show="child.imageUrl"
-                                                                :data-block-id="child.id"
-                                                                :src="child.imageUrl"
-                                                                :alt="child.imageAlt || ''"
-                                                                :title="child.imageTitle || ''"
-                                                                :style="child.style || ''"
-                                                                :class="['w-full h-auto rounded', child.classes || '']"
-                                                                @click.stop="openImageSettingsModal(child.id)"
-                                                                class="cursor-pointer"
-                                                            />
-                                                            <div 
-                                                                x-show="!child.imageUrl"
-                                                                :data-block-id="child.id"
-                                                                class="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 min-h-[150px] cursor-pointer hover:bg-gray-100 transition-colors w-full"
-                                                                @click.stop="openImageSettingsModal(child.id)"
-                                                            >
-                                                                <div class="text-center text-gray-500">
-                                                                    <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                                                    </svg>
-                                                                    <p class="text-xs font-medium">Bild auswählen</p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- Child Divider -->
-                                                        <div x-show="child.type === 'divider'">
-                                                            <hr class="border-t-2 border-gray-300 my-4" />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </template>
-                                        </div>
-                                    </a>
-                                    
-                                    <!-- Wenn keine URL, zeige Children ohne <a> Tag -->
-                                    <div 
-                                        x-show="!block.linkUrl || block.linkUrl.trim() === ''"
-                                        class="space-y-2"
-                                    >
-                                        <template x-for="(child, childIndex) in block.children" :key="child.id">
-                                            <!-- Verwende die gleiche Child-Rendering-Logik wie oben -->
-                                            <div 
-                                                :class="{
-                                                    'ring-2 ring-blue-500': selectedBlockId === child.id,
-                                                    'opacity-50': draggingBlockId === child.id
-                                                }"
-                                                class="block-item group relative p-2 rounded-lg hover:bg-gray-50 transition-all cursor-move bg-gray-50"
-                                                @click.stop="selectBlock(child.id)"
-                                                @mouseenter="hoveredBlockId = child.id"
-                                                @mouseleave="hoveredBlockId = null"
-                                                draggable="true"
-                                                @dragstart="handleDragStart($event, index, childIndex)"
-                                                @dragover.prevent="handleDragOver($event, index, childIndex)"
-                                                @drop="handleDrop($event, index, childIndex)"
-                                                @dragend="handleDragEnd()"
-                                            >
-                                                <!-- Visual Indicator für ausgewählten Child Block -->
-                                                <div 
-                                                    x-show="selectedBlockId === child.id"
-                                                    class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l"
-                                                ></div>
-
-                                                <!-- Child Block Controls -->
-                                                <div 
-                                                    x-show="hoveredBlockId === child.id || selectedBlockId === child.id"
-                                                    class="absolute -left-10 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                                >
-                                                    <button 
-                                                        @click.stop="openSidebar(child.id)"
-                                                        class="p-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 text-xs"
-                                                        title="Einstellungen öffnen"
-                                                    >
-                                                        ⚙
-                                                    </button>
-                                                    <button 
-                                                        @click.stop="moveChildBlock(block.id, childIndex, 'up')"
-                                                        :disabled="childIndex === 0"
-                                                        :class="childIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''"
-                                                        class="p-1 bg-white rounded shadow hover:bg-gray-100"
-                                                        title="Nach oben"
-                                                    >
-                                                        ↑
-                                                    </button>
-                                                    <button 
-                                                        @click.stop="moveChildBlock(block.id, childIndex, 'down')"
-                                                        :disabled="childIndex === (block.children.length - 1)"
-                                                        :class="childIndex === (block.children.length - 1) ? 'opacity-50 cursor-not-allowed' : ''"
-                                                        class="p-1 bg-white rounded shadow hover:bg-gray-100"
-                                                        title="Nach unten"
-                                                    >
-                                                        ↓
-                                                    </button>
-                                                    <button 
-                                                        @click.stop="removeChild(block.id, childIndex)"
-                                                        class="p-1 bg-red-500 text-white rounded shadow hover:bg-red-600"
-                                                        title="Löschen"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
-
-                                                <!-- Child Block Content - verwendet die zentrale Rendering-Logik -->
-                                                <div class="block-content">
-                                                    <!-- Child Paragraph -->
-                                                    <div x-show="child.type === 'paragraph'">
-                                                        <div 
-                                                            :data-block-id="child.id"
-                                                            :style="child.style || ''"
-                                                            :class="['block-placeholder min-h-[1.5rem] text-sm', child.classes || '']"
-                                                            contenteditable="true"
-                                                            data-placeholder="Child Absatz..."
-                                                            @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                            @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                            @keydown.backspace="handleBackspace(child.id, $event)"
-                                                            @focus="initBlockContent($event.target, child)"
-                                                        ></div>
-                                                    </div>
-
-                                                    <!-- Child Heading 1 -->
-                                                    <div x-show="child.type === 'heading1'">
-                                                        <h1 
-                                                            :data-block-id="child.id"
-                                                            :style="child.style || ''"
-                                                            :class="['block-placeholder text-2xl font-bold mb-2 min-h-[1.75rem]', child.classes || '']"
-                                                            contenteditable="true"
-                                                            data-placeholder="Child Überschrift 1..."
-                                                            x-init="$nextTick(() => initBlockContent($el, child))"
-                                                            @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                            @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                            @keydown.backspace="handleBackspace(child.id, $event)"
-                                                            @focus="initBlockContent($event.target, child)"
-                                                        ></h1>
-                                                    </div>
-
-                                                    <!-- Child Heading 2 -->
-                                                    <div x-show="child.type === 'heading2'">
-                                                        <h2 
-                                                            :data-block-id="child.id"
-                                                            :style="child.style || ''"
-                                                            :class="['block-placeholder text-xl font-bold mb-2 min-h-[1.5rem]', child.classes || '']"
-                                                            contenteditable="true"
-                                                            data-placeholder="Child Überschrift 2..."
-                                                            @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                            @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                            @keydown.backspace="handleBackspace(child.id, $event)"
-                                                            @focus="initBlockContent($event.target, child)"
-                                                        ></h2>
-                                                    </div>
-
-                                                    <!-- Child Heading 3 -->
-                                                    <div x-show="child.type === 'heading3'">
-                                                        <h3 
-                                                            :data-block-id="child.id"
-                                                            :style="child.style || ''"
-                                                            :class="['block-placeholder text-lg font-bold mb-2 min-h-[1.5rem]', child.classes || '']"
-                                                            contenteditable="true"
-                                                            data-placeholder="Child Überschrift 3..."
-                                                            @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                            @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                            @keydown.backspace="handleBackspace(child.id, $event)"
-                                                            @focus="initBlockContent($event.target, child)"
-                                                        ></h3>
-                                                    </div>
-
-                                                    <!-- Child Code Block -->
-                                                    <div x-show="child.type === 'code'">
-                                                        <pre 
-                                                            :data-block-id="child.id"
-                                                            :style="child.style || ''"
-                                                            :class="['block-placeholder bg-gray-900 text-green-400 p-3 rounded font-mono text-xs min-h-[3rem] whitespace-pre-wrap', child.classes || '']"
-                                                            contenteditable="true"
-                                                            data-placeholder="Child Code..."
-                                                            @input="updateBlockContent(child.id, $event.target.textContent)"
-                                                            @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                            @keydown.backspace="handleBackspace(child.id, $event)"
-                                                            @focus="initBlockContent($event.target, child, true)"
-                                                        ></pre>
-                                                    </div>
-
-                                                    <!-- Child Quote -->
-                                                    <div x-show="child.type === 'quote'">
-                                                        <blockquote 
-                                                            :data-block-id="child.id"
-                                                            :style="child.style || ''"
-                                                            :class="['block-placeholder border-l-4 border-blue-500 pl-3 italic text-gray-700 min-h-[1.5rem] text-sm', child.classes || '']"
-                                                            contenteditable="true"
-                                                            data-placeholder="Child Zitat..."
-                                                            @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                            @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
-                                                            @keydown.backspace="handleBackspace(child.id, $event)"
-                                                            @focus="initBlockContent($event.target, child)"
-                                                        ></blockquote>
-                                                    </div>
-
-                                                    <!-- Child Image -->
-                                                    <div x-show="child.type === 'image'" class="relative w-full">
-                                                        <img 
-                                                            x-show="child.imageUrl"
-                                                            :data-block-id="child.id"
-                                                            :src="child.imageUrl"
-                                                            :alt="child.imageAlt || ''"
-                                                            :title="child.imageTitle || ''"
-                                                            :style="child.style || ''"
-                                                            :class="['w-full h-auto rounded', child.classes || '']"
-                                                            @click.stop="openImageSettingsModal(child.id)"
-                                                            class="cursor-pointer"
-                                                        />
-                                                        <div 
-                                                            x-show="!child.imageUrl"
-                                                            :data-block-id="child.id"
-                                                            class="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 min-h-[150px] cursor-pointer hover:bg-gray-100 transition-colors w-full"
-                                                            @click.stop="openImageSettingsModal(child.id)"
-                                                        >
-                                                            <div class="text-center text-gray-500">
-                                                                <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                                                </svg>
-                                                                <p class="text-xs font-medium">Bild auswählen</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Child Divider -->
-                                                    <div x-show="child.type === 'divider'">
-                                                        <hr class="border-t-2 border-gray-300 my-4" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </div>
-                                    
-                                    <!-- "+ Block hinzufügen" Dropdown für Link-Blöcke -->
-                                    <select 
-                                        @change.stop="addChild(block.id, $event.target.value); $event.target.value = ''"
-                                        @click.stop
-                                        class="w-full mt-2 p-2 border border-dashed border-gray-400 rounded text-xs text-gray-500 hover:border-blue-500 hover:text-blue-500 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    >
-                                        <option value="" disabled selected>+ Block hinzufügen</option>
-                                        <template x-for="(type, key) in childBlockTypes" :key="key">
-                                            <option :value="key" x-text="type.label"></option>
-                                        </template>
-                                    </select>
-                                </div>
-                            </div>
+                            <!-- Link Block - Verwendet zentrale Rendering-Methode aus link.js -->
+                            <div x-show="block.type === 'link'" x-html="renderLinkBlock(block)"></div>
 
                             <!-- Two Column -->
                             <div x-show="block.type === 'twoColumn'" 
@@ -1398,37 +946,8 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <!-- Link in Spalte (twoColumn) -->
-                                                <div x-show="child.type === 'link'" class="relative w-full">
-                                                    <div 
-                                                        x-show="!child.linkUrl || child.linkUrl.trim() === ''"
-                                                        :data-block-id="child.id"
-                                                        class="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 min-h-[80px] cursor-pointer hover:bg-gray-100 transition-colors w-full"
-                                                        @click.stop="openLinkSettingsModal(child.id)"
-                                                    >
-                                                        <div class="text-center text-gray-500">
-                                                            <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
-                                                            </svg>
-                                                            <p class="text-xs font-medium">Link hinzufügen</p>
-                                                        </div>
-                                                    </div>
-                                                    <a 
-                                                        x-show="child.linkUrl && child.linkUrl.trim() !== ''"
-                                                        :data-block-id="child.id"
-                                                        :href="child.linkUrl"
-                                                        :target="child.linkTarget || '_self'"
-                                                        :style="child.style || ''"
-                                                        :class="['block-placeholder min-h-[1.5rem] text-sm text-blue-600 hover:text-blue-800 hover:underline', child.classes || '']"
-                                                        contenteditable="true"
-                                                        data-placeholder="Link-Text..."
-                                                        @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                        @keydown.backspace="handleBackspace(child.id, $event)"
-                                                        @focus="initBlockContent($event.target, child)"
-                                                        @click.stop="openLinkSettingsModal(child.id)"
-                                                        class="cursor-pointer"
-                                                    ></a>
-                                                </div>
+                                                <!-- Link in Spalte (twoColumn) - Verwendet zentrale Rendering-Methode aus link.js -->
+                                                <div x-show="child.type === 'link'" x-html="renderLinkChild(child, column, childIndex)"></div>
                                                 <!-- Checklist in Spalte (twoColumn) -->
                                                 <div x-show="child.type === 'checklist'" 
                                                      :data-block-id="child.id"
@@ -1924,37 +1443,8 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <!-- Link in Spalte (threeColumn) -->
-                                                <div x-show="child.type === 'link'" class="relative w-full">
-                                                    <div 
-                                                        x-show="!child.linkUrl || child.linkUrl.trim() === ''"
-                                                        :data-block-id="child.id"
-                                                        class="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 min-h-[80px] cursor-pointer hover:bg-gray-100 transition-colors w-full"
-                                                        @click.stop="openLinkSettingsModal(child.id)"
-                                                    >
-                                                        <div class="text-center text-gray-500">
-                                                            <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
-                                                            </svg>
-                                                            <p class="text-xs font-medium">Link hinzufügen</p>
-                                                        </div>
-                                                    </div>
-                                                    <a 
-                                                        x-show="child.linkUrl && child.linkUrl.trim() !== ''"
-                                                        :data-block-id="child.id"
-                                                        :href="child.linkUrl"
-                                                        :target="child.linkTarget || '_self'"
-                                                        :style="child.style || ''"
-                                                        :class="['block-placeholder min-h-[1.5rem] text-sm text-blue-600 hover:text-blue-800 hover:underline', child.classes || '']"
-                                                        contenteditable="true"
-                                                        data-placeholder="Link-Text..."
-                                                        @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                                                        @keydown.backspace="handleBackspace(child.id, $event)"
-                                                        @focus="initBlockContent($event.target, child)"
-                                                        @click.stop="openLinkSettingsModal(child.id)"
-                                                        class="cursor-pointer"
-                                                    ></a>
-                                                </div>
+                                                <!-- Link in Spalte (threeColumn) - Verwendet zentrale Rendering-Methode aus link.js -->
+                                                <div x-show="child.type === 'link'" x-html="renderLinkChild(child, column, childIndex)"></div>
                                                 <!-- Checklist in Spalte -->
                                                 <div x-show="child.type === 'checklist'" 
                                                      :data-block-id="child.id"
@@ -2916,6 +2406,25 @@
                         </p>
                     </div>
 
+                    <!-- Link-Text Eingabe (nur für block) -->
+                    <div x-show="linkModal.type === 'block'">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Link-Text <span class="text-gray-400 font-normal text-xs">(optional)</span>:
+                        </label>
+                        <input 
+                            type="text"
+                            x-model="linkModal.linkText"
+                            @keydown.enter.prevent="saveLink()"
+                            @click.stop
+                            @focus.stop
+                            placeholder="Z.B. 'Mehr erfahren' oder leer lassen"
+                            class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <p class="mt-1 text-xs text-gray-500">
+                            Optionaler Text, der für den Link angezeigt wird. Wenn leer, wird die URL verwendet.
+                        </p>
+                    </div>
+
                     <!-- Target Auswahl (für block, edit und selection) -->
                     <div x-show="linkModal.type === 'block' || linkModal.type === 'edit' || linkModal.type === 'selection'">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -2950,7 +2459,7 @@
                                 class="text-blue-600 hover:text-blue-800 hover:underline"
                                 @click.stop
                             >
-                                <span x-text="linkModal.url || 'Keine URL eingegeben'"></span>
+                                <span x-text="(linkModal.linkText && linkModal.linkText.trim() !== '') ? linkModal.linkText : (linkModal.url || 'Keine URL eingegeben')"></span>
                             </a>
                             <span 
                                 x-show="!linkModal.url || linkModal.url.trim() === ''"
@@ -3028,31 +2537,54 @@
 
             <!-- Modal Body -->
             <div class="flex-1 overflow-y-auto p-6">
-                <p class="text-gray-700" x-text="confirmModal.message"></p>
+                <p class="text-gray-700" x-html="confirmModal.message"></p>
             </div>
 
             <!-- Modal Footer -->
             <div class="flex justify-end gap-3 p-6 border-t border-gray-200">
-                <button 
-                    @click="closeConfirmModal()"
-                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                    Abbrechen
-                </button>
-                <button 
-                    x-show="confirmModal.showExtend"
-                    @click="confirmModal.onExtend && confirmModal.onExtend()"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                    Erweitern
-                </button>
-                <button 
-                    x-show="confirmModal.onConfirm && !confirmModal.showExtend"
-                    @click="confirmAction()"
-                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                    Bestätigen
-                </button>
+                <!-- Link-Follow Buttons -->
+                <template x-if="confirmModal.showLinkFollow">
+                    <div class="flex gap-3 w-full">
+                        <button 
+                            @click="confirmModal.onCancel && confirmModal.onCancel()"
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex-1"
+                        >
+                            ✏️ Bearbeiten
+                        </button>
+                        <button 
+                            @click="confirmModal.onConfirm && confirmModal.onConfirm()"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex-1"
+                        >
+                            🔗 Link folgen
+                        </button>
+                    </div>
+                </template>
+                
+                <!-- Standard Buttons (wenn nicht Link-Follow) -->
+                <template x-if="!confirmModal.showLinkFollow">
+                    <div class="flex gap-3">
+                        <button 
+                            @click="closeConfirmModal()"
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                        >
+                            Abbrechen
+                        </button>
+                        <button 
+                            x-show="confirmModal.showExtend"
+                            @click="confirmModal.onExtend && confirmModal.onExtend()"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            Erweitern
+                        </button>
+                        <button 
+                            x-show="confirmModal.onConfirm && !confirmModal.showExtend"
+                            @click="confirmAction()"
+                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                        >
+                            Bestätigen
+                        </button>
+                    </div>
+                </template>
             </div>
         </div>
     </div>

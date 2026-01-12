@@ -58,7 +58,27 @@ export const Utils = {
         // Prüfe ob Element existiert
         if (!element || !block) return;
         
-        // Setze Inhalt nur wenn Element leer ist und Block Inhalt hat
+        // Für Link-Blöcke: Immer Inhalt setzen, wenn Werte vorhanden sind
+        if (block.type === 'link') {
+            // Bestimme den anzuzeigenden Text: linkText > content > linkUrl
+            let content = block.linkText || block.content || block.linkUrl || '';
+            
+            if (content) {
+                try {
+                    // Für Link-Blöcke immer textContent verwenden (kein HTML)
+                    element.textContent = content;
+                    // Aktualisiere auch block.content, falls es leer war
+                    if (!block.content || block.content.trim() === '') {
+                        block.content = content;
+                    }
+                } catch (error) {
+                    console.warn('Fehler beim Initialisieren des Link-Block-Inhalts:', error);
+                }
+            }
+            return;
+        }
+        
+        // Für andere Block-Typen: Setze Inhalt nur wenn Element leer ist und Block Inhalt hat
         if (!element.textContent) {
             let content = block.content;
             

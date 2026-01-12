@@ -11,16 +11,36 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.2/dist/cdn.min.js"></script>
     <script>
         // Wiederverwendbare Modal-Helper-Funktionen
-        document.addEventListener('alpine:init', () => {
-            // Helper für Modal-Overflow-Management
-            window.modalHelpers = {
-                openModal() {
+        // Initialisiere sofort, nicht erst bei alpine:init
+        window.modalHelpers = {
+            openModal() {
+                if (document.body) {
                     document.body.style.overflow = 'hidden';
-                },
-                closeModal() {
+                }
+            },
+            closeModal() {
+                if (document.body) {
                     document.body.style.overflow = '';
                 }
-            };
+            }
+        };
+        
+        // Aktualisiere auch bei alpine:init (falls nötig)
+        document.addEventListener('alpine:init', () => {
+            if (!window.modalHelpers) {
+                window.modalHelpers = {
+                    openModal() {
+                        if (document.body) {
+                            document.body.style.overflow = 'hidden';
+                        }
+                    },
+                    closeModal() {
+                        if (document.body) {
+                            document.body.style.overflow = '';
+                        }
+                    }
+                };
+            }
         });
     </script>
     <style>
@@ -2829,9 +2849,9 @@
         </button>
     </div>
 
-    <!-- Link Input Modal für Text-Selektion -->
+    <!-- Einheitliches Link-Modal -->
     <div 
-        x-show="showLinkInputModal"
+        x-show="showLinkModal"
         x-transition:enter="transition ease-out duration-300"
         x-transition:enter-start="opacity-0"
         x-transition:enter-end="opacity-100"
@@ -2839,11 +2859,11 @@
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
         class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-        @click.self="closeLinkInputModal()"
+        @click.self="closeLinkModal()"
         style="display: none;"
     >
         <div 
-            class="bg-white rounded-lg shadow-xl max-w-md w-full flex flex-col"
+            class="bg-white rounded-lg shadow-xl max-w-2xl w-full flex flex-col"
             @click.stop
             x-transition:enter="transition ease-out duration-300"
             x-transition:enter-start="opacity-0 scale-95"
@@ -2854,9 +2874,9 @@
         >
             <!-- Modal Header -->
             <div class="flex justify-between items-center p-6 border-b border-gray-200">
-                <h2 class="text-xl font-bold text-gray-900" x-text="editingLink ? '🔗 Link bearbeiten' : '🔗 Link hinzufügen'"></h2>
+                <h2 class="text-xl font-bold text-gray-900" x-text="linkModal.type === 'edit' ? '🔗 Link bearbeiten' : linkModal.type === 'block' ? '🔗 Link-Einstellungen' : '🔗 Link hinzufügen'"></h2>
                 <button 
-                    @click="closeLinkInputModal()"
+                    @click="closeLinkModal()"
                     class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                     title="Schließen"
                 >
@@ -2868,29 +2888,77 @@
 
             <!-- Modal Body -->
             <div class="flex-1 overflow-y-auto p-6">
-                <div class="space-y-4">
-                    <div>
+                <div class="space-y-6">
+                    <!-- Text-Anzeige (nur für selection und edit) -->
+                    <div x-show="linkModal.type === 'selection' || linkModal.type === 'edit'">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             Text:
                         </label>
-                        <div class="p-3 bg-gray-50 rounded-lg text-sm text-gray-700 border border-gray-200" x-text="selectedText || editingLink?.text || ''"></div>
+                        <div class="p-3 bg-gray-50 rounded-lg text-sm text-gray-700 border border-gray-200" x-text="linkModal.text || selectedText || ''"></div>
                     </div>
+                    
+                    <!-- URL Eingabe -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             URL:
                         </label>
                         <input 
-                            type="text"
-                            x-model="linkInputUrl"
-                            @keydown.enter.prevent="applyLinkToSelection()"
+                            type="url"
+                            x-model="linkModal.url"
+                            @keydown.enter.prevent="saveLink()"
                             @click.stop
                             @focus.stop
                             placeholder="https://example.com"
                             class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                         <p class="mt-1 text-xs text-gray-500">
-                            Beispiel: <code class="bg-gray-100 px-1 rounded">https://example.com</code>
+                            Die URL, zu der der Link führen soll
                         </p>
+                    </div>
+
+                    <!-- Target Auswahl (für block, edit und selection) -->
+                    <div x-show="linkModal.type === 'block' || linkModal.type === 'edit' || linkModal.type === 'selection'">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Link öffnen in:
+                        </label>
+                        <select 
+                            x-model="linkModal.target"
+                            @click.stop
+                            @focus.stop
+                            class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="_self">Gleichem Tab/Fenster</option>
+                            <option value="_blank">Neuem Tab/Fenster</option>
+                            <option value="_parent">Übergeordnetem Frame</option>
+                            <option value="_top">Vollständigem Fenster</option>
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500">
+                            Legt fest, wo der Link geöffnet werden soll
+                        </p>
+                    </div>
+
+                    <!-- Vorschau (nur für block) -->
+                    <div x-show="linkModal.type === 'block'" class="pt-4 border-t border-gray-200">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Vorschau:
+                        </label>
+                        <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 min-h-[60px] flex items-center">
+                            <a 
+                                x-show="linkModal.url && linkModal.url.trim() !== ''"
+                                :href="linkModal.url"
+                                :target="linkModal.target || '_self'"
+                                class="text-blue-600 hover:text-blue-800 hover:underline"
+                                @click.stop
+                            >
+                                <span x-text="linkModal.url || 'Keine URL eingegeben'"></span>
+                            </a>
+                            <span 
+                                x-show="!linkModal.url || linkModal.url.trim() === ''"
+                                class="text-gray-400"
+                            >
+                                Keine URL eingegeben
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2898,7 +2966,7 @@
             <!-- Modal Footer -->
             <div class="flex justify-between items-center gap-3 p-6 border-t border-gray-200">
                 <button 
-                    x-show="editingLink"
+                    x-show="linkModal.type === 'edit'"
                     @click="removeLink()"
                     class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                 >
@@ -2906,15 +2974,15 @@
                 </button>
                 <div class="flex gap-3 ml-auto">
                     <button 
-                        @click="closeLinkInputModal()"
+                        @click="closeLinkModal()"
                         class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                     >
                         Abbrechen
                     </button>
                     <button 
-                        @click="applyLinkToSelection()"
+                        @click="saveLink()"
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                        x-text="editingLink ? 'Link aktualisieren' : 'Link hinzufügen'"
+                        x-text="linkModal.type === 'edit' ? 'Link aktualisieren' : linkModal.type === 'block' ? 'Speichern' : 'Link hinzufügen'"
                     ></button>
                 </div>
             </div>
@@ -3235,128 +3303,6 @@
         </div>
     </div>
 
-    <!-- Link Settings Modal -->
-    <div 
-        x-show="showLinkSettingsModal"
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
-        class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-        @click.self="closeLinkSettingsModal()"
-        style="display: none;"
-    >
-        <div 
-            class="bg-white rounded-lg shadow-xl max-w-2xl w-full flex flex-col"
-            @click.stop
-            x-transition:enter="transition ease-out duration-300"
-            x-transition:enter-start="opacity-0 scale-95"
-            x-transition:enter-end="opacity-100 scale-100"
-            x-transition:leave="transition ease-in duration-200"
-            x-transition:leave-start="opacity-100 scale-100"
-            x-transition:leave-end="opacity-0 scale-95"
-        >
-            <!-- Modal Header -->
-            <div class="flex justify-between items-center p-6 border-b border-gray-200">
-                <h2 class="text-2xl font-bold text-gray-900">🔗 Link-Einstellungen</h2>
-                <button 
-                    @click="closeLinkSettingsModal()"
-                    class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    title="Schließen"
-                >
-                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-
-            <!-- Modal Body -->
-            <div class="flex-1 overflow-y-auto p-6">
-                <div class="space-y-6">
-                    <!-- URL Eingabe -->
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            URL:
-                        </label>
-                        <input 
-                            type="url"
-                            x-model="linkSettingsUrl"
-                            @click.stop
-                            @focus.stop
-                            placeholder="https://example.com"
-                            class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                        <p class="mt-1 text-xs text-gray-500">
-                            Die URL, zu der der Link führen soll
-                        </p>
-                    </div>
-
-                    <!-- Target Auswahl -->
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            Link öffnen in:
-                        </label>
-                        <select 
-                            x-model="linkSettingsTarget"
-                            @click.stop
-                            @focus.stop
-                            class="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                            <option value="_self">Gleichem Tab/Fenster</option>
-                            <option value="_blank">Neuem Tab/Fenster</option>
-                            <option value="_parent">Übergeordnetem Frame</option>
-                            <option value="_top">Vollständigem Fenster</option>
-                        </select>
-                        <p class="mt-1 text-xs text-gray-500">
-                            Legt fest, wo der Link geöffnet werden soll
-                        </p>
-                    </div>
-
-                    <!-- Vorschau -->
-                    <div class="pt-4 border-t border-gray-200">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            Vorschau:
-                        </label>
-                        <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 min-h-[60px] flex items-center">
-                            <a 
-                                x-show="linkSettingsUrl && linkSettingsUrl.trim() !== ''"
-                                :href="linkSettingsUrl"
-                                :target="linkSettingsTarget || '_self'"
-                                class="text-blue-600 hover:text-blue-800 hover:underline"
-                                @click.stop
-                            >
-                                <span x-text="linkSettingsUrl || 'Keine URL eingegeben'"></span>
-                            </a>
-                            <span 
-                                x-show="!linkSettingsUrl || linkSettingsUrl.trim() === ''"
-                                class="text-gray-400"
-                            >
-                                Keine URL eingegeben
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Modal Footer -->
-            <div class="flex justify-end gap-3 p-6 border-t border-gray-200">
-                <button 
-                    @click="closeLinkSettingsModal()"
-                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                    Abbrechen
-                </button>
-                <button 
-                    @click="saveLinkSettings()"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                    Speichern
-                </button>
-            </div>
-        </div>
-    </div>
 
 </body>
 </html>

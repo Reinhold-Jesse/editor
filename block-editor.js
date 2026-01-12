@@ -39,18 +39,21 @@ function blockEditor() {
         imageSettingsAlt: '',
         imageSettingsTitle: '',
         imageSettingsActiveTab: 'upload', // 'upload' oder 'url'
-        showLinkSettingsModal: false,
-        linkSettingsBlockId: null,
-        linkSettingsUrl: '',
-        linkSettingsTarget: '_self', // '_self', '_blank', etc.
         showFloatingToolbar: false,
         floatingToolbarPosition: { top: 0, left: 0 },
         selectedText: '',
         selectedRange: null,
-        showLinkInputModal: false,
-        linkInputUrl: '',
-        editingLink: null,
-        editingLinkElement: null,
+        // Einheitliches Link-Management-System
+        showLinkModal: false,
+        linkModal: {
+            type: null, // 'block', 'selection', 'edit' - Art des Links
+            blockId: null, // Block-ID (für Link-Blocks)
+            url: '', // Link-URL
+            target: '_self', // Link-Target ('_self', '_blank', etc.)
+            text: '', // Link-Text
+            element: null, // DOM-Element (für Edit-Modus)
+            range: null // Selection-Range (für Selection-Modus)
+        },
         newThemeName: '',
         editThemeName: '',
         editThemeOriginalName: '',
@@ -200,7 +203,7 @@ function blockEditor() {
                 if (this.showFloatingToolbar && !e.target.closest('.floating-toolbar')) {
                     // Prüfe ob Klick auf Toolbar oder Modal ist
                     if (!e.target.closest('[x-show*="showFloatingToolbar"]') && 
-                        !e.target.closest('[x-show*="showLinkInputModal"]')) {
+                        !e.target.closest('[x-show*="showLinkModal"]')) {
                         this.showFloatingToolbar = false;
                     }
                 }
@@ -273,22 +276,40 @@ function blockEditor() {
         },
 
         initBlockContent(element, block, isTextContent = false) {
-            Utils.initBlockContent(element, block, isTextContent);
+            if (!element || !block) return;
+            try {
+                Utils.initBlockContent(element, block, isTextContent);
+            } catch (error) {
+                console.warn('Fehler beim Initialisieren des Block-Inhalts:', error);
+            }
         },
 
         initTableCellContent(element, cell) {
+            // Prüfe ob Element und Cell existieren
+            if (!element || !cell) return;
+            
             // Nur initialisieren wenn Element leer ist und Cell Inhalt hat
-            if (!element.textContent && cell && cell.content) {
-                element.innerHTML = cell.content;
-                // Cursor ans Ende setzen
-                this.$nextTick(() => {
-                    const range = document.createRange();
-                    const sel = window.getSelection();
-                    range.selectNodeContents(element);
-                    range.collapse(false);
-                    sel.removeAllRanges();
-                    sel.addRange(range);
-                });
+            if (!element.textContent && cell.content) {
+                try {
+                    element.innerHTML = cell.content;
+                    // Cursor ans Ende setzen
+                    this.$nextTick(() => {
+                        try {
+                            const range = document.createRange();
+                            const sel = window.getSelection();
+                            if (sel && element) {
+                                range.selectNodeContents(element);
+                                range.collapse(false);
+                                sel.removeAllRanges();
+                                sel.addRange(range);
+                            }
+                        } catch (error) {
+                            // Ignoriere Fehler beim Setzen des Cursors
+                        }
+                    });
+                } catch (error) {
+                    console.warn('Fehler beim Initialisieren der Tabellenzelle:', error);
+                }
             }
         },
 
@@ -752,11 +773,18 @@ function blockEditor() {
                     await navigator.clipboard.writeText(this.exportJSONText);
                 } else {
                     // Fallback für ältere Browser
-                    if (this.$refs.exportJSONTextarea) {
-                        this.$refs.exportJSONTextarea.select();
-                        this.$refs.exportJSONTextarea.setSelectionRange(0, 99999);
-                        document.execCommand('copy');
-                    }
+                    this.$nextTick(() => {
+                        const textarea = this.$refs?.exportJSONTextarea;
+                        if (textarea) {
+                            try {
+                                textarea.select();
+                                textarea.setSelectionRange(0, 99999);
+                                document.execCommand('copy');
+                            } catch (err) {
+                                console.warn('Fehler beim Kopieren mit Fallback-Methode:', err);
+                            }
+                        }
+                    });
                 }
                 
                 // Erfolgsmeldung anzeigen
@@ -941,12 +969,12 @@ function blockEditor() {
             this.confirmModal = {
                 title: 'Theme laden',
                 message: `Möchten Sie das Theme "${themeName}" laden?`,
+                onConfirm: () => this.loadTheme(themeName),
                 onCancel: () => this.closeConfirmModal(),
                 onExtend: () => this.extendTheme(themeName),
                 showExtend: true
             };
             this.showConfirmModal = true;
-            if (window.modalHelpers) window.modalHelpers.openModal();
             if (window.modalHelpers) window.modalHelpers.openModal();
         },
 
@@ -1055,6 +1083,33 @@ function blockEditor() {
                 this.showNotification(`Theme "${themeName}" erfolgreich hinzugefügt!`, 'success');
             } catch (error) {
                 this.showNotification('Fehler beim Hinzufügen des Themes: ' + error.message, 'error');
+            }
+        },
+
+        async loadTheme(themeName) {
+            this.closeConfirmModal();
+            
+            try {
+                const updateCounter = (newCounter) => {
+                    this.blockIdCounter = newCounter;
+                };
+                
+                await Storage.loadTheme(
+                    themeName,
+                    this.blocks,
+                    this.blockIdCounter,
+                    this.$nextTick.bind(this),
+                    Utils.initAllBlockContents,
+                    updateCounter
+                );
+                
+                // Cache komplett leeren nach Theme-Laden (DOM wurde komplett neu aufgebaut)
+                this.clearElementCache();
+                this.selectedBlockId = null;
+                
+                this.showNotification(`Theme "${themeName}" erfolgreich geladen!`, 'success');
+            } catch (error) {
+                this.showNotification('Fehler beim Laden des Themes: ' + error.message, 'error');
             }
         },
 
@@ -1297,10 +1352,6 @@ function blockEditor() {
                     const reader = new FileReader();
                     reader.onload = (event) => {
                         const imageUrl = event.target.result;
-                        // Aktualisiere auch die Modal-Vorschau, wenn das Modal geöffnet ist
-                        if (this.showImageSettingsModal && this.imageSettingsBlockId === blockId) {
-                            this.imageSettingsUrl = imageUrl;
-                        }
                         BlockManagement.updateImageUrl(this.blocks, blockId, imageUrl);
                         
                         // Aktualisiere auch die Modal-Felder, falls das Modal geöffnet ist
@@ -1319,54 +1370,274 @@ function blockEditor() {
             input.click();
         },
 
-        openLinkSettingsModal(blockId) {
-            const { block } = this.findBlockById(blockId);
-            if (block && block.type === 'link') {
-                this.linkSettingsBlockId = blockId;
-                this.linkSettingsUrl = block.linkUrl || '';
-                this.linkSettingsTarget = block.linkTarget || '_self';
-                this.showLinkSettingsModal = true;
-                if (window.modalHelpers) window.modalHelpers.openModal();
-            }
-        },
-
-        closeLinkSettingsModal() {
-            this.showLinkSettingsModal = false;
-            this.linkSettingsBlockId = null;
-            this.linkSettingsUrl = '';
-            this.linkSettingsTarget = '_self';
-        },
-
-        saveLinkSettings() {
-            if (!this.linkSettingsBlockId) return;
+        // Einheitliches Link-Management-System
+        
+        /**
+         * Öffnet das Link-Modal für verschiedene Kontexte
+         * @param {string} type - 'block' (Link-Block), 'selection' (Text-Selektion), 'edit' (Link bearbeiten)
+         * @param {object} options - Optionale Parameter je nach Typ
+         */
+        openLinkModal(type, options = {}) {
+            // Reset Modal-Daten
+            this.linkModal = {
+                type: type,
+                blockId: null,
+                url: '',
+                target: '_self',
+                text: '',
+                element: null,
+                range: null
+            };
             
-            if (!this.linkSettingsUrl.trim()) {
+            if (type === 'block') {
+                // Link-Block bearbeiten
+                const { block } = this.findBlockById(options.blockId);
+                if (block && block.type === 'link') {
+                    this.linkModal.blockId = options.blockId;
+                    this.linkModal.url = block.linkUrl || '';
+                    this.linkModal.target = block.linkTarget || '_self';
+                    this.linkModal.text = block.content || '';
+                } else {
+                    return; // Ungültiger Block
+                }
+            } else if (type === 'selection') {
+                // Neuer Link für Text-Selektion
+                if (!this.selectedRange || !this.selectedText) return;
+                this.linkModal.range = this.selectedRange;
+                this.linkModal.text = this.selectedText;
+            } else if (type === 'edit') {
+                // Bestehenden Link in Text bearbeiten
+                if (!options.element || !options.blockElement) return;
+                const blockId = options.blockElement.getAttribute('data-block-id');
+                const href = options.element.getAttribute('href') || '';
+                const linkText = options.element.textContent || '';
+                const linkTarget = options.element.getAttribute('target') || '_self';
+                
+                this.linkModal.element = options.element;
+                this.linkModal.blockId = blockId;
+                this.linkModal.url = href;
+                this.linkModal.text = linkText;
+                this.linkModal.target = linkTarget;
+            }
+            
+            this.showLinkModal = true;
+            if (window.modalHelpers) window.modalHelpers.openModal();
+        },
+        
+        closeLinkModal() {
+            this.showLinkModal = false;
+            this.linkModal = {
+                type: null,
+                blockId: null,
+                url: '',
+                target: '_self',
+                text: '',
+                element: null,
+                range: null
+            };
+            if (window.modalHelpers) window.modalHelpers.closeModal();
+        },
+        
+        /**
+         * Speichert/aktualisiert den Link je nach Modal-Typ
+         */
+        saveLink() {
+            if (!this.linkModal.url.trim()) {
                 this.showNotification('Bitte geben Sie eine URL ein', 'warning');
                 return;
             }
             
-            const { block } = this.findBlockById(this.linkSettingsBlockId);
-            if (block && block.type === 'link') {
-                block.linkUrl = this.linkSettingsUrl.trim();
-                block.linkTarget = this.linkSettingsTarget;
-                
-                // Aktualisiere auch den Block-Inhalt, falls vorhanden
-                const blockElement = this.getBlockElement(this.linkSettingsBlockId);
-                if (blockElement && blockElement.tagName === 'A') {
-                    // Wenn der Link bereits Inhalt hat, behalte ihn
-                    if (!block.content || block.content.trim() === '') {
-                        // Setze Standard-Text wenn leer
-                        block.content = this.linkSettingsUrl;
+            const url = this.linkModal.url.trim();
+            const target = this.linkModal.target;
+            
+            if (this.linkModal.type === 'block') {
+                // Link-Block speichern
+                const { block } = this.findBlockById(this.linkModal.blockId);
+                if (block && block.type === 'link') {
+                    block.linkUrl = url;
+                    block.linkTarget = target;
+                    
+                    // Aktualisiere auch den Block-Inhalt, falls vorhanden
+                    const blockElement = this.getBlockElement(this.linkModal.blockId);
+                    if (blockElement && blockElement.tagName === 'A') {
+                        if (!block.content || block.content.trim() === '') {
+                            block.content = url;
+                        }
                     }
                 }
+                this.showNotification('Link-Einstellungen erfolgreich gespeichert!', 'success');
+            } else if (this.linkModal.type === 'selection') {
+                // Neuer Link für Selektion
+                if (!this.linkModal.range || !this.selectedBlockId) {
+                    this.showNotification('Bitte markieren Sie Text für den Link', 'warning');
+                    return;
+                }
+                
+                const element = this.getBlockElement(this.selectedBlockId);
+                if (!element) {
+                    this.closeLinkModal();
+                    return;
+                }
+                
+                // Stelle Selektion wieder her
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(this.linkModal.range);
+                
+                // Prüfe ob bereits ein Link markiert ist
+                const anchorNode = selection.anchorNode;
+                let linkElement = null;
+                if (anchorNode) {
+                    let parent = anchorNode.nodeType === 3 ? anchorNode.parentElement : anchorNode;
+                    while (parent && parent !== element) {
+                        if (parent.tagName === 'A' && parent.hasAttribute('href')) {
+                            linkElement = parent;
+                            break;
+                        }
+                        parent = parent.parentElement;
+                    }
+                }
+                
+                if (linkElement) {
+                    // Aktualisiere bestehenden Link
+                    linkElement.setAttribute('href', url);
+                    if (target !== '_self') {
+                        linkElement.setAttribute('target', target);
+                    } else {
+                        linkElement.removeAttribute('target');
+                    }
+                } else {
+                    // Erstelle neuen Link
+                    try {
+                        document.execCommand('createLink', false, url);
+                        // Setze Target nachträglich
+                        const newLink = selection.anchorNode ? 
+                            (selection.anchorNode.nodeType === 3 ? selection.anchorNode.parentElement : selection.anchorNode).closest('a') : null;
+                        if (newLink) {
+                            if (target !== '_self') {
+                                newLink.setAttribute('target', target);
+                            } else {
+                                newLink.removeAttribute('target');
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('Fehler beim Erstellen des Links:', error);
+                        this.showNotification('Link konnte nicht erstellt werden', 'warning');
+                        return;
+                    }
+                }
+                
+                // Aktualisiere Block-Inhalt
+                this.updateContentAfterLinkChange(element, selection);
+                
+                this.showNotification('Link erfolgreich hinzugefügt!', 'success');
+                this.showFloatingToolbar = false;
+                this.selectedRange = null;
+            } else if (this.linkModal.type === 'edit') {
+                // Bestehenden Link aktualisieren
+                if (!this.linkModal.element) {
+                    this.showNotification('Link-Element nicht gefunden', 'error');
+                    return;
+                }
+                
+                this.linkModal.element.setAttribute('href', url);
+                if (target !== '_self') {
+                    this.linkModal.element.setAttribute('target', target);
+                } else {
+                    this.linkModal.element.removeAttribute('target');
+                }
+                
+                // Aktualisiere Block-Inhalt
+                const blockElement = this.getBlockElement(this.linkModal.blockId);
+                if (blockElement) {
+                    this.$nextTick(() => {
+                        const { block } = this.findBlockById(this.linkModal.blockId);
+                        if (block) {
+                            this.updateBlockContent(this.linkModal.blockId, blockElement.innerHTML);
+                        }
+                    });
+                }
+                
+                this.showNotification('Link erfolgreich aktualisiert!', 'success');
             }
             
-            this.showNotification('Link-Einstellungen erfolgreich gespeichert!', 'success');
-            this.closeLinkSettingsModal();
+            this.closeLinkModal();
+        },
+        
+        /**
+         * Entfernt einen Link (nur für Edit-Modus)
+         */
+        removeLink() {
+            if (this.linkModal.type !== 'edit' || !this.linkModal.element) return;
+            
+            const blockId = this.linkModal.blockId;
+            const element = this.linkModal.element;
+            
+            // Entferne Link, behalte Text
+            const linkText = element.textContent;
+            const textNode = document.createTextNode(linkText);
+            element.parentNode.replaceChild(textNode, element);
+            
+            // Aktualisiere Block-Inhalt
+            const blockElement = this.getBlockElement(blockId);
+            if (blockElement) {
+                this.$nextTick(() => {
+                    const { block } = this.findBlockById(blockId);
+                    if (block) {
+                        this.updateBlockContent(blockId, blockElement.innerHTML);
+                    }
+                });
+            }
+            
+            this.showNotification('Link entfernt', 'success');
+            this.closeLinkModal();
+        },
+        
+        /**
+         * Helper-Funktion: Aktualisiert Block-Inhalt nach Link-Änderung
+         */
+        updateContentAfterLinkChange(element, selection) {
+            // Prüfe ob es ein Checklist-Eintrag ist
+            const checklistItemElement = selection.anchorNode ? 
+                (selection.anchorNode.nodeType === 3 ? selection.anchorNode.parentElement : selection.anchorNode).closest('[data-item-id]') : null;
+            const isChecklistItem = checklistItemElement !== null;
+            
+            this.$nextTick(() => {
+                if (isChecklistItem) {
+                    const itemId = checklistItemElement.getAttribute('data-item-id');
+                    const blockId = checklistItemElement.getAttribute('data-block-id');
+                    this.updateChecklistItemText(blockId, itemId, checklistItemElement.innerHTML);
+                } else {
+                    const { block } = this.findBlockById(this.selectedBlockId);
+                    if (block) {
+                        this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                    }
+                }
+            });
+        },
+        
+        // Rückwärtskompatibilität: Alte Funktionen als Wrapper
+        openLinkSettingsModal(blockId) {
+            this.openLinkModal('block', { blockId });
+        },
+        
+        closeLinkSettingsModal() {
+            this.closeLinkModal();
+        },
+        
+        saveLinkSettings() {
+            this.saveLink();
         },
 
         handleTextSelection() {
-            const selection = window.getSelection();
+            let selection;
+            try {
+                selection = window.getSelection();
+            } catch (error) {
+                console.warn('Fehler beim Abrufen der Selektion:', error);
+                this.showFloatingToolbar = false;
+                return;
+            }
             
             // Prüfe ob Text markiert ist
             if (!selection || selection.rangeCount === 0 || selection.toString().trim() === '') {
@@ -1374,10 +1645,18 @@ function blockEditor() {
                 return;
             }
             
-            const range = selection.getRangeAt(0);
+            let range;
+            try {
+                range = selection.getRangeAt(0);
+            } catch (error) {
+                console.warn('Fehler beim Abrufen des Range:', error);
+                this.showFloatingToolbar = false;
+                return;
+            }
+            
             const selectedText = selection.toString().trim();
             
-            if (!selectedText) {
+            if (!selectedText || !range) {
                 this.showFloatingToolbar = false;
                 return;
             }
@@ -1438,7 +1717,15 @@ function blockEditor() {
             }
             
             // Berechne Position der Toolbar
-            const rect = range.getBoundingClientRect();
+            let rect;
+            try {
+                rect = range.getBoundingClientRect();
+            } catch (error) {
+                console.warn('Fehler beim Abrufen der Bounding-Rect:', error);
+                this.showFloatingToolbar = false;
+                return;
+            }
+            
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
             
@@ -1448,9 +1735,15 @@ function blockEditor() {
             };
             
             // Speichere Range als Clone für spätere Verwendung
-            this.selectedText = selectedText;
-            this.selectedRange = range.cloneRange();
-            this.selectedBlockId = blockId;
+            try {
+                this.selectedText = selectedText;
+                this.selectedRange = range.cloneRange();
+                this.selectedBlockId = blockId;
+            } catch (error) {
+                console.warn('Fehler beim Klonen des Range:', error);
+                this.showFloatingToolbar = false;
+                return;
+            }
             
             // Wenn ein Link in der Selektion ist, öffne direkt Bearbeitung
             if (linkInSelection) {
@@ -1469,23 +1762,58 @@ function blockEditor() {
                 
                 // Speichere aktuelle Selektion
                 const currentSelection = window.getSelection();
+                if (!currentSelection) return 'off';
+                
                 const savedRanges = [];
-                for (let i = 0; i < currentSelection.rangeCount; i++) {
-                    savedRanges.push(currentSelection.getRangeAt(i).cloneRange());
+                try {
+                    for (let i = 0; i < currentSelection.rangeCount; i++) {
+                        savedRanges.push(currentSelection.getRangeAt(i).cloneRange());
+                    }
+                } catch (e) {
+                    // Ignoriere Fehler beim Speichern der Ranges
                 }
                 
                 // Stelle temporär unsere Selektion wieder her
-                currentSelection.removeAllRanges();
-                currentSelection.addRange(this.selectedRange);
-                
-                // Prüfe ob Formatierung aktiv ist
-                const isActive = document.queryCommandState(format);
-                
-                // Stelle ursprüngliche Selektion wieder her
-                currentSelection.removeAllRanges();
-                savedRanges.forEach(r => currentSelection.addRange(r));
-                
-                return isActive ? 'on' : 'off';
+                try {
+                    currentSelection.removeAllRanges();
+                    currentSelection.addRange(this.selectedRange);
+                    
+                    // Prüfe ob Formatierung aktiv ist
+                    let isActive = false;
+                    try {
+                        isActive = document.queryCommandState(format);
+                    } catch (e) {
+                        // queryCommandState kann in manchen Browsern fehlschlagen
+                        return 'off';
+                    }
+                    
+                    // Stelle ursprüngliche Selektion wieder her
+                    currentSelection.removeAllRanges();
+                    savedRanges.forEach(r => {
+                        try {
+                            currentSelection.addRange(r);
+                        } catch (e) {
+                            // Ignoriere Fehler beim Wiederherstellen
+                        }
+                    });
+                    
+                    return isActive ? 'on' : 'off';
+                } catch (e) {
+                    // Stelle ursprüngliche Selektion wieder her bei Fehler
+                    try {
+                        currentSelection.removeAllRanges();
+                        savedRanges.forEach(r => {
+                            try {
+                                currentSelection.addRange(r);
+                            } catch (e2) {
+                                // Ignoriere Fehler
+                            }
+                        });
+                    } catch (e2) {
+                        // Ignoriere Fehler
+                    }
+                    return 'off';
+                }
             } catch (e) {
                 return 'off';
             }
@@ -1501,9 +1829,16 @@ function blockEditor() {
             }
             
             // Stelle Selektion wieder her
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(this.selectedRange);
+            let selection;
+            try {
+                selection = window.getSelection();
+                if (!selection) return;
+                selection.removeAllRanges();
+                selection.addRange(this.selectedRange);
+            } catch (error) {
+                console.warn('Fehler beim Wiederherstellen der Selektion:', error);
+                return;
+            }
             
             // Prüfe ob es ein Checklist-Eintrag ist
             const checklistItemElement = selection.anchorNode ? 
@@ -1511,33 +1846,55 @@ function blockEditor() {
             const isChecklistItem = checklistItemElement !== null;
             
             // Prüfe ob Formatierung bereits aktiv ist (Toggle-Verhalten)
-            const isActive = document.queryCommandState(format);
+            let isActive = false;
+            try {
+                isActive = document.queryCommandState(format);
+            } catch (error) {
+                // queryCommandState kann in manchen Browsern fehlschlagen
+                console.warn('Fehler beim Prüfen des Format-Status:', error);
+            }
             
             // Wende Formatierung an oder entferne sie
-            if (isActive && format !== 'createLink') {
-                // Entferne Formatierung
-                document.execCommand(format, false, null);
-            } else {
-                // Wende Formatierung an
-                document.execCommand(format, false, null);
+            try {
+                if (isActive && format !== 'createLink') {
+                    // Entferne Formatierung
+                    document.execCommand(format, false, null);
+                } else {
+                    // Wende Formatierung an
+                    document.execCommand(format, false, null);
+                }
+            } catch (error) {
+                console.warn('Fehler beim Anwenden der Formatierung:', error);
+                this.showNotification('Formatierung konnte nicht angewendet werden', 'warning');
+                return;
             }
             
             // Aktualisiere Block-Inhalt oder Checklist-Eintrag
             this.$nextTick(() => {
-                if (isChecklistItem) {
-                    const itemId = checklistItemElement.getAttribute('data-item-id');
-                    const blockId = checklistItemElement.getAttribute('data-block-id');
-                    this.updateChecklistItemText(blockId, itemId, checklistItemElement.innerHTML);
-                } else {
-                    const { block } = this.findBlockById(this.selectedBlockId);
-                    if (block) {
-                        this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                try {
+                    if (isChecklistItem && checklistItemElement) {
+                        const itemId = checklistItemElement.getAttribute('data-item-id');
+                        const blockId = checklistItemElement.getAttribute('data-block-id');
+                        if (itemId && blockId) {
+                            this.updateChecklistItemText(blockId, itemId, checklistItemElement.innerHTML);
+                        }
+                    } else {
+                        const { block } = this.findBlockById(this.selectedBlockId);
+                        if (block && element) {
+                            this.updateBlockContent(this.selectedBlockId, element.innerHTML);
+                        }
                     }
-                }
-                // Aktualisiere selectedRange für weitere Formatierungen
-                const newSelection = window.getSelection();
-                if (newSelection.rangeCount > 0) {
-                    this.selectedRange = newSelection.getRangeAt(0).cloneRange();
+                    // Aktualisiere selectedRange für weitere Formatierungen
+                    try {
+                        const newSelection = window.getSelection();
+                        if (newSelection && newSelection.rangeCount > 0) {
+                            this.selectedRange = newSelection.getRangeAt(0).cloneRange();
+                        }
+                    } catch (error) {
+                        // Ignoriere Fehler beim Aktualisieren des Ranges
+                    }
+                } catch (error) {
+                    console.warn('Fehler beim Aktualisieren des Block-Inhalts:', error);
                 }
             });
         },
@@ -1552,9 +1909,16 @@ function blockEditor() {
             }
             
             // Stelle Selektion wieder her
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(this.selectedRange);
+            let selection;
+            try {
+                selection = window.getSelection();
+                if (!selection) return;
+                selection.removeAllRanges();
+                selection.addRange(this.selectedRange);
+            } catch (error) {
+                console.warn('Fehler beim Wiederherstellen der Selektion:', error);
+                return;
+            }
             
             // Prüfe ob es ein Checklist-Eintrag ist
             const checklistItemElement = selection.anchorNode ? 
@@ -1563,8 +1927,14 @@ function blockEditor() {
             const targetElement = isChecklistItem ? checklistItemElement : element;
             
             // Entferne alle Formatierungen
-            document.execCommand('removeFormat', false, null);
-            document.execCommand('unlink', false, null);
+            try {
+                document.execCommand('removeFormat', false, null);
+                document.execCommand('unlink', false, null);
+            } catch (error) {
+                console.warn('Fehler beim Entfernen der Formatierung:', error);
+                this.showNotification('Formatierung konnte nicht entfernt werden', 'warning');
+                return;
+            }
             
             // Aktualisiere Block-Inhalt oder Checklist-Eintrag
             this.$nextTick(() => {
@@ -1585,166 +1955,25 @@ function blockEditor() {
             this.selectedRange = null;
         },
 
+        // Rückwärtskompatibilität: Alte Funktionen für Links in Text
         editLink(linkElement, blockElement) {
-            const blockId = blockElement.getAttribute('data-block-id');
-            const href = linkElement.getAttribute('href') || '';
-            const linkText = linkElement.textContent || '';
-            
-            // Speichere Referenzen
-            this.editingLink = {
-                element: linkElement,
-                blockId: blockId,
-                href: href,
-                text: linkText
-            };
-            this.editingLinkElement = linkElement;
-            
-            // Öffne Modal mit aktuellen Werten
-            this.linkInputUrl = href;
-            this.selectedText = linkText;
-            this.showLinkInputModal = true;
+            this.openLinkModal('edit', { element: linkElement, blockElement });
         },
-
+        
         updateLink() {
-            if (!this.editingLink || !this.linkInputUrl.trim()) {
-                this.showNotification('Bitte geben Sie eine URL ein', 'warning');
-                return;
-            }
-            
-            const { element, blockId } = this.editingLink;
-            
-            // Aktualisiere Link-Attribut
-            element.setAttribute('href', this.linkInputUrl);
-            
-            // Aktualisiere Block-Inhalt
-            const blockElement = this.getBlockElement(blockId);
-            if (blockElement) {
-                this.$nextTick(() => {
-                    const { block } = this.findBlockById(blockId);
-                    if (block) {
-                        this.updateBlockContent(blockId, blockElement.innerHTML);
-                    }
-                });
-            }
-            
-            this.showNotification('Link erfolgreich aktualisiert!', 'success');
-            this.closeLinkInputModal();
-            this.editingLink = null;
-            this.editingLinkElement = null;
+            this.saveLink();
         },
-
-        removeLink() {
-            if (!this.editingLink) return;
-            
-            const { element, blockId } = this.editingLink;
-            
-            // Entferne Link, behalte Text
-            const linkText = element.textContent;
-            const textNode = document.createTextNode(linkText);
-            element.parentNode.replaceChild(textNode, element);
-            
-            // Aktualisiere Block-Inhalt
-            const blockElement = this.getBlockElement(blockId);
-            if (blockElement) {
-                this.$nextTick(() => {
-                    const { block } = this.findBlockById(blockId);
-                    if (block) {
-                        this.updateBlockContent(blockId, blockElement.innerHTML);
-                    }
-                });
-            }
-            
-            this.showNotification('Link entfernt', 'success');
-            this.closeLinkInputModal();
-            this.editingLink = null;
-            this.editingLinkElement = null;
-        },
-
+        
         openLinkInputForSelection() {
-            if (!this.selectedRange || !this.selectedText) return;
-            
-            this.linkInputUrl = '';
-            this.showLinkInputModal = true;
-            if (window.modalHelpers) window.modalHelpers.openModal();
+            this.openLinkModal('selection');
         },
-
+        
         closeLinkInputModal() {
-            this.showLinkInputModal = false;
-            this.linkInputUrl = '';
-            this.editingLink = null;
-            this.editingLinkElement = null;
-            if (window.modalHelpers) window.modalHelpers.closeModal();
+            this.closeLinkModal();
         },
-
+        
         applyLinkToSelection() {
-            // Wenn ein Link bearbeitet wird, aktualisiere ihn
-            if (this.editingLink) {
-                this.updateLink();
-                return;
-            }
-            
-            // Neuer Link für Selektion
-            if (!this.selectedRange || !this.linkInputUrl.trim() || !this.selectedBlockId) {
-                this.showNotification('Bitte geben Sie eine URL ein', 'warning');
-                return;
-            }
-            
-            const element = this.getBlockElement(this.selectedBlockId);
-            if (!element) {
-                this.closeLinkInputModal();
-                return;
-            }
-            
-            // Stelle Selektion wieder her
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(this.selectedRange);
-            
-            // Prüfe ob bereits ein Link markiert ist
-            const anchorNode = selection.anchorNode;
-            let linkElement = null;
-            if (anchorNode) {
-                let parent = anchorNode.parentElement;
-                while (parent && parent !== element) {
-                    if (parent.tagName === 'A') {
-                        linkElement = parent;
-                        break;
-                    }
-                    parent = parent.parentElement;
-                }
-            }
-            
-            if (linkElement) {
-                // Aktualisiere bestehenden Link
-                linkElement.setAttribute('href', this.linkInputUrl);
-            } else {
-                // Erstelle neuen Link
-                document.execCommand('createLink', false, this.linkInputUrl);
-            }
-            
-            // Prüfe ob es ein Checklist-Eintrag ist
-            const checklistItemElement = selection.anchorNode ? 
-                (selection.anchorNode.nodeType === 3 ? selection.anchorNode.parentElement : selection.anchorNode).closest('[data-item-id]') : null;
-            const isChecklistItem = checklistItemElement !== null;
-            
-            // Aktualisiere Block-Inhalt oder Checklist-Eintrag
-            this.$nextTick(() => {
-                if (isChecklistItem) {
-                    const itemId = checklistItemElement.getAttribute('data-item-id');
-                    const blockId = checklistItemElement.getAttribute('data-block-id');
-                    this.updateChecklistItemText(blockId, itemId, checklistItemElement.innerHTML);
-                } else {
-                    const { block } = this.findBlockById(this.selectedBlockId);
-                    if (block) {
-                        this.updateBlockContent(this.selectedBlockId, element.innerHTML);
-                    }
-                }
-            });
-            
-            this.showNotification('Link erfolgreich hinzugefügt!', 'success');
-            this.closeLinkInputModal();
-            this.showFloatingToolbar = false;
-            this.selectedRange = null;
+            this.saveLink();
         },
 
         applyTextAlignment(blockId, alignment) {
@@ -1778,16 +2007,19 @@ function blockEditor() {
             
             // Wende Ausrichtung an
             try {
-                document.execCommand('justifyLeft', false, null);
                 if (alignment === 'center') {
                     document.execCommand('justifyCenter', false, null);
                 } else if (alignment === 'right') {
                     document.execCommand('justifyRight', false, null);
                 } else if (alignment === 'left') {
                     document.execCommand('justifyLeft', false, null);
+                } else {
+                    document.execCommand('justifyLeft', false, null);
                 }
             } catch (e) {
                 console.warn('Text alignment command not supported:', e);
+                this.showNotification('Text-Ausrichtung konnte nicht angewendet werden', 'warning');
+                return;
             }
             
             // Prüfe ob es ein Checklist-Eintrag ist
@@ -1869,25 +2101,38 @@ function blockEditor() {
             }
             
             // Stelle Selektion wieder her
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(this.selectedRange);
+            let selection;
+            try {
+                selection = window.getSelection();
+                if (!selection) return;
+                selection.removeAllRanges();
+                selection.addRange(this.selectedRange);
+            } catch (error) {
+                console.warn('Fehler beim Wiederherstellen der Selektion:', error);
+                return;
+            }
             
             // Wende Textfarbe an
             try {
                 document.execCommand('foreColor', false, color);
             } catch (e) {
                 // Fallback: Erstelle span mit color style
-                const range = selection.getRangeAt(0);
-                const span = document.createElement('span');
-                span.style.color = color;
                 try {
-                    range.surroundContents(span);
-                } catch (e2) {
-                    // Wenn surroundContents fehlschlägt, verwende extractContents
-                    const contents = range.extractContents();
-                    span.appendChild(contents);
-                    range.insertNode(span);
+                    const range = selection.getRangeAt(0);
+                    const span = document.createElement('span');
+                    span.style.color = color;
+                    try {
+                        range.surroundContents(span);
+                    } catch (e2) {
+                        // Wenn surroundContents fehlschlägt, verwende extractContents
+                        const contents = range.extractContents();
+                        span.appendChild(contents);
+                        range.insertNode(span);
+                    }
+                } catch (e3) {
+                    console.warn('Fehler beim Anwenden der Textfarbe:', e3);
+                    this.showNotification('Textfarbe konnte nicht angewendet werden', 'warning');
+                    return;
                 }
             }
             
@@ -1924,9 +2169,16 @@ function blockEditor() {
             }
             
             // Stelle Selektion wieder her
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(this.selectedRange);
+            let selection;
+            try {
+                selection = window.getSelection();
+                if (!selection) return;
+                selection.removeAllRanges();
+                selection.addRange(this.selectedRange);
+            } catch (error) {
+                console.warn('Fehler beim Wiederherstellen der Selektion:', error);
+                return;
+            }
             
             // Prüfe ob es ein Checklist-Eintrag ist
             const checklistItemElement = selection.anchorNode ? 
@@ -1938,16 +2190,22 @@ function blockEditor() {
                 document.execCommand('backColor', false, color);
             } catch (e) {
                 // Fallback: Erstelle span mit backgroundColor style
-                const range = selection.getRangeAt(0);
-                const span = document.createElement('span');
-                span.style.backgroundColor = color;
                 try {
-                    range.surroundContents(span);
-                } catch (e2) {
-                    // Wenn surroundContents fehlschlägt, verwende extractContents
-                    const contents = range.extractContents();
-                    span.appendChild(contents);
-                    range.insertNode(span);
+                    const range = selection.getRangeAt(0);
+                    const span = document.createElement('span');
+                    span.style.backgroundColor = color;
+                    try {
+                        range.surroundContents(span);
+                    } catch (e2) {
+                        // Wenn surroundContents fehlschlägt, verwende extractContents
+                        const contents = range.extractContents();
+                        span.appendChild(contents);
+                        range.insertNode(span);
+                    }
+                } catch (e3) {
+                    console.warn('Fehler beim Anwenden der Hintergrundfarbe:', e3);
+                    this.showNotification('Hintergrundfarbe konnte nicht angewendet werden', 'warning');
+                    return;
                 }
             }
             

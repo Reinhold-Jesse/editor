@@ -55,63 +55,89 @@ export const Utils = {
     },
 
     initBlockContent(element, block, isTextContent = false) {
+        // Prüfe ob Element existiert
+        if (!element || !block) return;
+        
         // Setze Inhalt nur wenn Element leer ist und Block Inhalt hat
         if (!element.textContent) {
             let content = block.content;
             
             if (content) {
-                if (isTextContent) {
-                    element.textContent = content;
-                } else {
-                    element.innerHTML = content;
+                try {
+                    if (isTextContent) {
+                        element.textContent = content;
+                    } else {
+                        element.innerHTML = content;
+                    }
+                } catch (error) {
+                    console.warn('Fehler beim Initialisieren des Block-Inhalts:', error);
                 }
             }
         }
     },
 
     initAllBlockContents(blocks) {
+        if (!blocks || !Array.isArray(blocks)) return;
+        
         blocks.forEach(block => {
-            const element = document.querySelector(`[data-block-id="${block.id}"]`);
-            if (element && !element.textContent) {
-                let content = block.content;
-                
-                if (content) {
-                    if (block.type === 'code') {
-                        element.textContent = content;
-                    } else {
-                        element.innerHTML = content;
+            if (!block || !block.id) return;
+            
+            try {
+                const element = document.querySelector(`[data-block-id="${block.id}"]`);
+                if (element && !element.textContent) {
+                    let content = block.content;
+                    
+                    if (content) {
+                        if (block.type === 'code') {
+                            element.textContent = content;
+                        } else {
+                            element.innerHTML = content;
+                        }
                     }
                 }
-            }
-            
-            // Initialisiere Tabellenzellen
-            if (block.type === 'table' && block.tableData && block.tableData.cells) {
-                block.tableData.cells.forEach(row => {
-                    row.forEach(cell => {
-                        const cellElement = document.querySelector(`[data-cell-id="${cell.id}"]`);
-                        if (cellElement && !cellElement.textContent && cell.content) {
-                            cellElement.innerHTML = cell.content;
+                
+                // Initialisiere Tabellenzellen
+                if (block.type === 'table' && block.tableData && block.tableData.cells) {
+                    block.tableData.cells.forEach(row => {
+                        if (!Array.isArray(row)) return;
+                        row.forEach(cell => {
+                            if (!cell || !cell.id) return;
+                            try {
+                                const cellElement = document.querySelector(`[data-cell-id="${cell.id}"]`);
+                                if (cellElement && !cellElement.textContent && cell.content) {
+                                    cellElement.innerHTML = cell.content;
+                                }
+                            } catch (error) {
+                                console.warn('Fehler beim Initialisieren der Tabellenzelle:', error);
+                            }
+                        });
+                    });
+                }
+                
+                // Initialisiere Children
+                if (block.children && Array.isArray(block.children)) {
+                    block.children.forEach(child => {
+                        if (!child || !child.id) return;
+                        try {
+                            const childElement = document.querySelector(`[data-block-id="${child.id}"]`);
+                            if (childElement && !childElement.textContent) {
+                                let content = child.content;
+                                
+                                if (content) {
+                                    if (child.type === 'code') {
+                                        childElement.textContent = content;
+                                    } else {
+                                        childElement.innerHTML = content;
+                                    }
+                                }
+                            }
+                        } catch (error) {
+                            console.warn('Fehler beim Initialisieren des Child-Blocks:', error);
                         }
                     });
-                });
-            }
-            
-            // Initialisiere Children
-            if (block.children) {
-                block.children.forEach(child => {
-                    const childElement = document.querySelector(`[data-block-id="${child.id}"]`);
-                    if (childElement && !childElement.textContent) {
-                        let content = child.content;
-                        
-                        if (content) {
-                            if (child.type === 'code') {
-                                childElement.textContent = content;
-                            } else {
-                                childElement.innerHTML = content;
-                            }
-                        }
-                    }
-                });
+                }
+            } catch (error) {
+                console.warn('Fehler beim Initialisieren des Blocks:', error);
             }
         });
     }

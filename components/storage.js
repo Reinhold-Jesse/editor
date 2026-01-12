@@ -227,18 +227,132 @@ export const Storage = {
             }
         }
         
-        // Versuche auch Themes aus dem themes Ordner zu laden (wenn Server verfügbar)
+        // Lade Themes aus dem themes Ordner (wenn Server verfügbar)
+        const themesFromFolder = await this._loadThemesFromFolder();
+        
+        // Kombiniere Themes: Themes aus dem Ordner haben Priorität
+        // Erstelle eine Map für schnelles Lookup
+        const themesMap = new Map();
+        
+        // Füge zuerst Themes aus LocalStorage hinzu
+        themes.forEach(theme => {
+            themesMap.set(theme.filename || theme.name.toLowerCase(), theme);
+        });
+        
+        // Überschreibe/Ergänze mit Themes aus dem Ordner
+        themesFromFolder.forEach(theme => {
+            const key = theme.filename || theme.name.toLowerCase();
+            // Wenn Theme bereits existiert, aktualisiere es mit Daten aus dem Ordner
+            if (themesMap.has(key)) {
+                const existing = themesMap.get(key);
+                themesMap.set(key, { ...existing, ...theme, data: theme.data || existing.data });
+            } else {
+                // Füge neues Theme hinzu
+                themesMap.set(key, theme);
+            }
+        });
+        
+        // Konvertiere Map zurück zu Array
+        return Array.from(themesMap.values());
+    },
+
+    // Lädt alle Themes aus dem themes Ordner
+    async _loadThemesFromFolder() {
+        const themesFromFolder = [];
+        
+        // Versuche zuerst, eine index.json zu laden, die eine Liste aller Themes enthält
+        let allFiles = [];
+        
         try {
-            const response = await fetch('themes/');
-            if (response.ok) {
-                // Wenn der Server ein Verzeichnis-Listing unterstützt, könnten wir hier die Dateien auflisten
-                // Für jetzt verlassen wir uns auf LocalStorage und manuelles Laden
+            const indexResponse = await fetch('themes/index.json');
+            if (indexResponse.ok) {
+                const indexData = await indexResponse.json();
+                if (Array.isArray(indexData.files)) {
+                    allFiles = indexData.files;
+                } else if (Array.isArray(indexData)) {
+                    // Falls index.json direkt ein Array ist
+                    allFiles = indexData;
+                }
             }
         } catch (error) {
-            // Ignoriere Fehler - themes Ordner möglicherweise nicht über HTTP verfügbar
+            // Ignoriere Fehler - index.json existiert möglicherweise nicht
         }
         
-        return themes;
+        // Wenn keine index.json gefunden wurde, versuche bekannte Dateien und automatische Erkennung
+        if (allFiles.length === 0) {
+            // Versuche, alle JSON-Dateien im themes Ordner zu finden
+            // Da HTTP-Server normalerweise kein Verzeichnis-Listing unterstützen,
+            // versuchen wir bekannte Patterns und Dateien
+            const knownThemeFiles = [
+                'block-editor-1765371313540.json',
+                'block-editor-1765371474322.json'
+            ];
+            
+            // Versuche auch, ein Verzeichnis-Listing zu bekommen (falls unterstützt)
+            try {
+                const dirResponse = await fetch('themes/');
+                if (dirResponse.ok) {
+                    const html = await dirResponse.text();
+                    // Versuche, Links zu JSON-Dateien aus dem HTML zu extrahieren
+                    const jsonLinks = html.match(/href="([^"]+\.json)"/g);
+                    if (jsonLinks) {
+                        jsonLinks.forEach(link => {
+                            const filename = link.match(/href="([^"]+)"/)[1];
+                            if (filename && !allFiles.includes(filename)) {
+                                allFiles.push(filename);
+                            }
+                        });
+                    }
+                }
+            } catch (error) {
+                // Ignoriere Fehler - Verzeichnis-Listing nicht verfügbar
+            }
+            
+            // Füge bekannte Dateien hinzu, falls noch nicht vorhanden
+            knownThemeFiles.forEach(file => {
+                if (!allFiles.includes(file)) {
+                    allFiles.push(file);
+                }
+            });
+        }
+        
+        // Versuche, jede Datei zu laden
+        for (const filename of allFiles) {
+            if (!filename.endsWith('.json')) continue;
+            
+            try {
+                const response = await fetch(`themes/${filename}`);
+                if (response.ok) {
+                    const blocks = await response.json();
+                    
+                    // Validiere, dass es ein Array von Blöcken ist
+                    if (Array.isArray(blocks) && blocks.length > 0 && blocks[0].id && blocks[0].type) {
+                        // Extrahiere Theme-Namen aus Dateinamen
+                        const themeName = filename
+                            .replace('.json', '')
+                            .replace(/^block-editor-/, '')
+                            .replace(/[_-]/g, ' ')
+                            .replace(/\b\w/g, l => l.toUpperCase())
+                            .trim() || filename.replace('.json', '');
+                        
+                        const themeData = {
+                            name: themeName,
+                            filename: filename,
+                            data: blocks,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date(response.headers.get('last-modified') || new Date().toISOString()).toISOString()
+                        };
+                        
+                        themesFromFolder.push(themeData);
+                    }
+                }
+            } catch (error) {
+                // Ignoriere Fehler für einzelne Dateien
+                console.warn(`Fehler beim Laden von Theme-Datei "${filename}":`, error);
+            }
+        }
+        
+        return themesFromFolder;
     },
 
     async loadTheme(themeName, blocks, blockIdCounter, $nextTick, initAllBlockContents, updateCounter) {

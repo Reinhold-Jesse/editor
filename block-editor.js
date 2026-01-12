@@ -1732,6 +1732,46 @@ function blockEditor() {
             return '';
         },
         
+        /**
+         * Rendert einen Image-Block mit allen Optionen
+         * @param {object} block - Der Block-Objekt
+         * @returns {string} HTML-String für den Block
+         */
+        renderImageBlock(block) {
+            const component = getBlockComponent('image');
+            if (component && component.renderHTML) {
+                return component.renderHTML(block, {
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId,
+                    childBlockTypes: this.childBlockTypes,
+                    index: this.blocks.findIndex(b => b.id === block.id)
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Rendert einen Child-Image-Block
+         * @param {object} child - Der Child-Block-Objekt
+         * @param {object} parentBlock - Der Parent-Block-Objekt
+         * @param {number} childIndex - Der Index des Child-Blocks
+         * @returns {string} HTML-String für den Child-Block
+         */
+        renderImageChild(child, parentBlock, childIndex) {
+            const component = getBlockComponent('image');
+            if (component && component.renderChildHTML) {
+                return component.renderChildHTML(child, {
+                    block: parentBlock,
+                    childIndex: childIndex,
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId
+                });
+            }
+            return '';
+        },
+        
         closeLinkSettingsModal() {
             this.closeLinkModal();
         },

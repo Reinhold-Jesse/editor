@@ -9,6 +9,8 @@ import { ChecklistManagement } from './components/checklist-management.js';
 import { BLOCK_TYPES, BlockTypes } from './components/block-types.js';
 import { renderJSONBlocks } from './components/json-renderer.js';
 import { getBlockComponent } from './components/blocks/index.js';
+// Template-System Import
+import { getAllTemplates } from './components/templates/index.js';
 
 function blockEditor() {
     return {
@@ -87,8 +89,17 @@ function blockEditor() {
         textSelectionTimeout: null, // Debounce-Timeout für Text-Selektion
         elementCache: new Map(), // Cache für DOM-Elemente
         eventListeners: [], // Array für Event Listener Cleanup
+        // Templates für HTML-Komponenten
+        templates: null, // Wird in init() geladen
 
         init() {
+            // Lade Templates beim Initialisieren
+            try {
+                this.templates = getAllTemplates();
+            } catch (error) {
+                console.warn('Fehler beim Laden der Templates:', error);
+                this.templates = {};
+            }
             // Stelle sicher, dass Column-Blöcke die richtige Anzahl von Spalten haben (falls Blöcke bereits vorhanden sind)
             BlockManagement.ensureColumnStructure(this.blocks);
             

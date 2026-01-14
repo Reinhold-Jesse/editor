@@ -23,6 +23,8 @@ function blockEditor() {
         dragOverIndex: null,
         showSidebar: false,
         sidebarTab: 'blocks',
+        blockSettingsCache: {}, // Cache für Block-Einstellungen HTML
+        blockSettingsVersion: 0, // Version für Reaktivität
         showImportModal: false,
         importJSONText: '',
         importJSONValid: false,
@@ -327,6 +329,127 @@ function blockEditor() {
         closeSidebar() {
             this.showSidebar = false;
             // this.selectedBlockId = null; // Optional: Block-Auswahl beibehalten
+        },
+        
+        /**
+         * Rendert die Einstellungen für einen Block aus der Komponente
+         * @param {object} block - Der Block-Objekt
+         * @returns {string} HTML-String für die Einstellungen
+         */
+        renderBlockSettings(block) {
+            if (!block || !block.type) {
+                return '';
+            }
+            
+            // Erstelle einen Cache-Key basierend auf Block-ID, Typ und relevanten Daten
+            const cacheKey = this.getBlockSettingsCacheKey(block);
+            
+            // Prüfe ob Cache vorhanden ist (Version wird in x-effect geprüft)
+            const cached = this.blockSettingsCache[cacheKey];
+            if (cached) {
+                return cached.html;
+            }
+            
+            const component = getBlockComponent(block.type);
+            if (component && component.getSettingsHTML) {
+                const settingsHTML = component.getSettingsHTML(block, {
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId,
+                    childBlockTypes: this.childBlockTypes,
+                    index: this.blocks.findIndex(b => b.id === block.id)
+                });
+                
+                // Speichere im Cache mit Version
+                this.blockSettingsCache[cacheKey] = {
+                    html: settingsHTML,
+                    version: this.blockSettingsVersion
+                };
+                return settingsHTML;
+            }
+            return '';
+        },
+        
+        /**
+         * Erstellt einen Cache-Key für Block-Einstellungen
+         * @param {object} block - Der Block-Objekt
+         * @returns {string} Cache-Key
+         */
+        getBlockSettingsCacheKey(block) {
+            if (!block || !block.id) {
+                return '';
+            }
+            
+            // Erstelle Key basierend auf Block-ID, Typ und relevanten Daten
+            let key = `${block.id}_${block.type}`;
+            
+            // Für Tabellen: Füge tableData-Info hinzu
+            if (block.type === 'table' && block.tableData) {
+                const rowCount = block.tableData.cells?.length || 0;
+                const colCount = block.tableData.cells?.[0]?.length || 0;
+                const hasHeader = block.tableData.hasHeader || false;
+                const hasFooter = block.tableData.hasFooter || false;
+                key += `_${rowCount}_${colCount}_${hasHeader}_${hasFooter}`;
+            }
+            
+            // Für Checklist: Füge Items-Count hinzu
+            if (block.type === 'checklist' && block.checklistData) {
+                const itemsCount = block.checklistData.items?.length || 0;
+                key += `_${itemsCount}`;
+            }
+            
+            return key;
+        },
+        
+        /**
+         * Invalidiert den Cache für einen Block
+         * @param {string} blockId - Die Block-ID
+         */
+        invalidateBlockSettingsCache(blockId) {
+            if (!blockId) {
+                // Lösche gesamten Cache
+                this.blockSettingsCache = {};
+                this.blockSettingsVersion++;
+                return;
+            }
+            
+            // Lösche nur Einträge für diesen Block
+            Object.keys(this.blockSettingsCache).forEach(key => {
+                if (key.startsWith(`${blockId}_`)) {
+                    delete this.blockSettingsCache[key];
+                }
+            });
+            
+            // Erhöhe Version für Reaktivität (nur wenn Block gefunden wurde)
+            const block = this.blocks.find(b => b.id === blockId) || 
+                         this.getAllBlocks().find(b => b.id === blockId);
+            if (block) {
+                this.blockSettingsVersion++;
+            }
+        },
+        
+        /**
+         * Aktualisiert die Block-Einstellungen reaktiv
+         * @param {object} block - Der Block-Objekt
+         * @param {HTMLElement} element - Das DOM-Element
+         */
+        updateBlockSettingsReactive(block, element) {
+            if (!block || !block.id || this.selectedBlockId !== block.id) {
+                return;
+            }
+            
+            const cacheKey = this.getBlockSettingsCacheKey(block);
+            const cached = this.blockSettingsCache[cacheKey];
+            const currentVersion = this.blockSettingsVersion;
+            
+            if (!cached || cached.version !== currentVersion) {
+                this.$nextTick(() => {
+                    const newHTML = this.renderBlockSettings(block);
+                    if (element && element.innerHTML !== newHTML) {
+                        element.innerHTML = newHTML;
+                    }
+                });
+            }
         },
 
         addBlock(type, content = '') {
@@ -838,26 +961,31 @@ function blockEditor() {
             const result = TableManagement.addTableRow(this.blocks, blockId, this.blockIdCounter, position);
             if (result) {
                 this.blockIdCounter = result.lastCellIdCounter + 1;
+                this.invalidateBlockSettingsCache(blockId);
             }
         },
 
         removeTableRow(blockId, rowIndex) {
             TableManagement.removeTableRow(this.blocks, blockId, rowIndex);
+            this.invalidateBlockSettingsCache(blockId);
         },
 
         addTableColumn(blockId, position = 'right') {
             const result = TableManagement.addTableColumn(this.blocks, blockId, this.blockIdCounter, position);
             if (result) {
                 this.blockIdCounter = result.lastCellIdCounter + 1;
+                this.invalidateBlockSettingsCache(blockId);
             }
         },
 
         removeTableColumn(blockId, colIndex) {
             TableManagement.removeTableColumn(this.blocks, blockId, colIndex);
+            this.invalidateBlockSettingsCache(blockId);
         },
 
         mergeTableCells(blockId, startRow, startCol, endRow, endCol) {
             TableManagement.mergeTableCells(this.blocks, blockId, startRow, startCol, endRow, endCol);
+            this.invalidateBlockSettingsCache(blockId);
         },
 
         unmergeTableCells(blockId, row, col) {
@@ -870,10 +998,12 @@ function blockEditor() {
 
         toggleTableHeader(blockId) {
             TableManagement.toggleTableHeader(this.blocks, blockId);
+            this.invalidateBlockSettingsCache(blockId);
         },
 
         toggleTableFooter(blockId) {
             TableManagement.toggleTableFooter(this.blocks, blockId);
+            this.invalidateBlockSettingsCache(blockId);
         },
 
         // Checklist Management Functions
@@ -1688,6 +1818,58 @@ function blockEditor() {
             };
             this.showConfirmModal = true;
             if (window.modalHelpers) window.modalHelpers.openModal();
+        },
+        
+        /**
+         * Zentrale Rendering-Funktion für alle Block-Typen
+         * @param {object} block - Der Block-Objekt
+         * @returns {string} HTML-String für den Block
+         */
+        renderBlock(block) {
+            if (!block || !block.type) {
+                console.warn('renderBlock: Block ohne Typ gefunden', block);
+                return '';
+            }
+            
+            // Container-Blöcke werden jetzt auch über diese Funktion gerendert
+            
+            const component = getBlockComponent(block.type);
+            if (component && component.renderHTML) {
+                return component.renderHTML(block, {
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId,
+                    childBlockTypes: this.childBlockTypes,
+                    index: this.blocks.findIndex(b => b.id === block.id)
+                });
+            }
+            return '';
+        },
+        
+        /**
+         * Zentrale Rendering-Funktion für alle Child-Blöcke
+         * @param {object} child - Der Child-Block-Objekt
+         * @param {object} parentBlock - Der Parent-Block-Objekt
+         * @param {number} childIndex - Der Index des Child-Blocks
+         * @returns {string} HTML-String für den Child-Block
+         */
+        renderChild(child, parentBlock, childIndex) {
+            if (!child || !child.type) {
+                console.warn('renderChild: Child ohne Typ gefunden', child);
+                return '';
+            }
+            
+            const component = getBlockComponent(child.type);
+            if (component && component.renderChildHTML) {
+                return component.renderChildHTML(child, {
+                    block: parentBlock,
+                    childIndex: childIndex,
+                    selectedBlockId: this.selectedBlockId,
+                    draggingBlockId: this.draggingBlockId,
+                    hoveredBlockId: this.hoveredBlockId
+                });
+            }
+            return '';
         },
         
         /**

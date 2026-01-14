@@ -59,8 +59,9 @@ export const ParagraphBlock = {
                     :class="['block-placeholder min-h-[1.5rem] text-sm', child.classes || '']"
                     contenteditable="true"
                     data-placeholder="Child Absatz..."
+                    x-init="$nextTick(() => initBlockContent($el, child))"
                     @input="updateBlockContent(child.id, $event.target.innerHTML)"
-                    @keydown.enter.prevent="addChildAfter(block.id, childIndex, 'paragraph')"
+                    @keydown.enter.prevent="addChildAfter((column && column.id) || (block && block.id), childIndex, 'paragraph')"
                     @keydown.backspace="handleBackspace(child.id, $event)"
                     @focus="initBlockContent($event.target, child)"
                 ></div>
@@ -84,6 +85,11 @@ export const ParagraphBlock = {
     cleanup(block) {
         // Keine Cleanup-Logik für Standard-Blöcke
         return block;
+    },
+    
+    // Einstellungen HTML für Sidebar (Standard: keine speziellen Einstellungen)
+    getSettingsHTML(block, context = {}) {
+        return '';
     }
 };
 

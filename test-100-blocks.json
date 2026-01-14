@@ -1,0 +1,797 @@
+[
+  {
+    "id": "block-1-1000",
+    "type": "heading1",
+    "content": "Großer Test mit 100 Blöcken",
+    "createdAt": "2025-01-14T10:00:00.000Z"
+  },
+  {
+    "id": "block-2-1000",
+    "type": "paragraph",
+    "content": "Dieser JSON-Test deckt alle Block-Typen ab, inklusive verschachtelter Strukturen in zwei- und dreispaltigen Layouts.",
+    "createdAt": "2025-01-14T10:00:01.000Z"
+  },
+  {
+    "id": "block-3-1000",
+    "type": "heading2",
+    "content": "Überschriften & Absätze",
+    "createdAt": "2025-01-14T10:00:02.000Z"
+  },
+  {
+    "id": "block-4-1000",
+    "type": "paragraph",
+    "content": "Absatz 1: Einfache Textkomponente zur Basisprüfung des Paragraph-Typs.",
+    "createdAt": "2025-01-14T10:00:03.000Z"
+  },
+  {
+    "id": "block-5-1000",
+    "type": "paragraph",
+    "content": "Absatz 2: Noch ein Standard-Paragraph mit etwas mehr Textinhalt.",
+    "createdAt": "2025-01-14T10:00:04.000Z"
+  },
+  {
+    "id": "block-6-1000",
+    "type": "heading3",
+    "content": "Code & Zitate",
+    "createdAt": "2025-01-14T10:00:05.000Z"
+  },
+  {
+    "id": "block-7-1000",
+    "type": "code",
+    "content": "function halloWelt() {\n  console.log('Hallo Welt aus dem Test!');\n}\n\nhalloWelt();",
+    "createdAt": "2025-01-14T10:00:06.000Z"
+  },
+  {
+    "id": "block-8-1000",
+    "type": "quote",
+    "content": "„Dies ist ein Testzitat, um die Quote-Komponente zu prüfen.“",
+    "createdAt": "2025-01-14T10:00:07.000Z"
+  },
+  {
+    "id": "block-9-1000",
+    "type": "divider",
+    "content": "",
+    "createdAt": "2025-01-14T10:00:08.000Z"
+  },
+  {
+    "id": "block-10-1000",
+    "type": "paragraph",
+    "content": "Nach der Trennlinie folgt ein weiterer Absatz, um Layout und Abstände zu testen.",
+    "createdAt": "2025-01-14T10:00:09.000Z"
+  },
+  {
+    "id": "block-11-1000",
+    "type": "image",
+    "imageUrl": "https://via.placeholder.com/800x400?text=Bild+Block+1",
+    "imageAlt": "Testbild 1",
+    "imageTitle": "Testbild 1 - Placeholder",
+    "createdAt": "2025-01-14T10:00:10.000Z"
+  },
+  {
+    "id": "block-12-1000",
+    "type": "paragraph",
+    "content": "Unter dem Bild ein kurzer erklärender Absatz, um Bild- und Textkombinationen zu prüfen.",
+    "createdAt": "2025-01-14T10:00:11.000Z"
+  },
+  {
+    "id": "block-13-1000",
+    "type": "table",
+    "content": "",
+    "createdAt": "2025-01-14T10:00:12.000Z"
+  },
+  {
+    "id": "block-14-1000",
+    "type": "paragraph",
+    "content": "Oben steht eine Tabelle. Die Tabelle wird beim Import automatisch initialisiert und kann dann im Editor angepasst werden.",
+    "createdAt": "2025-01-14T10:00:13.000Z"
+  },
+  {
+    "id": "block-15-1000",
+    "type": "checklist",
+    "content": "",
+    "createdAt": "2025-01-14T10:00:14.000Z"
+  },
+  {
+    "id": "block-16-1000",
+    "type": "paragraph",
+    "content": "Über dieser Zeile befindet sich eine Checkliste. Beim Import werden automatisch Einträge erzeugt.",
+    "createdAt": "2025-01-14T10:00:15.000Z"
+  },
+  {
+    "id": "block-17-1000",
+    "type": "link",
+    "linkUrl": "https://example.com",
+    "linkText": "Externer Test-Link zu example.com",
+    "linkTarget": "_blank",
+    "content": "Externer Test-Link zu example.com",
+    "createdAt": "2025-01-14T10:00:16.000Z"
+  },
+  {
+    "id": "block-18-1000",
+    "type": "paragraph",
+    "content": "Der Link oben testet die Link-Komponente inklusive Ziel (_blank) und anpassbarem Linktext.",
+    "createdAt": "2025-01-14T10:00:17.000Z"
+  },
+  {
+    "id": "block-19-1000",
+    "type": "twoColumn",
+    "content": "",
+    "children": [
+      {
+        "id": "col-19-1-1000",
+        "type": "column",
+        "children": [
+          {
+            "id": "block-19-1-1000",
+            "type": "heading3",
+            "content": "Zweispaltiges Layout – Spalte 1"
+          },
+          {
+            "id": "block-19-2-1000",
+            "type": "paragraph",
+            "content": "In dieser Spalte stehen ein Heading3 und ein Paragraph als Test."
+          },
+          {
+            "id": "block-19-3-1000",
+            "type": "image",
+            "imageUrl": "https://via.placeholder.com/400x200?text=TwoColumn+S1+Bild",
+            "imageAlt": "TwoColumn Bild Spalte 1",
+            "imageTitle": "TwoColumn Bild Spalte 1"
+          }
+        ]
+      },
+      {
+        "id": "col-19-2-1000",
+        "type": "column",
+        "children": [
+          {
+            "id": "block-19-4-1000",
+            "type": "heading3",
+            "content": "Zweispaltiges Layout – Spalte 2"
+          },
+          {
+            "id": "block-19-5-1000",
+            "type": "checklist",
+            "content": ""
+          },
+          {
+            "id": "block-19-6-1000",
+            "type": "link",
+            "linkUrl": "https://www.google.com",
+            "linkText": "Google in Spalte 2",
+            "linkTarget": "_blank",
+            "content": "Google in Spalte 2"
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-01-14T10:00:18.000Z"
+  },
+  {
+    "id": "block-20-1000",
+    "type": "paragraph",
+    "content": "Der Block oben ist ein TwoColumn-Container mit verschiedenen Child-Komponenten pro Spalte.",
+    "createdAt": "2025-01-14T10:00:19.000Z"
+  },
+  {
+    "id": "block-21-1000",
+    "type": "threeColumn",
+    "content": "",
+    "children": [
+      {
+        "id": "col-21-1-1000",
+        "type": "column",
+        "children": [
+          {
+            "id": "block-21-1-1000",
+            "type": "paragraph",
+            "content": "Dreispaltiges Layout – Spalte 1 mit Paragraph."
+          },
+          {
+            "id": "block-21-2-1000",
+            "type": "code",
+            "content": "console.log('ThreeColumn Spalte 1');"
+          }
+        ]
+      },
+      {
+        "id": "col-21-2-1000",
+        "type": "column",
+        "children": [
+          {
+            "id": "block-21-3-1000",
+            "type": "paragraph",
+            "content": "Dreispaltiges Layout – Spalte 2 mit Paragraph und Bild."
+          },
+          {
+            "id": "block-21-4-1000",
+            "type": "image",
+            "imageUrl": "https://via.placeholder.com/300x200?text=ThreeColumn+S2+Bild",
+            "imageAlt": "ThreeColumn Bild Spalte 2",
+            "imageTitle": "ThreeColumn Bild Spalte 2"
+          }
+        ]
+      },
+      {
+        "id": "col-21-3-1000",
+        "type": "column",
+        "children": [
+          {
+            "id": "block-21-5-1000",
+            "type": "paragraph",
+            "content": "Dreispaltiges Layout – Spalte 3 mit Zitat und Link."
+          },
+          {
+            "id": "block-21-6-1000",
+            "type": "quote",
+            "content": "„ThreeColumn-Block mit verschachtelten Komponenten.“"
+          },
+          {
+            "id": "block-21-7-1000",
+            "type": "link",
+            "linkUrl": "https://tailwindcss.com",
+            "linkText": "Tailwind CSS Doku",
+            "linkTarget": "_blank",
+            "content": "Tailwind CSS Doku"
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-01-14T10:00:20.000Z"
+  },
+  {
+    "id": "block-22-1000",
+    "type": "paragraph",
+    "content": "Der ThreeColumn-Block oben enthält pro Spalte unterschiedliche Komponenten und testet verschachtelte Inhalte.",
+    "createdAt": "2025-01-14T10:00:21.000Z"
+  },
+  {
+    "id": "block-23-1000",
+    "type": "heading2",
+    "content": "Weitere einfache Testblöcke",
+    "createdAt": "2025-01-14T10:00:22.000Z"
+  },
+  {
+    "id": "block-24-1000",
+    "type": "paragraph",
+    "content": "Absatz 3: Weitere Inhalte zur Füllung der Blockliste.",
+    "createdAt": "2025-01-14T10:00:23.000Z"
+  },
+  {
+    "id": "block-25-1000",
+    "type": "paragraph",
+    "content": "Absatz 4: Noch ein Paragraph, um Scroll-Verhalten und Layout zu testen.",
+    "createdAt": "2025-01-14T10:00:24.000Z"
+  },
+  {
+    "id": "block-26-1000",
+    "type": "heading3",
+    "content": "Längere Liste von Blöcken",
+    "createdAt": "2025-01-14T10:00:25.000Z"
+  },
+  {
+    "id": "block-27-1000",
+    "type": "paragraph",
+    "content": "Absatz 5: Dieser Absatz ist Teil der langen Testliste.",
+    "createdAt": "2025-01-14T10:00:26.000Z"
+  },
+  {
+    "id": "block-28-1000",
+    "type": "paragraph",
+    "content": "Absatz 6: Noch ein weiterer Paragraph mit einfachem Text.",
+    "createdAt": "2025-01-14T10:00:27.000Z"
+  },
+  {
+    "id": "block-29-1000",
+    "type": "quote",
+    "content": "„Ein weiteres Zitat zur optischen Auflockerung.“",
+    "createdAt": "2025-01-14T10:00:28.000Z"
+  },
+  {
+    "id": "block-30-1000",
+    "type": "divider",
+    "content": "",
+    "createdAt": "2025-01-14T10:00:29.000Z"
+  },
+  {
+    "id": "block-31-1000",
+    "type": "paragraph",
+    "content": "Absatz 7 nach einer weiteren Trennlinie.",
+    "createdAt": "2025-01-14T10:00:30.000Z"
+  },
+  {
+    "id": "block-32-1000",
+    "type": "heading3",
+    "content": "Zusätzliche Code- und Bildtests",
+    "createdAt": "2025-01-14T10:00:31.000Z"
+  },
+  {
+    "id": "block-33-1000",
+    "type": "code",
+    "content": "<div class=\"test-code\">HTML im Codeblock</div>",
+    "createdAt": "2025-01-14T10:00:32.000Z"
+  },
+  {
+    "id": "block-34-1000",
+    "type": "image",
+    "imageUrl": "https://via.placeholder.com/500x300?text=Bild+Block+2",
+    "imageAlt": "Testbild 2",
+    "imageTitle": "Testbild 2 - Placeholder",
+    "createdAt": "2025-01-14T10:00:33.000Z"
+  },
+  {
+    "id": "block-35-1000",
+    "type": "paragraph",
+    "content": "Unter Bild 2: weiterer Text, um Bild-Layouts mit längeren Texten zu prüfen.",
+    "createdAt": "2025-01-14T10:00:34.000Z"
+  },
+  {
+    "id": "block-36-1000",
+    "type": "checklist",
+    "content": "",
+    "createdAt": "2025-01-14T10:00:35.000Z"
+  },
+  {
+    "id": "block-37-1000",
+    "type": "paragraph",
+    "content": "Die Checkliste oberhalb dieses Absatzes kann um weitere Einträge erweitert und umsortiert werden.",
+    "createdAt": "2025-01-14T10:00:36.000Z"
+  },
+  {
+    "id": "block-38-1000",
+    "type": "link",
+    "linkUrl": "https://alpinejs.dev",
+    "linkText": "Alpine.js Dokumentation",
+    "linkTarget": "_blank",
+    "content": "Alpine.js Dokumentation",
+    "createdAt": "2025-01-14T10:00:37.000Z"
+  },
+  {
+    "id": "block-39-1000",
+    "type": "paragraph",
+    "content": "Der Link oben verweist auf die Alpine.js-Dokumentation.",
+    "createdAt": "2025-01-14T10:00:38.000Z"
+  },
+  {
+    "id": "block-40-1000",
+    "type": "table",
+    "content": "",
+    "createdAt": "2025-01-14T10:00:39.000Z"
+  },
+  {
+    "id": "block-41-1000",
+    "type": "paragraph",
+    "content": "Diese zusätzliche Tabelle testet mehrere Tabelleninstanzen im selben Dokument.",
+    "createdAt": "2025-01-14T10:00:40.000Z"
+  },
+  {
+    "id": "block-42-1000",
+    "type": "twoColumn",
+    "content": "",
+    "children": [
+      {
+        "id": "col-42-1-1000",
+        "type": "column",
+        "children": [
+          {
+            "id": "block-42-1-1000",
+            "type": "paragraph",
+            "content": "Zweispaltiger Testblock 2 – Spalte 1."
+          },
+          {
+            "id": "block-42-2-1000",
+            "type": "quote",
+            "content": "„TwoColumn Testblock 2 – Zitat in Spalte 1.“"
+          }
+        ]
+      },
+      {
+        "id": "col-42-2-1000",
+        "type": "column",
+        "children": [
+          {
+            "id": "block-42-3-1000",
+            "type": "paragraph",
+            "content": "Zweispaltiger Testblock 2 – Spalte 2 mit Paragraph."
+          },
+          {
+            "id": "block-42-4-1000",
+            "type": "image",
+            "imageUrl": "https://via.placeholder.com/300x200?text=TwoColumn+S2+Bild+2",
+            "imageAlt": "TwoColumn Bild 2 Spalte 2",
+            "imageTitle": "TwoColumn Bild 2 Spalte 2"
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-01-14T10:00:41.000Z"
+  },
+  {
+    "id": "block-43-1000",
+    "type": "paragraph",
+    "content": "Zusätzlicher Hinweistext zum zweiten TwoColumn-Block.",
+    "createdAt": "2025-01-14T10:00:42.000Z"
+  },
+  {
+    "id": "block-44-1000",
+    "type": "threeColumn",
+    "content": "",
+    "children": [
+      {
+        "id": "col-44-1-1000",
+        "type": "column",
+        "children": [
+          {
+            "id": "block-44-1-1000",
+            "type": "paragraph",
+            "content": "Dreispaltiger Testblock 2 – Spalte 1."
+          }
+        ]
+      },
+      {
+        "id": "col-44-2-1000",
+        "type": "column",
+        "children": [
+          {
+            "id": "block-44-2-1000",
+            "type": "paragraph",
+            "content": "Dreispaltiger Testblock 2 – Spalte 2."
+          }
+        ]
+      },
+      {
+        "id": "col-44-3-1000",
+        "type": "column",
+        "children": [
+          {
+            "id": "block-44-3-1000",
+            "type": "paragraph",
+            "content": "Dreispaltiger Testblock 2 – Spalte 3."
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-01-14T10:00:43.000Z"
+  },
+  {
+    "id": "block-45-1000",
+    "type": "paragraph",
+    "content": "Dieser ThreeColumn-Block ist etwas einfacher gehalten, testet aber denselben Typ ein weiteres Mal.",
+    "createdAt": "2025-01-14T10:00:44.000Z"
+  },
+  {
+    "id": "block-46-1000",
+    "type": "heading2",
+    "content": "Lange Sequenz aus Standardblöcken",
+    "createdAt": "2025-01-14T10:00:45.000Z"
+  },
+  {
+    "id": "block-47-1000",
+    "type": "paragraph",
+    "content": "Absatz 8: Beginn einer längeren Sequenz von Paragraphen und Zitaten.",
+    "createdAt": "2025-01-14T10:00:46.000Z"
+  },
+  {
+    "id": "block-48-1000",
+    "type": "paragraph",
+    "content": "Absatz 9: Noch mehr Inhalt zur Füllung.",
+    "createdAt": "2025-01-14T10:00:47.000Z"
+  },
+  {
+    "id": "block-49-1000",
+    "type": "quote",
+    "content": "„Zwischen den Absätzen taucht immer wieder ein Zitat auf.“",
+    "createdAt": "2025-01-14T10:00:48.000Z"
+  },
+  {
+    "id": "block-50-1000",
+    "type": "paragraph",
+    "content": "Absatz 10.",
+    "createdAt": "2025-01-14T10:00:49.000Z"
+  },
+  {
+    "id": "block-51-1000",
+    "type": "paragraph",
+    "content": "Absatz 11.",
+    "createdAt": "2025-01-14T10:00:50.000Z"
+  },
+  {
+    "id": "block-52-1000",
+    "type": "quote",
+    "content": "„Noch ein Zitat innerhalb der langen Sequenz.“",
+    "createdAt": "2025-01-14T10:00:51.000Z"
+  },
+  {
+    "id": "block-53-1000",
+    "type": "paragraph",
+    "content": "Absatz 12.",
+    "createdAt": "2025-01-14T10:00:52.000Z"
+  },
+  {
+    "id": "block-54-1000",
+    "type": "paragraph",
+    "content": "Absatz 13.",
+    "createdAt": "2025-01-14T10:00:53.000Z"
+  },
+  {
+    "id": "block-55-1000",
+    "type": "paragraph",
+    "content": "Absatz 14.",
+    "createdAt": "2025-01-14T10:00:54.000Z"
+  },
+  {
+    "id": "block-56-1000",
+    "type": "divider",
+    "content": "",
+    "createdAt": "2025-01-14T10:00:55.000Z"
+  },
+  {
+    "id": "block-57-1000",
+    "type": "paragraph",
+    "content": "Absatz 15 nach einer weiteren Trennlinie.",
+    "createdAt": "2025-01-14T10:00:56.000Z"
+  },
+  {
+    "id": "block-58-1000",
+    "type": "paragraph",
+    "content": "Absatz 16.",
+    "createdAt": "2025-01-14T10:00:57.000Z"
+  },
+  {
+    "id": "block-59-1000",
+    "type": "paragraph",
+    "content": "Absatz 17.",
+    "createdAt": "2025-01-14T10:00:58.000Z"
+  },
+  {
+    "id": "block-60-1000",
+    "type": "quote",
+    "content": "„Noch ein Zitat gegen Ende der Sequenz.“",
+    "createdAt": "2025-01-14T10:00:59.000Z"
+  },
+  {
+    "id": "block-61-1000",
+    "type": "paragraph",
+    "content": "Absatz 18.",
+    "createdAt": "2025-01-14T10:01:00.000Z"
+  },
+  {
+    "id": "block-62-1000",
+    "type": "paragraph",
+    "content": "Absatz 19.",
+    "createdAt": "2025-01-14T10:01:01.000Z"
+  },
+  {
+    "id": "block-63-1000",
+    "type": "paragraph",
+    "content": "Absatz 20.",
+    "createdAt": "2025-01-14T10:01:02.000Z"
+  },
+  {
+    "id": "block-64-1000",
+    "type": "paragraph",
+    "content": "Absatz 21.",
+    "createdAt": "2025-01-14T10:01:03.000Z"
+  },
+  {
+    "id": "block-65-1000",
+    "type": "paragraph",
+    "content": "Absatz 22.",
+    "createdAt": "2025-01-14T10:01:04.000Z"
+  },
+  {
+    "id": "block-66-1000",
+    "type": "paragraph",
+    "content": "Absatz 23.",
+    "createdAt": "2025-01-14T10:01:05.000Z"
+  },
+  {
+    "id": "block-67-1000",
+    "type": "paragraph",
+    "content": "Absatz 24.",
+    "createdAt": "2025-01-14T10:01:06.000Z"
+  },
+  {
+    "id": "block-68-1000",
+    "type": "paragraph",
+    "content": "Absatz 25.",
+    "createdAt": "2025-01-14T10:01:07.000Z"
+  },
+  {
+    "id": "block-69-1000",
+    "type": "paragraph",
+    "content": "Absatz 26.",
+    "createdAt": "2025-01-14T10:01:08.000Z"
+  },
+  {
+    "id": "block-70-1000",
+    "type": "paragraph",
+    "content": "Absatz 27.",
+    "createdAt": "2025-01-14T10:01:09.000Z"
+  },
+  {
+    "id": "block-71-1000",
+    "type": "paragraph",
+    "content": "Absatz 28.",
+    "createdAt": "2025-01-14T10:01:10.000Z"
+  },
+  {
+    "id": "block-72-1000",
+    "type": "paragraph",
+    "content": "Absatz 29.",
+    "createdAt": "2025-01-14T10:01:11.000Z"
+  },
+  {
+    "id": "block-73-1000",
+    "type": "paragraph",
+    "content": "Absatz 30.",
+    "createdAt": "2025-01-14T10:01:12.000Z"
+  },
+  {
+    "id": "block-74-1000",
+    "type": "paragraph",
+    "content": "Absatz 31.",
+    "createdAt": "2025-01-14T10:01:13.000Z"
+  },
+  {
+    "id": "block-75-1000",
+    "type": "paragraph",
+    "content": "Absatz 32.",
+    "createdAt": "2025-01-14T10:01:14.000Z"
+  },
+  {
+    "id": "block-76-1000",
+    "type": "paragraph",
+    "content": "Absatz 33.",
+    "createdAt": "2025-01-14T10:01:15.000Z"
+  },
+  {
+    "id": "block-77-1000",
+    "type": "paragraph",
+    "content": "Absatz 34.",
+    "createdAt": "2025-01-14T10:01:16.000Z"
+  },
+  {
+    "id": "block-78-1000",
+    "type": "paragraph",
+    "content": "Absatz 35.",
+    "createdAt": "2025-01-14T10:01:17.000Z"
+  },
+  {
+    "id": "block-79-1000",
+    "type": "paragraph",
+    "content": "Absatz 36.",
+    "createdAt": "2025-01-14T10:01:18.000Z"
+  },
+  {
+    "id": "block-80-1000",
+    "type": "paragraph",
+    "content": "Absatz 37.",
+    "createdAt": "2025-01-14T10:01:19.000Z"
+  },
+  {
+    "id": "block-81-1000",
+    "type": "paragraph",
+    "content": "Absatz 38.",
+    "createdAt": "2025-01-14T10:01:20.000Z"
+  },
+  {
+    "id": "block-82-1000",
+    "type": "paragraph",
+    "content": "Absatz 39.",
+    "createdAt": "2025-01-14T10:01:21.000Z"
+  },
+  {
+    "id": "block-83-1000",
+    "type": "paragraph",
+    "content": "Absatz 40.",
+    "createdAt": "2025-01-14T10:01:22.000Z"
+  },
+  {
+    "id": "block-84-1000",
+    "type": "paragraph",
+    "content": "Absatz 41.",
+    "createdAt": "2025-01-14T10:01:23.000Z"
+  },
+  {
+    "id": "block-85-1000",
+    "type": "paragraph",
+    "content": "Absatz 42.",
+    "createdAt": "2025-01-14T10:01:24.000Z"
+  },
+  {
+    "id": "block-86-1000",
+    "type": "paragraph",
+    "content": "Absatz 43.",
+    "createdAt": "2025-01-14T10:01:25.000Z"
+  },
+  {
+    "id": "block-87-1000",
+    "type": "paragraph",
+    "content": "Absatz 44.",
+    "createdAt": "2025-01-14T10:01:26.000Z"
+  },
+  {
+    "id": "block-88-1000",
+    "type": "paragraph",
+    "content": "Absatz 45.",
+    "createdAt": "2025-01-14T10:01:27.000Z"
+  },
+  {
+    "id": "block-89-1000",
+    "type": "paragraph",
+    "content": "Absatz 46.",
+    "createdAt": "2025-01-14T10:01:28.000Z"
+  },
+  {
+    "id": "block-90-1000",
+    "type": "paragraph",
+    "content": "Absatz 47.",
+    "createdAt": "2025-01-14T10:01:29.000Z"
+  },
+  {
+    "id": "block-91-1000",
+    "type": "paragraph",
+    "content": "Absatz 48.",
+    "createdAt": "2025-01-14T10:01:30.000Z"
+  },
+  {
+    "id": "block-92-1000",
+    "type": "paragraph",
+    "content": "Absatz 49.",
+    "createdAt": "2025-01-14T10:01:31.000Z"
+  },
+  {
+    "id": "block-93-1000",
+    "type": "paragraph",
+    "content": "Absatz 50.",
+    "createdAt": "2025-01-14T10:01:32.000Z"
+  },
+  {
+    "id": "block-94-1000",
+    "type": "heading3",
+    "content": "Abschlussbereich",
+    "createdAt": "2025-01-14T10:01:33.000Z"
+  },
+  {
+    "id": "block-95-1000",
+    "type": "paragraph",
+    "content": "Im Abschlussbereich werden noch einmal Link, Bild und Checkliste getestet.",
+    "createdAt": "2025-01-14T10:01:34.000Z"
+  },
+  {
+    "id": "block-96-1000",
+    "type": "image",
+    "imageUrl": "https://via.placeholder.com/600x300?text=Bild+Block+3",
+    "imageAlt": "Testbild 3",
+    "imageTitle": "Testbild 3 - Abschluss",
+    "createdAt": "2025-01-14T10:01:35.000Z"
+  },
+  {
+    "id": "block-97-1000",
+    "type": "link",
+    "linkUrl": "https://github.com",
+    "linkText": "GitHub Startseite",
+    "linkTarget": "_blank",
+    "content": "GitHub Startseite",
+    "createdAt": "2025-01-14T10:01:36.000Z"
+  },
+  {
+    "id": "block-98-1000",
+    "type": "checklist",
+    "content": "",
+    "createdAt": "2025-01-14T10:01:37.000Z"
+  },
+  {
+    "id": "block-99-1000",
+    "type": "paragraph",
+    "content": "Die Checkliste direkt über diesem Absatz gehört zum Abschlussbereich.",
+    "createdAt": "2025-01-14T10:01:38.000Z"
+  },
+  {
+    "id": "block-100-1000",
+    "type": "heading1",
+    "content": "Ende des 100-Blöcke-Tests",
+    "createdAt": "2025-01-14T10:01:39.000Z"
+  }
+]

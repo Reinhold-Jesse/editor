@@ -11,6 +11,7 @@ export const BlockManagement = {
             content: content,
             style: '',
             classes: '',
+            htmlId: '',
             createdAt: new Date().toISOString()
         };
         
@@ -123,6 +124,22 @@ export const BlockManagement = {
         const { block } = Utils.findBlockById(blocks, blockId);
         if (block) {
             block.classes = '';
+            block.updatedAt = new Date().toISOString();
+        }
+    },
+
+    updateBlockHtmlId(blocks, blockId, htmlId) {
+        const { block } = Utils.findBlockById(blocks, blockId);
+        if (block) {
+            block.htmlId = htmlId;
+            block.updatedAt = new Date().toISOString();
+        }
+    },
+
+    clearBlockHtmlId(blocks, blockId) {
+        const { block } = Utils.findBlockById(blocks, blockId);
+        if (block) {
+            block.htmlId = '';
             block.updatedAt = new Date().toISOString();
         }
     },
@@ -252,6 +269,8 @@ export const updateBlockStyle = BlockManagement.updateBlockStyle.bind(BlockManag
 export const clearBlockStyle = BlockManagement.clearBlockStyle.bind(BlockManagement);
 export const updateBlockClasses = BlockManagement.updateBlockClasses.bind(BlockManagement);
 export const clearBlockClasses = BlockManagement.clearBlockClasses.bind(BlockManagement);
+export const updateBlockHtmlId = BlockManagement.updateBlockHtmlId.bind(BlockManagement);
+export const clearBlockHtmlId = BlockManagement.clearBlockHtmlId.bind(BlockManagement);
 export const moveBlock = BlockManagement.moveBlock.bind(BlockManagement);
 export const updateImageUrl = BlockManagement.updateImageUrl.bind(BlockManagement);
 export const updateImageAlt = BlockManagement.updateImageAlt.bind(BlockManagement);

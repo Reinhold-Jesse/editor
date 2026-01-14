@@ -16,6 +16,7 @@ export const QuoteBlock = {
         content: '',
         style: '',
         classes: '',
+        htmlId: '',
         createdAt: '',
         updatedAt: ''
     },
@@ -25,6 +26,7 @@ export const QuoteBlock = {
             <div x-show="block.type === 'quote'">
                 <blockquote 
                     :data-block-id="block.id"
+                    :id="block.htmlId || null"
                     :style="block.style || ''"
                     :class="['block-placeholder border-l-4 border-blue-500 pl-4 italic text-gray-700 min-h-[1.5rem]', block.classes || '']"
                     contenteditable="true"
@@ -44,6 +46,7 @@ export const QuoteBlock = {
             <div x-show="child.type === 'quote'">
                 <blockquote 
                     :data-block-id="child.id"
+                    :id="child.htmlId || null"
                     :style="child.style || ''"
                     :class="['block-placeholder border-l-4 border-blue-500 pl-3 italic text-gray-700 min-h-[1.5rem] text-sm', child.classes || '']"
                     contenteditable="true"

@@ -18,6 +18,7 @@ export const TableBlock = {
         tableData: null,
         style: '',
         classes: '',
+        htmlId: '',
         createdAt: '',
         updatedAt: ''
     },
@@ -30,6 +31,7 @@ export const TableBlock = {
             <div x-show="block.type === 'table'" class="overflow-x-auto">
                 <table 
                     data-block-id="${blockId}"
+                    :id="block.htmlId || null"
                     :style="block.style || ''"
                     :class="['w-full border-collapse border border-gray-300', block.classes || '']"
                 >

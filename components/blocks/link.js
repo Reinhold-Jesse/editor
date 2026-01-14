@@ -22,6 +22,7 @@ export const LinkBlock = {
         linkTarget: '_self', // '_self', '_blank', etc.
         style: '',
         classes: '',
+        htmlId: '',
         createdAt: '',
         updatedAt: ''
     },
@@ -67,6 +68,7 @@ export const LinkBlock = {
             <div x-show="block.type === 'link'" class="relative w-full">
                 <a 
                     :data-block-id="block.id"
+                    :id="block.htmlId || null"
                     :href="block.linkUrl"
                     :target="block.linkTarget || '_self'"
                     :style="block.style || ''"
@@ -118,6 +120,7 @@ export const LinkBlock = {
             <div x-show="child.type === 'link'" class="relative w-full">
                 <a 
                     :data-block-id="child.id"
+                    :id="child.htmlId || null"
                     :href="child.linkUrl"
                     :target="child.linkTarget || '_self'"
                     :style="child.style || ''"
@@ -168,6 +171,7 @@ export const LinkBlock = {
                     <div x-show="block.linkUrl && block.linkUrl.trim() !== ''">
                         <a 
                             :data-block-id="block.id"
+                            :id="block.htmlId || null"
                             :href="block.linkUrl"
                             :target="block.linkTarget || '_self'"
                             :style="block.style || ''"

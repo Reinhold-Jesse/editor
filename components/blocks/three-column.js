@@ -17,6 +17,7 @@ export const ThreeColumnBlock = {
         children: [],
         style: '',
         classes: '',
+        htmlId: '',
         createdAt: '',
         updatedAt: ''
     },
@@ -25,7 +26,9 @@ export const ThreeColumnBlock = {
     renderHTML(block, context = {}) {
         return `
             <div x-show="block.type === 'threeColumn'" 
-                 class="grid grid-cols-3 gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]">
+                 :id="block.htmlId || null"
+                 :style="block.style || ''"
+                 :class="['grid grid-cols-3 gap-4 p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]', block.classes || '']">
                 <template x-for="(column, columnIndex) in (block.children || [])" :key="column.id">
                     <div class="space-y-2">
                         <div class="text-xs font-semibold text-gray-500 mb-2" x-text="'Spalte ' + (columnIndex + 1)"></div>
@@ -51,8 +54,10 @@ export const ThreeColumnBlock = {
     // Child-Version (für verschachtelte Container)
     renderChildHTML(child, context = {}) {
         return `
-            <div x-show="child.type === 'threeColumn'" 
-                 class="grid grid-cols-3 gap-2 p-2 border border-dashed border-gray-300 rounded min-h-[150px]">
+            <div x-show="child.type === 'threeColumn'"
+                 :id="child.htmlId || null"
+                 :style="child.style || ''"
+                 :class="['grid grid-cols-3 gap-2 p-2 border border-dashed border-gray-300 rounded min-h-[150px]', child.classes || '']">
                 <template x-for="(nestedColumn, nestedColumnIndex) in (child.children || [])" :key="nestedColumn.id">
                     <div class="space-y-1">
                         <div class="text-xs font-semibold text-gray-400 mb-1" x-text="'Spalte ' + (nestedColumnIndex + 1)"></div>

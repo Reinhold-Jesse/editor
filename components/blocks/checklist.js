@@ -19,6 +19,7 @@ export const ChecklistBlock = {
         checklistData: null,
         style: '',
         classes: '',
+        htmlId: '',
         createdAt: '',
         updatedAt: ''
     },
@@ -32,6 +33,7 @@ export const ChecklistBlock = {
         return `
             <div x-show="block.type === 'checklist'" 
                  data-block-id="${blockId}"
+                 :id="block.htmlId || null"
                  :style="block.style || ''"
                  :class="['space-y-2 p-4 border border-gray-300 rounded-lg', block.classes || '']">
                 <template x-for="(item, itemIndex) in (block.checklistData?.items || [])" :key="item.id">
@@ -116,6 +118,7 @@ export const ChecklistBlock = {
         return `
             <div x-show="child.type === 'checklist'" 
                  data-block-id="${childId}"
+                 :id="child.htmlId || null"
                  :style="child.style || ''"
                  :class="['space-y-2 p-4 border border-gray-300 rounded-lg', child.classes || '']">
                 <template x-for="(item, itemIndex) in (child.checklistData?.items || [])" :key="item.id">

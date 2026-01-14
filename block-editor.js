@@ -573,6 +573,14 @@ function blockEditor() {
             BlockManagement.clearBlockClasses(this.blocks, blockId);
         },
 
+        updateBlockHtmlId(blockId, htmlId) {
+            BlockManagement.updateBlockHtmlId(this.blocks, blockId, htmlId);
+        },
+
+        clearBlockHtmlId(blockId) {
+            BlockManagement.clearBlockHtmlId(this.blocks, blockId);
+        },
+
         addChild(parentBlockId, childType) {
             this.blockIdCounter++;
             const childBlock = ChildManagement.addChild(this.blocks, parentBlockId, this.blockIdCounter, childType);

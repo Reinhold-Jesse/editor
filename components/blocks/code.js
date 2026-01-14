@@ -16,6 +16,7 @@ export const CodeBlock = {
         content: '',
         style: '',
         classes: '',
+        htmlId: '',
         createdAt: '',
         updatedAt: ''
     },
@@ -25,6 +26,7 @@ export const CodeBlock = {
             <div x-show="block.type === 'code'">
                 <pre 
                     :data-block-id="block.id"
+                    :id="block.htmlId || null"
                     :style="block.style || ''"
                     :class="['block-placeholder bg-gray-900 text-green-400 p-4 rounded font-mono text-sm min-h-[4rem] whitespace-pre-wrap', block.classes || '']"
                     contenteditable="true"
@@ -44,6 +46,7 @@ export const CodeBlock = {
             <div x-show="child.type === 'code'">
                 <pre 
                     :data-block-id="child.id"
+                    :id="child.htmlId || null"
                     :style="child.style || ''"
                     :class="['block-placeholder bg-gray-900 text-green-400 p-3 rounded font-mono text-xs min-h-[3rem] whitespace-pre-wrap', child.classes || '']"
                     contenteditable="true"

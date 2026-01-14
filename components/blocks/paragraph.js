@@ -18,6 +18,7 @@ export const ParagraphBlock = {
         content: '',
         style: '',
         classes: '',
+        htmlId: '',
         createdAt: '',
         updatedAt: ''
     },
@@ -32,6 +33,7 @@ export const ParagraphBlock = {
             <div x-show="block.type === 'paragraph'">
                 <div 
                     :data-block-id="block.id"
+                    :id="block.htmlId || null"
                     :style="block.style || ''"
                     :class="['block-placeholder min-h-[1.5rem]', block.classes || '']"
                     contenteditable="true"
@@ -52,6 +54,7 @@ export const ParagraphBlock = {
             <div x-show="child.type === 'paragraph'">
                 <div 
                     :data-block-id="child.id"
+                    :id="child.htmlId || null"
                     :style="child.style || ''"
                     :class="['block-placeholder min-h-[1.5rem] text-sm', child.classes || '']"
                     contenteditable="true"

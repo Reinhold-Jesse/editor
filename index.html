@@ -326,6 +326,36 @@
                                 </div>
                             </div>
 
+                            <!-- HTML ID Editor -->
+                            <div @click.stop class="pt-4 border-t border-gray-200">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    HTML ID (Optional):
+                                </label>
+                                <input 
+                                    type="text"
+                                    x-model="block.htmlId"
+                                    @input="block.updatedAt = new Date().toISOString()"
+                                    @click.stop
+                                    @focus.stop
+                                    placeholder="z.B. my-custom-id"
+                                    class="w-full p-2 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                                <div 
+                                    class="mt-2 flex gap-2"
+                                    x-show="block.htmlId && block.htmlId.trim().length > 0"
+                                >
+                                    <button 
+                                        @click.stop="clearBlockHtmlId(block.id)"
+                                        class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+                                    >
+                                        Zurücksetzen
+                                    </button>
+                                </div>
+                                <div class="mt-2 text-xs text-gray-500">
+                                    Beispiel: <code class="bg-gray-100 px-1 rounded">my-section-header</code>
+                                </div>
+                            </div>
+
                             <!-- CSS Editor (Optional) -->
                             <div @click.stop class="pt-4 border-t border-gray-200">
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">

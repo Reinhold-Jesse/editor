@@ -15,6 +15,7 @@ export const DividerBlock = {
         type: 'divider',
         style: '',
         classes: '',
+        htmlId: '',
         createdAt: '',
         updatedAt: ''
     },
@@ -22,7 +23,11 @@ export const DividerBlock = {
     renderHTML(block, context = {}) {
         return `
             <div x-show="block.type === 'divider'">
-                <hr class="border-t-2 border-gray-300 my-4">
+                <hr 
+                    :id="block.htmlId || null"
+                    :style="block.style || ''"
+                    :class="['border-t-2 border-gray-300 my-4', block.classes || '']"
+                >
             </div>
         `;
     },

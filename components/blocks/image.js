@@ -21,6 +21,7 @@ export const ImageBlock = {
         imageTitle: '',
         style: '',
         classes: '',
+        htmlId: '',
         createdAt: '',
         updatedAt: ''
     },
@@ -58,6 +59,7 @@ export const ImageBlock = {
             <div x-show="block.type === 'image'" class="relative w-full">
                 <img 
                     :data-block-id="block.id"
+                    :id="block.htmlId || null"
                     :src="block.imageUrl"
                     :alt="block.imageAlt || ''"
                     :title="block.imageTitle || ''"
@@ -98,6 +100,7 @@ export const ImageBlock = {
             <div x-show="child.type === 'image'" class="relative w-full">
                 <img 
                     :data-block-id="child.id"
+                    :id="child.htmlId || null"
                     :src="child.imageUrl"
                     :alt="child.imageAlt || ''"
                     :title="child.imageTitle || ''"

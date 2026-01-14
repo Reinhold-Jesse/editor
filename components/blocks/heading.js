@@ -16,6 +16,7 @@ const createHeadingBlock = (level) => ({
         content: '',
         style: '',
         classes: '',
+        htmlId: '',
         createdAt: '',
         updatedAt: ''
     },
@@ -25,6 +26,7 @@ const createHeadingBlock = (level) => ({
             <div x-show="block.type === 'heading${level}'">
                 <h${level} 
                     :data-block-id="block.id"
+                    :id="block.htmlId || null"
                     :style="block.style || ''"
                     :class="['block-placeholder text-${level === 1 ? '3xl' : level === 2 ? '2xl' : 'xl'} font-bold mb-2 min-h-[${level === 1 ? '2rem' : level === 2 ? '1.75rem' : '1.5rem'}]', block.classes || '']"
                     contenteditable="true"
@@ -45,6 +47,7 @@ const createHeadingBlock = (level) => ({
             <div x-show="child.type === 'heading${level}'">
                 <h${level} 
                     :data-block-id="child.id"
+                    :id="child.htmlId || null"
                     :style="child.style || ''"
                     :class="['block-placeholder ${childClasses} font-bold mb-2 min-h-[${level === 1 ? '1.75rem' : '1.5rem'}]', child.classes || '']"
                     contenteditable="true"

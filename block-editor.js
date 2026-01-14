@@ -91,6 +91,19 @@ function blockEditor() {
         eventListeners: [], // Array für Event Listener Cleanup
         // Templates für HTML-Komponenten
         templates: null, // Wird in init() geladen
+        // Performance: Debouncing für Updates
+        updateBlockContentTimeout: null, // Debounce-Timeout für Block-Content-Updates
+        validateJSONTimeout: null, // Debounce-Timeout für JSON-Validierung
+        // Performance: Caching für Rendering
+        renderBlockCache: new Map(), // Cache für gerenderte Blöcke
+        renderBlockVersion: 0, // Version für Cache-Invalidierung
+        // Performance: JSON Display Cache
+        jsonDisplayCache: '', // Gecachter JSON-String für Debug-Display
+        jsonDisplayTimeout: null, // Debounce-Timeout für JSON-Display
+        jsonDisplayHash: '', // Hash der Blöcke für Change-Detection
+        // Performance: Block-Lookup Cache
+        blockLookupCache: new Map(), // Cache für findBlockById Ergebnisse
+        blockLookupCacheVersion: 0, // Version für Cache-Invalidierung
 
         init() {
             // Lade Templates beim Initialisieren
@@ -247,9 +260,25 @@ function blockEditor() {
                 clearTimeout(this.notificationTimeout);
                 this.notificationTimeout = null;
             }
+            if (this.updateBlockContentTimeout) {
+                clearTimeout(this.updateBlockContentTimeout);
+                this.updateBlockContentTimeout = null;
+            }
+            if (this.validateJSONTimeout) {
+                clearTimeout(this.validateJSONTimeout);
+                this.validateJSONTimeout = null;
+            }
+            if (this.jsonDisplayTimeout) {
+                clearTimeout(this.jsonDisplayTimeout);
+                this.jsonDisplayTimeout = null;
+            }
             
             // Clear Element Cache
             this.elementCache.clear();
+            // Clear Render Cache
+            this.renderBlockCache.clear();
+            // Clear Block Lookup Cache
+            this.blockLookupCache.clear();
         },
         
         // Optimierte Helper-Funktion für DOM-Element-Abfragen mit Caching
@@ -286,6 +315,75 @@ function blockEditor() {
         // Cache komplett leeren (z.B. nach größeren DOM-Änderungen)
         clearElementCache() {
             this.elementCache.clear();
+        },
+        
+        /**
+         * Erstellt einen einfachen Hash für Change-Detection
+         * @param {Array} blocks - Die Blöcke
+         * @returns {string} Hash-String
+         */
+        getBlocksHash(blocks) {
+            // Einfacher Hash basierend auf Anzahl, IDs und Content-Längen
+            if (!blocks || blocks.length === 0) return 'empty';
+            
+            let hash = `${blocks.length}_`;
+            blocks.forEach(block => {
+                if (block && block.id) {
+                    hash += `${block.id}_${block.type}_`;
+                    if (block.content) hash += `${block.content.length}_`;
+                    if (block.children && block.children.length > 0) {
+                        hash += `c${block.children.length}_`;
+                    }
+                }
+            });
+            return hash;
+        },
+        
+        /**
+         * Gibt den gecachten JSON-String für das Debug-Display zurück
+         * Wird debounced aktualisiert für bessere Performance
+         * @returns {string} JSON-String
+         */
+        getJSONDisplay() {
+            // Prüfe ob sich die Blöcke geändert haben
+            const currentHash = this.getBlocksHash(this.blocks);
+            
+            // Wenn Hash gleich ist und Cache vorhanden, gib Cache zurück
+            if (currentHash === this.jsonDisplayHash && this.jsonDisplayCache) {
+                return this.jsonDisplayCache;
+            }
+            
+            // Wenn bereits ein Timeout läuft, gib aktuellen Cache zurück
+            if (this.jsonDisplayTimeout) {
+                return this.jsonDisplayCache || '{}';
+            }
+            
+            // Aktualisiere Cache asynchron (debounced)
+            this.jsonDisplayTimeout = setTimeout(() => {
+                try {
+                    this.jsonDisplayCache = JSON.stringify(this.blocks, null, 2);
+                    this.jsonDisplayHash = this.getBlocksHash(this.blocks);
+                } catch (error) {
+                    this.jsonDisplayCache = '{}';
+                    this.jsonDisplayHash = '';
+                }
+                this.jsonDisplayTimeout = null;
+            }, 500); // 500ms Debounce für JSON-Display
+            
+            // Gib aktuellen Cache zurück (oder leeren String beim ersten Aufruf)
+            return this.jsonDisplayCache || '{}';
+        },
+        
+        /**
+         * Invalidiert den JSON-Display-Cache
+         */
+        invalidateJSONDisplayCache() {
+            if (this.jsonDisplayTimeout) {
+                clearTimeout(this.jsonDisplayTimeout);
+                this.jsonDisplayTimeout = null;
+            }
+            this.jsonDisplayCache = '';
+            this.jsonDisplayHash = '';
         },
 
         initAllBlockContents() {
@@ -473,6 +571,10 @@ function blockEditor() {
             // Stelle sicher, dass Column-Blöcke die richtige Anzahl von Spalten haben
             BlockManagement.ensureColumnStructure(this.blocks);
             
+            // Invalidiere Caches (neuer Block hinzugefügt)
+            this.invalidateJSONDisplayCache();
+            this.invalidateBlockLookupCache();
+            
             // Focus auf den neuen Block
             this.$nextTick(() => {
                 const element = this.getBlockElement(block.id);
@@ -514,8 +616,22 @@ function blockEditor() {
         },
 
         updateBlockContent(blockId, content) {
-            BlockManagement.updateBlockContent(this.blocks, blockId, content);
-            // Cache bleibt gültig, da nur Inhalt geändert wird
+            // Debounce für bessere Performance bei schnellen Eingaben
+            if (this.updateBlockContentTimeout) {
+                clearTimeout(this.updateBlockContentTimeout);
+            }
+            
+            // Speichere Block-ID und Content für den Timeout
+            const pendingUpdate = { blockId, content };
+            
+            this.updateBlockContentTimeout = setTimeout(() => {
+                BlockManagement.updateBlockContent(this.blocks, pendingUpdate.blockId, pendingUpdate.content);
+                // Invalidiere Render-Cache für diesen Block
+                this.invalidateRenderCache(pendingUpdate.blockId);
+                // Invalidiere JSON-Display-Cache
+                this.invalidateJSONDisplayCache();
+                this.updateBlockContentTimeout = null;
+            }, 150); // 150ms Debounce - guter Kompromiss zwischen Responsivität und Performance
         },
 
         deleteBlock(blockId) {
@@ -523,6 +639,9 @@ function blockEditor() {
             if (result.deleted) {
                 // Invalidiere Cache für gelöschten Block
                 this.invalidateBlockCache(blockId);
+                this.invalidateRenderCache(blockId);
+                this.invalidateJSONDisplayCache();
+                this.invalidateBlockLookupCache();
                 
                 this.selectedBlockId = null;
                 
@@ -547,6 +666,8 @@ function blockEditor() {
 
         moveBlock(index, direction) {
             BlockManagement.moveBlock(this.blocks, index, direction);
+            // Invalidiere JSON-Display-Cache (Reihenfolge hat sich geändert)
+            this.invalidateJSONDisplayCache();
         },
 
         handleBackspace(blockId, event) {
@@ -676,6 +797,8 @@ function blockEditor() {
             
             // Invalidiere Cache für diesen Block (DOM-Struktur hat sich geändert)
             this.invalidateBlockCache(blockId);
+            this.invalidateRenderCache(blockId);
+            this.invalidateJSONDisplayCache();
             
             // Focus auf den Block nach Typ-Änderung
             this.$nextTick(() => {
@@ -722,6 +845,10 @@ function blockEditor() {
                 // Stelle sicher, dass die Struktur korrekt ist (entfernt Children von nicht-Container-Blöcken)
                 BlockManagement.ensureColumnStructure(this.blocks);
                 
+                // Invalidiere Render-Cache für Parent und JSON-Display
+                this.invalidateRenderCache(parentBlockId);
+                this.invalidateJSONDisplayCache();
+                
                 this.selectedBlockId = childBlock.id;
                 
                 this.$nextTick(() => {
@@ -753,6 +880,9 @@ function blockEditor() {
 
         removeChild(parentBlockId, childIndex) {
             ChildManagement.removeChild(this.blocks, parentBlockId, childIndex);
+            // Invalidiere Render-Cache für Parent und JSON-Display
+            this.invalidateRenderCache(parentBlockId);
+            this.invalidateJSONDisplayCache();
         },
 
         removeChildFromColumn(parentBlockId, columnIndex, childIndex) {
@@ -786,7 +916,74 @@ function blockEditor() {
         },
 
         findBlockById(blockId) {
-            return Utils.findBlockById(this.blocks, blockId);
+            if (!blockId) return { block: null, parent: null };
+            
+            // Prüfe Cache
+            const cacheKey = `${blockId}_${this.blockLookupCacheVersion}`;
+            if (this.blockLookupCache.has(cacheKey)) {
+                return this.blockLookupCache.get(cacheKey);
+            }
+            
+            // Suche Block
+            const result = Utils.findBlockById(this.blocks, blockId);
+            
+            // Speichere im Cache (nur wenn Block gefunden wurde)
+            if (result && result.block) {
+                this.blockLookupCache.set(cacheKey, result);
+                
+                // Begrenze Cache-Größe (max 100 Einträge)
+                if (this.blockLookupCache.size > 100) {
+                    // Entferne älteste Einträge (einfache Strategie: lösche erste 20)
+                    const keysToDelete = Array.from(this.blockLookupCache.keys()).slice(0, 20);
+                    keysToDelete.forEach(key => this.blockLookupCache.delete(key));
+                }
+            }
+            
+            return result;
+        },
+        
+        /**
+         * Invalidiert den Block-Lookup-Cache
+         */
+        invalidateBlockLookupCache() {
+            this.blockLookupCacheVersion++;
+            // Optional: Cache komplett leeren wenn zu groß
+            if (this.blockLookupCache.size > 50) {
+                this.blockLookupCache.clear();
+            }
+        },
+        
+        /**
+         * Performance: Gibt gefilterte Header-Rows für Tabellen zurück
+         * Wird gecacht, um .filter() nicht bei jedem Re-Render auszuführen
+         * @param {object} block - Der Tabellen-Block
+         * @returns {Array} Gefilterte Header-Rows
+         */
+        getTableHeaderRows(block) {
+            if (!block || !block.tableData || !block.tableData.cells) return [];
+            return block.tableData.cells.filter(r => r && r[0] && r[0].isHeader);
+        },
+        
+        /**
+         * Performance: Gibt gefilterte Body-Rows für Tabellen zurück
+         * Wird gecacht, um .filter() nicht bei jedem Re-Render auszuführen
+         * @param {object} block - Der Tabellen-Block
+         * @returns {Array} Gefilterte Body-Rows
+         */
+        getTableBodyRows(block) {
+            if (!block || !block.tableData || !block.tableData.cells) return [];
+            return block.tableData.cells.filter(r => r && r[0] && !r[0].isHeader && !r[0].isFooter);
+        },
+        
+        /**
+         * Performance: Gibt gefilterte Footer-Rows für Tabellen zurück
+         * Wird gecacht, um .filter() nicht bei jedem Re-Render auszuführen
+         * @param {object} block - Der Tabellen-Block
+         * @returns {Array} Gefilterte Footer-Rows
+         */
+        getTableFooterRows(block) {
+            if (!block || !block.tableData || !block.tableData.cells) return [];
+            return block.tableData.cells.filter(r => r && r[0] && r[0].isFooter);
         },
 
         getAllBlocks() {
@@ -817,45 +1014,58 @@ function blockEditor() {
         },
 
         validateImportJSON() {
-            this.importJSONError = null;
-            this.importJSONValid = false;
-            this.importJSONPreview = null;
-
-            if (!this.importJSONText.trim()) {
-                return;
+            // Debounce für bessere Performance bei schnellen Eingaben
+            if (this.validateJSONTimeout) {
+                clearTimeout(this.validateJSONTimeout);
             }
+            
+            this.validateJSONTimeout = setTimeout(() => {
+                this.importJSONError = null;
+                this.importJSONValid = false;
+                this.importJSONPreview = null;
 
-            try {
-                const parsed = JSON.parse(this.importJSONText);
-                
-                // Prüfe ob es ein Array ist
-                if (!Array.isArray(parsed)) {
-                    this.importJSONError = 'JSON muss ein Array von Blöcken sein.';
+                if (!this.importJSONText.trim()) {
+                    this.validateJSONTimeout = null;
                     return;
                 }
 
-                // Prüfe ob Blöcke die erforderlichen Felder haben
-                if (parsed.length === 0) {
-                    this.importJSONError = 'Das Array ist leer.';
-                    return;
-                }
-
-                // Validiere Block-Struktur
-                for (let i = 0; i < parsed.length; i++) {
-                    const block = parsed[i];
-                    if (!block.id || !block.type) {
-                        this.importJSONError = `Block ${i + 1} fehlt 'id' oder 'type' Feld.`;
+                try {
+                    const parsed = JSON.parse(this.importJSONText);
+                    
+                    // Prüfe ob es ein Array ist
+                    if (!Array.isArray(parsed)) {
+                        this.importJSONError = 'JSON muss ein Array von Blöcken sein.';
+                        this.validateJSONTimeout = null;
                         return;
                     }
-                }
 
-                this.importJSONValid = true;
-                this.importJSONPreview = {
-                    blockCount: parsed.length
-                };
-            } catch (error) {
-                this.importJSONError = error.message || 'Ungültiges JSON Format.';
-            }
+                    // Prüfe ob Blöcke die erforderlichen Felder haben
+                    if (parsed.length === 0) {
+                        this.importJSONError = 'Das Array ist leer.';
+                        this.validateJSONTimeout = null;
+                        return;
+                    }
+
+                    // Validiere Block-Struktur
+                    for (let i = 0; i < parsed.length; i++) {
+                        const block = parsed[i];
+                        if (!block.id || !block.type) {
+                            this.importJSONError = `Block ${i + 1} fehlt 'id' oder 'type' Feld.`;
+                            this.validateJSONTimeout = null;
+                            return;
+                        }
+                    }
+
+                    this.importJSONValid = true;
+                    this.importJSONPreview = {
+                        blockCount: parsed.length
+                    };
+                } catch (error) {
+                    this.importJSONError = error.message || 'Ungültiges JSON Format.';
+                }
+                
+                this.validateJSONTimeout = null;
+            }, 300); // 300ms Debounce für JSON-Validierung
         },
 
         confirmImportJSON() {
@@ -880,6 +1090,8 @@ function blockEditor() {
                 const blockCount = this.importJSONPreview?.blockCount || 0;
                 // Cache komplett leeren nach JSON-Import (DOM wurde komplett neu aufgebaut)
                 this.clearElementCache();
+                this.invalidateRenderCache(); // Invalidiere gesamten Render-Cache
+                this.invalidateJSONDisplayCache();
                 this.showNotification(`Erfolgreich ${blockCount} Block(s) importiert!`, 'success');
                 this.closeImportModal();
             } catch (error) {
@@ -1842,19 +2054,94 @@ function blockEditor() {
                 return '';
             }
             
-            // Container-Blöcke werden jetzt auch über diese Funktion gerendert
+            // Cache-Key erstellen basierend auf Block-Daten und Kontext
+            const cacheKey = this.getRenderCacheKey(block);
+            const cached = this.renderBlockCache.get(cacheKey);
             
+            // Prüfe ob Cache gültig ist
+            if (cached && cached.version === this.renderBlockVersion) {
+                return cached.html;
+            }
+            
+            // Container-Blöcke werden jetzt auch über diese Funktion gerendert
             const component = getBlockComponent(block.type);
             if (component && component.renderHTML) {
-                return component.renderHTML(block, {
+                const html = component.renderHTML(block, {
                     selectedBlockId: this.selectedBlockId,
                     draggingBlockId: this.draggingBlockId,
                     hoveredBlockId: this.hoveredBlockId,
                     childBlockTypes: this.childBlockTypes,
                     index: this.blocks.findIndex(b => b.id === block.id)
                 });
+                
+                // Speichere im Cache
+                this.renderBlockCache.set(cacheKey, {
+                    html: html,
+                    version: this.renderBlockVersion
+                });
+                
+                return html;
             }
             return '';
+        },
+        
+        /**
+         * Erstellt einen Cache-Key für Block-Rendering
+         * @param {object} block - Der Block-Objekt
+         * @returns {string} Cache-Key
+         */
+        getRenderCacheKey(block) {
+            if (!block || !block.id) return '';
+            
+            // Erstelle Key basierend auf Block-ID, Typ, Content-Hash und Kontext
+            let key = `${block.id}_${block.type}`;
+            
+            // Füge Content-Hash hinzu (vereinfacht - nur Länge und erste Zeichen)
+            const contentHash = block.content ? `${block.content.length}_${block.content.substring(0, 20)}` : 'empty';
+            key += `_${contentHash}`;
+            
+            // Füge Kontext hinzu (selected, dragging, hovered)
+            key += `_${this.selectedBlockId === block.id ? 'sel' : ''}`;
+            key += `_${this.draggingBlockId === block.id ? 'drag' : ''}`;
+            key += `_${this.hoveredBlockId === block.id ? 'hover' : ''}`;
+            
+            // Für spezielle Block-Typen: füge relevante Daten hinzu
+            if (block.type === 'table' && block.tableData) {
+                const rowCount = block.tableData.cells?.length || 0;
+                const colCount = block.tableData.cells?.[0]?.length || 0;
+                key += `_t${rowCount}x${colCount}`;
+            }
+            
+            if (block.type === 'checklist' && block.checklistData) {
+                const itemsCount = block.checklistData.items?.length || 0;
+                key += `_c${itemsCount}`;
+            }
+            
+            return key;
+        },
+        
+        /**
+         * Invalidiert den Render-Cache für einen Block oder alle
+         * @param {string|null} blockId - Die Block-ID oder null für alle
+         */
+        invalidateRenderCache(blockId = null) {
+            if (blockId) {
+                // Entferne nur Einträge für diesen Block
+                const keysToDelete = [];
+                this.renderBlockCache.forEach((value, key) => {
+                    if (key.startsWith(`${blockId}_`)) {
+                        keysToDelete.push(key);
+                    }
+                });
+                keysToDelete.forEach(key => this.renderBlockCache.delete(key));
+            } else {
+                // Invalidiere gesamten Cache durch Versions-Erhöhung
+                this.renderBlockVersion++;
+                // Optional: Cache komplett leeren wenn zu groß (> 100 Einträge)
+                if (this.renderBlockCache.size > 100) {
+                    this.renderBlockCache.clear();
+                }
+            }
         },
         
         /**

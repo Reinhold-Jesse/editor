@@ -37,7 +37,7 @@ export const TableBlock = {
                 >
                     <!-- Header -->
                     <thead x-show="block.tableData && block.tableData.hasHeader">
-                        <template x-for="(row, rowIndex) in (block.tableData?.cells || []).filter(r => r[0]?.isHeader)" :key="rowIndex">
+                        <template x-for="(row, rowIndex) in getTableHeaderRows(block)" :key="rowIndex">
                             <tr>
                                 <template x-for="(cell, colIndex) in row" :key="cell.id">
                                     <th 
@@ -63,7 +63,7 @@ export const TableBlock = {
                     
                     <!-- Body -->
                     <tbody>
-                        <template x-for="(row, rowIndex) in (block.tableData?.cells || []).filter(r => !r[0]?.isHeader && !r[0]?.isFooter)" :key="rowIndex">
+                        <template x-for="(row, rowIndex) in getTableBodyRows(block)" :key="rowIndex">
                             <tr>
                                 <template x-for="(cell, colIndex) in row" :key="cell.id">
                                     <td 
@@ -89,7 +89,7 @@ export const TableBlock = {
                     
                     <!-- Footer -->
                     <tfoot x-show="block.tableData && block.tableData.hasFooter">
-                        <template x-for="(row, rowIndex) in (block.tableData?.cells || []).filter(r => r[0]?.isFooter)" :key="rowIndex">
+                        <template x-for="(row, rowIndex) in getTableFooterRows(block)" :key="rowIndex">
                             <tr>
                                 <template x-for="(cell, colIndex) in row" :key="cell.id">
                                     <td 
@@ -131,7 +131,7 @@ export const TableBlock = {
                 >
                     <!-- Header -->
                     <thead x-show="child.tableData && child.tableData.hasHeader">
-                        <template x-for="(row, rowIndex) in (child.tableData?.cells || []).filter(r => r[0]?.isHeader)" :key="rowIndex">
+                        <template x-for="(row, rowIndex) in getTableHeaderRows(child)" :key="rowIndex">
                             <tr>
                                 <template x-for="(cell, colIndex) in row" :key="cell.id">
                                     <th 
@@ -157,7 +157,7 @@ export const TableBlock = {
                     
                     <!-- Body -->
                     <tbody>
-                        <template x-for="(row, rowIndex) in (child.tableData?.cells || []).filter(r => !r[0]?.isHeader && !r[0]?.isFooter)" :key="rowIndex">
+                        <template x-for="(row, rowIndex) in getTableBodyRows(child)" :key="rowIndex">
                             <tr>
                                 <template x-for="(cell, colIndex) in row" :key="cell.id">
                                     <td 
@@ -183,7 +183,7 @@ export const TableBlock = {
                     
                     <!-- Footer -->
                     <tfoot x-show="child.tableData && child.tableData.hasFooter">
-                        <template x-for="(row, rowIndex) in (child.tableData?.cells || []).filter(r => r[0]?.isFooter)" :key="rowIndex">
+                        <template x-for="(row, rowIndex) in getTableFooterRows(child)" :key="rowIndex">
                             <tr>
                                 <template x-for="(cell, colIndex) in row" :key="cell.id">
                                     <td 

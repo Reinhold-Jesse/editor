@@ -99,11 +99,67 @@ export const Utils = {
     initAllBlockContents(blocks) {
         if (!blocks || !Array.isArray(blocks)) return;
         
+        // Performance-Optimierung: Sammle alle IDs und führe Batch-Query durch
+        const blockIds = new Set();
+        const cellIds = new Set();
+        
+        // Sammle alle IDs
+        blocks.forEach(block => {
+            if (!block || !block.id) return;
+            blockIds.add(block.id);
+            
+            // Sammle Tabellenzellen-IDs
+            if (block.type === 'table' && block.tableData && block.tableData.cells) {
+                block.tableData.cells.forEach(row => {
+                    if (!Array.isArray(row)) return;
+                    row.forEach(cell => {
+                        if (cell && cell.id) {
+                            cellIds.add(cell.id);
+                        }
+                    });
+                });
+            }
+            
+            // Sammle Child-IDs
+            if (block.children && Array.isArray(block.children)) {
+                block.children.forEach(child => {
+                    if (child && child.id) {
+                        blockIds.add(child.id);
+                    }
+                });
+            }
+        });
+        
+        // Batch-Query für Block-Elemente (nur einmal querySelectorAll)
+        const blockElementsMap = new Map();
+        if (blockIds.size > 0) {
+            const allBlockElements = document.querySelectorAll('[data-block-id]');
+            allBlockElements.forEach(el => {
+                const id = el.getAttribute('data-block-id');
+                if (blockIds.has(id)) {
+                    blockElementsMap.set(id, el);
+                }
+            });
+        }
+        
+        // Batch-Query für Zellen-Elemente
+        const cellElementsMap = new Map();
+        if (cellIds.size > 0) {
+            const allCellElements = document.querySelectorAll('[data-cell-id]');
+            allCellElements.forEach(el => {
+                const id = el.getAttribute('data-cell-id');
+                if (cellIds.has(id)) {
+                    cellElementsMap.set(id, el);
+                }
+            });
+        }
+        
+        // Initialisiere Blöcke mit gecachten Elementen
         blocks.forEach(block => {
             if (!block || !block.id) return;
             
             try {
-                const element = document.querySelector(`[data-block-id="${block.id}"]`);
+                const element = blockElementsMap.get(block.id);
                 if (element && !element.textContent) {
                     let content = block.content;
                     
@@ -116,14 +172,14 @@ export const Utils = {
                     }
                 }
                 
-                // Initialisiere Tabellenzellen
+                // Initialisiere Tabellenzellen mit gecachten Elementen
                 if (block.type === 'table' && block.tableData && block.tableData.cells) {
                     block.tableData.cells.forEach(row => {
                         if (!Array.isArray(row)) return;
                         row.forEach(cell => {
                             if (!cell || !cell.id) return;
                             try {
-                                const cellElement = document.querySelector(`[data-cell-id="${cell.id}"]`);
+                                const cellElement = cellElementsMap.get(cell.id);
                                 if (cellElement && !cellElement.textContent && cell.content) {
                                     cellElement.innerHTML = cell.content;
                                 }
@@ -134,12 +190,12 @@ export const Utils = {
                     });
                 }
                 
-                // Initialisiere Children
+                // Initialisiere Children mit gecachten Elementen
                 if (block.children && Array.isArray(block.children)) {
                     block.children.forEach(child => {
                         if (!child || !child.id) return;
                         try {
-                            const childElement = document.querySelector(`[data-block-id="${child.id}"]`);
+                            const childElement = blockElementsMap.get(child.id);
                             if (childElement && !childElement.textContent) {
                                 let content = child.content;
                                 

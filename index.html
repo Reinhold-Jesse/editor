@@ -243,38 +243,56 @@
                     </svg>
                 </button>
                 <div class="overflow-auto ">
-                    <pre x-text="JSON.stringify(blocks, null, 2)"></pre>
+                    <pre x-text="getJSONDisplay()"></pre>
                 </div>
 
             </div>
         </div>
 
-        <!-- JSON Import Modal (aus Template) -->
-        <div x-html="templates?.modals?.jsonImport || ''"></div>
+        <!-- JSON Import Modal (aus Template) - Lazy Loading mit x-if -->
+        <template x-if="showImportModal">
+            <div x-html="templates?.modals?.jsonImport || ''"></div>
+        </template>
 
-        <!-- Save Theme Modal (aus Template) -->
-        <div x-html="templates?.modals?.themeSave || ''"></div>
+        <!-- Save Theme Modal (aus Template) - Lazy Loading mit x-if -->
+        <template x-if="showSaveThemeModal">
+            <div x-html="templates?.modals?.themeSave || ''"></div>
+        </template>
 
-        <!-- Edit Theme Modal (aus Template) -->
-        <div x-html="templates?.modals?.themeEdit || ''"></div>
+        <!-- Edit Theme Modal (aus Template) - Lazy Loading mit x-if -->
+        <template x-if="showEditThemeModal">
+            <div x-html="templates?.modals?.themeEdit || ''"></div>
+        </template>
 
-        <!-- Import Theme Modal (aus Template) -->
-        <div x-html="templates?.modals?.themeImport || ''"></div>
+        <!-- Import Theme Modal (aus Template) - Lazy Loading mit x-if -->
+        <template x-if="showImportThemeModal">
+            <div x-html="templates?.modals?.themeImport || ''"></div>
+        </template>
 
-        <!-- JSON Export Modal (aus Template) -->
-        <div x-html="templates?.modals?.jsonExport || ''"></div>
+        <!-- JSON Export Modal (aus Template) - Lazy Loading mit x-if -->
+        <template x-if="showExportModal">
+            <div x-html="templates?.modals?.jsonExport || ''"></div>
+        </template>
 
-        <!-- Floating Toolbar für Text-Selektion (aus Template) -->
-        <div x-html="templates?.floatingToolbar || ''"></div>
+        <!-- Floating Toolbar für Text-Selektion (aus Template) - Lazy Loading mit x-if -->
+        <template x-if="showFloatingToolbar">
+            <div x-html="templates?.floatingToolbar || ''"></div>
+        </template>
 
-        <!-- Einheitliches Link-Modal (aus Template) -->
-        <div x-html="templates?.modals?.link || ''"></div>
+        <!-- Einheitliches Link-Modal (aus Template) - Lazy Loading mit x-if -->
+        <template x-if="showLinkModal">
+            <div x-html="templates?.modals?.link || ''"></div>
+        </template>
 
-        <!-- Confirm Modal (aus Template) -->
-        <div x-html="templates?.modals?.confirm || ''"></div>
+        <!-- Confirm Modal (aus Template) - Lazy Loading mit x-if -->
+        <template x-if="showConfirmModal">
+            <div x-html="templates?.modals?.confirm || ''"></div>
+        </template>
 
-        <!-- Image Settings Modal (aus Template) -->
-        <div x-html="templates?.modals?.imageSettings || ''"></div>
+        <!-- Image Settings Modal (aus Template) - Lazy Loading mit x-if -->
+        <template x-if="showImageSettingsModal">
+            <div x-html="templates?.modals?.imageSettings || ''"></div>
+        </template>
 
     </div>
     </div>

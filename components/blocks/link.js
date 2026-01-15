@@ -36,10 +36,6 @@ export const LinkBlock = {
         }
         
         // Ansonsten rendere einfachen Link
-        const { selectedBlockId, draggingBlockId, hoveredBlockId } = context;
-        const isSelected = selectedBlockId === block.id;
-        const isDragging = draggingBlockId === block.id;
-        
         // Wenn keine URL gesetzt ist, zeige Platzhalter
         if (!block.linkUrl || block.linkUrl.trim() === '') {
             return `
@@ -77,6 +73,7 @@ export const LinkBlock = {
                     data-placeholder="${this.options.placeholder}"
                     x-init="$nextTick(() => initBlockContent($el, block))"
                     @input="updateBlockContent(block.id, $event.target.innerHTML)"
+                    @blur="commitBlockContent(block.id, $event.target.innerHTML)"
                     @keydown.enter.prevent="addBlockAfter(block.id, 'paragraph')"
                     @keydown.backspace="handleBackspace(block.id, $event)"
                     @focus="initBlockContent($event.target, block)"
@@ -129,6 +126,7 @@ export const LinkBlock = {
                     data-placeholder="Link-Text..."
                     x-init="$nextTick(() => initBlockContent($el, child))"
                     @input="updateBlockContent(child.id, $event.target.innerHTML)"
+                    @blur="commitBlockContent(child.id, $event.target.innerHTML)"
                     @keydown.enter.prevent="${addChildAfterCall}"
                     @keydown.backspace="handleBackspace(child.id, $event)"
                     @focus="initBlockContent($event.target, child)"
@@ -180,6 +178,7 @@ export const LinkBlock = {
                             data-placeholder="Link-Text..."
                             x-init="$nextTick(() => initBlockContent($el, block))"
                             @input="updateBlockContent(block.id, $event.target.innerHTML)"
+                            @blur="commitBlockContent(block.id, $event.target.innerHTML)"
                             @keydown.enter.prevent="addBlockAfter(block.id, 'paragraph')"
                             @keydown.backspace="handleBackspace(block.id, $event)"
                             @focus="initBlockContent($event.target, block)"

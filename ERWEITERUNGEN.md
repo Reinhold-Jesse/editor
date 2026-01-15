@@ -139,53 +139,19 @@ export const BlockComponents = {
 };
 ```
 
-#### Schritt 4: Rendering-Funktion in `block-editor.js` hinzufügen
+#### Schritt 4: Rendering über zentrale Funktionen
 
-Öffne `block-editor.js` und suche nach den `render*Block` Funktionen:
+**Hinweis:** Es sind keine extra Render-Helper nötig. Der Editor rendert alle Block-Typen über:
+`renderBlock(block)` und `renderChild(child, parentBlock, childIndex)`.
 
-```javascript
-// Füge diese Funktion hinzu:
-renderButtonBlock(block) {
-    const component = getBlockComponent('button');
-    return component.renderHTML(block, {
-        selectedBlockId: this.selectedBlockId,
-        draggingBlockId: this.draggingBlockId,
-        hoveredBlockId: this.hoveredBlockId
-    });
-}
-```
+Sobald der Block in `components/blocks/index.js` registriert ist, wird er automatisch gerendert.
 
-#### Schritt 5: HTML-Template in `index.html` hinzufügen
+#### Schritt 5: HTML-Template
 
-Öffne `index.html` und suche nach dem Block-Content-Bereich (ca. Zeile 766):
+**Hinweis:** Es sind keine zusätzlichen HTML-Templates nötig. Die zentrale Rendering-Logik nutzt
+bereits `x-html="renderBlock(block)"` und `x-html="renderChild(child, ...)"`.
 
-```html
-<!-- Button -->
-<div x-show="block.type === 'button'" x-html="renderButtonBlock(block)"></div>
-```
-
-#### Schritt 6: Child-Rendering hinzufügen (optional)
-
-Falls der Block in Spalten verwendet werden kann, füge auch Child-Rendering hinzu:
-
-```html
-<!-- Button in Spalte -->
-<div x-show="child.type === 'button'" x-html="renderButtonChild(child, column, childIndex)"></div>
-```
-
-Und in `block-editor.js`:
-
-```javascript
-renderButtonChild(child, parent, childIndex) {
-    const component = getBlockComponent('button');
-    return component.renderChildHTML(child, {
-        block: parent,
-        childIndex: childIndex
-    });
-}
-```
-
-#### Schritt 7: Settings-Modal (optional)
+#### Schritt 6: Settings-Modal (optional)
 
 Falls der Block spezielle Einstellungen benötigt (wie der Image-Block), erstelle ein Modal in `index.html` und die entsprechenden Funktionen in `block-editor.js`.
 

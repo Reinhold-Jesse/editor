@@ -25,10 +25,6 @@ export const ParagraphBlock = {
     
     // HTML-Template für Rendering
     renderHTML(block, context = {}) {
-        const { selectedBlockId, draggingBlockId, hoveredBlockId } = context;
-        const isSelected = selectedBlockId === block.id;
-        const isDragging = draggingBlockId === block.id;
-        
         return `
             <div x-show="block.type === 'paragraph'">
                 <div 
@@ -40,6 +36,7 @@ export const ParagraphBlock = {
                     data-placeholder="${this.options.placeholder}"
                     x-init="$nextTick(() => initBlockContent($el, block))"
                     @input="updateBlockContent(block.id, $event.target.innerHTML)"
+                    @blur="commitBlockContent(block.id, $event.target.innerHTML)"
                     @keydown.enter.prevent="addBlockAfter(block.id, 'paragraph')"
                     @keydown.backspace="handleBackspace(block.id, $event)"
                     @focus="initBlockContent($event.target, block)"
@@ -61,6 +58,7 @@ export const ParagraphBlock = {
                     data-placeholder="Child Absatz..."
                     x-init="$nextTick(() => initBlockContent($el, child))"
                     @input="updateBlockContent(child.id, $event.target.innerHTML)"
+                    @blur="commitBlockContent(child.id, $event.target.innerHTML)"
                     @keydown.enter.prevent="addChildAfter((column && column.id) || (block && block.id), childIndex, 'paragraph')"
                     @keydown.backspace="handleBackspace(child.id, $event)"
                     @focus="initBlockContent($event.target, child)"

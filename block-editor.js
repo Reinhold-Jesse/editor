@@ -16,7 +16,6 @@ function blockEditor() {
     return {
         blocks: [],
         selectedBlockId: null,
-        hoveredBlockId: null,
         draggingBlockId: null,
         showToolbar: false,
         showThemeDropdown: false,
@@ -92,11 +91,11 @@ function blockEditor() {
         // Templates für HTML-Komponenten
         templates: null, // Wird in init() geladen
         // Performance: Debouncing für Updates
-        updateBlockContentTimeout: null, // Debounce-Timeout für Block-Content-Updates
+        updateBlockContentTimeouts: new Map(), // Debounce-Timeouts pro Block
         validateJSONTimeout: null, // Debounce-Timeout für JSON-Validierung
         // Performance: Caching für Rendering
-        renderBlockCache: new Map(), // Cache für gerenderte Blöcke
-        renderBlockVersion: 0, // Version für Cache-Invalidierung
+        renderBlockCache: new Map(), // Cache für gerenderte Blöcke (pro Block-ID)
+        renderChildCache: new Map(), // Cache für gerenderte Child-Blöcke (pro Block-ID)
         // Performance: JSON Display Cache
         jsonDisplayCache: '', // Gecachter JSON-String für Debug-Display
         jsonDisplayTimeout: null, // Debounce-Timeout für JSON-Display
@@ -260,9 +259,11 @@ function blockEditor() {
                 clearTimeout(this.notificationTimeout);
                 this.notificationTimeout = null;
             }
-            if (this.updateBlockContentTimeout) {
-                clearTimeout(this.updateBlockContentTimeout);
-                this.updateBlockContentTimeout = null;
+            if (this.updateBlockContentTimeouts.size > 0) {
+                this.updateBlockContentTimeouts.forEach(timeoutId => {
+                    clearTimeout(timeoutId);
+                });
+                this.updateBlockContentTimeouts.clear();
             }
             if (this.validateJSONTimeout) {
                 clearTimeout(this.validateJSONTimeout);
@@ -277,6 +278,7 @@ function blockEditor() {
             this.elementCache.clear();
             // Clear Render Cache
             this.renderBlockCache.clear();
+            this.renderChildCache.clear();
             // Clear Block Lookup Cache
             this.blockLookupCache.clear();
         },
@@ -464,7 +466,6 @@ function blockEditor() {
                 const settingsHTML = component.getSettingsHTML(block, {
                     selectedBlockId: this.selectedBlockId,
                     draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId,
                     childBlockTypes: this.childBlockTypes,
                     index: this.blocks.findIndex(b => b.id === block.id)
                 });
@@ -616,22 +617,45 @@ function blockEditor() {
         },
 
         updateBlockContent(blockId, content) {
-            // Debounce für bessere Performance bei schnellen Eingaben
-            if (this.updateBlockContentTimeout) {
-                clearTimeout(this.updateBlockContentTimeout);
+            const { block } = this.findBlockById(blockId);
+            if (!block) {
+                return;
             }
             
-            // Speichere Block-ID und Content für den Timeout
-            const pendingUpdate = { blockId, content };
+            // Content sofort aktualisieren (DOM ist bereits durch contenteditable geändert)
+            block.content = content;
             
-            this.updateBlockContentTimeout = setTimeout(() => {
-                BlockManagement.updateBlockContent(this.blocks, pendingUpdate.blockId, pendingUpdate.content);
-                // Invalidiere Render-Cache für diesen Block
-                this.invalidateRenderCache(pendingUpdate.blockId);
-                // Invalidiere JSON-Display-Cache
+            // Debounce: nur JSON-Cache aktualisieren, kein Re-Render während des Tippens
+            if (this.updateBlockContentTimeouts.has(blockId)) {
+                clearTimeout(this.updateBlockContentTimeouts.get(blockId));
+            }
+            
+            const timeoutId = setTimeout(() => {
                 this.invalidateJSONDisplayCache();
-                this.updateBlockContentTimeout = null;
-            }, 150); // 150ms Debounce - guter Kompromiss zwischen Responsivität und Performance
+                this.updateBlockContentTimeouts.delete(blockId);
+            }, 400);
+            
+            this.updateBlockContentTimeouts.set(blockId, timeoutId);
+        },
+
+        commitBlockContent(blockId, content = null) {
+            const { block } = this.findBlockById(blockId);
+            if (!block) {
+                return;
+            }
+
+            if (content !== null && content !== undefined) {
+                block.content = content;
+            }
+
+            if (this.updateBlockContentTimeouts.has(blockId)) {
+                clearTimeout(this.updateBlockContentTimeouts.get(blockId));
+                this.updateBlockContentTimeouts.delete(blockId);
+            }
+
+            block.updatedAt = new Date().toISOString();
+            this.invalidateRenderCache(blockId);
+            this.invalidateJSONDisplayCache();
         },
 
         deleteBlock(blockId) {
@@ -2054,12 +2078,11 @@ function blockEditor() {
                 return '';
             }
             
-            // Cache-Key erstellen basierend auf Block-Daten und Kontext
-            const cacheKey = this.getRenderCacheKey(block);
-            const cached = this.renderBlockCache.get(cacheKey);
+            // Render-Signatur pro Block (nur bei Änderungen neu rendern)
+            const signature = this.getRenderSignature(block);
+            const cached = this.renderBlockCache.get(block.id);
             
-            // Prüfe ob Cache gültig ist
-            if (cached && cached.version === this.renderBlockVersion) {
+            if (cached && cached.signature === signature) {
                 return cached.html;
             }
             
@@ -2067,17 +2090,14 @@ function blockEditor() {
             const component = getBlockComponent(block.type);
             if (component && component.renderHTML) {
                 const html = component.renderHTML(block, {
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId,
                     childBlockTypes: this.childBlockTypes,
                     index: this.blocks.findIndex(b => b.id === block.id)
                 });
                 
                 // Speichere im Cache
-                this.renderBlockCache.set(cacheKey, {
+                this.renderBlockCache.set(block.id, {
                     html: html,
-                    version: this.renderBlockVersion
+                    signature: signature
                 });
                 
                 return html;
@@ -2090,31 +2110,41 @@ function blockEditor() {
          * @param {object} block - Der Block-Objekt
          * @returns {string} Cache-Key
          */
-        getRenderCacheKey(block) {
+        getRenderSignature(block) {
             if (!block || !block.id) return '';
             
-            // Erstelle Key basierend auf Block-ID, Typ, Content-Hash und Kontext
-            let key = `${block.id}_${block.type}`;
+            // Signatur basiert auf Typ + Zeitstempel (nur wenn Werte gesetzt/aktualisiert)
+            const version = block.updatedAt || block.createdAt || '';
+            let key = `${block.type}_${version}`;
             
-            // Füge Content-Hash hinzu (vereinfacht - nur Länge und erste Zeichen)
-            const contentHash = block.content ? `${block.content.length}_${block.content.substring(0, 20)}` : 'empty';
-            key += `_${contentHash}`;
-            
-            // Füge Kontext hinzu (selected, dragging, hovered)
-            key += `_${this.selectedBlockId === block.id ? 'sel' : ''}`;
-            key += `_${this.draggingBlockId === block.id ? 'drag' : ''}`;
-            key += `_${this.hoveredBlockId === block.id ? 'hover' : ''}`;
+            // Fallback wenn kein Zeitstempel vorhanden ist
+            if (!version) {
+                const contentHash = block.content ? `${block.content.length}_${block.content.substring(0, 20)}` : 'empty';
+                key += `_${contentHash}`;
+            }
             
             // Für spezielle Block-Typen: füge relevante Daten hinzu
             if (block.type === 'table' && block.tableData) {
                 const rowCount = block.tableData.cells?.length || 0;
                 const colCount = block.tableData.cells?.[0]?.length || 0;
-                key += `_t${rowCount}x${colCount}`;
+                key += `_t${rowCount}x${colCount}_${block.tableData.hasHeader ? 'h1' : 'h0'}_${block.tableData.hasFooter ? 'f1' : 'f0'}`;
             }
             
             if (block.type === 'checklist' && block.checklistData) {
                 const itemsCount = block.checklistData.items?.length || 0;
                 key += `_c${itemsCount}`;
+            }
+            
+            if (block.type === 'image') {
+                key += `_${block.imageUrl || ''}_${block.imageAlt || ''}_${block.imageTitle || ''}`;
+            }
+            
+            if (block.type === 'link') {
+                key += `_${block.linkUrl || ''}_${block.linkText || ''}_${block.linkTarget || ''}`;
+            }
+            
+            if ((block.type === 'twoColumn' || block.type === 'threeColumn') && block.children) {
+                key += `_cols${block.children.length}`;
             }
             
             return key;
@@ -2126,21 +2156,11 @@ function blockEditor() {
          */
         invalidateRenderCache(blockId = null) {
             if (blockId) {
-                // Entferne nur Einträge für diesen Block
-                const keysToDelete = [];
-                this.renderBlockCache.forEach((value, key) => {
-                    if (key.startsWith(`${blockId}_`)) {
-                        keysToDelete.push(key);
-                    }
-                });
-                keysToDelete.forEach(key => this.renderBlockCache.delete(key));
+                this.renderBlockCache.delete(blockId);
+                this.renderChildCache.delete(blockId);
             } else {
-                // Invalidiere gesamten Cache durch Versions-Erhöhung
-                this.renderBlockVersion++;
-                // Optional: Cache komplett leeren wenn zu groß (> 100 Einträge)
-                if (this.renderBlockCache.size > 100) {
-                    this.renderBlockCache.clear();
-                }
+                this.renderBlockCache.clear();
+                this.renderChildCache.clear();
             }
         },
         
@@ -2159,453 +2179,24 @@ function blockEditor() {
             
             const component = getBlockComponent(child.type);
             if (component && component.renderChildHTML) {
-                return component.renderChildHTML(child, {
+                const signature = this.getRenderSignature(child);
+                const cached = this.renderChildCache.get(child.id);
+                
+                if (cached && cached.signature === signature) {
+                    return cached.html;
+                }
+                
+                const html = component.renderChildHTML(child, {
                     block: parentBlock,
-                    childIndex: childIndex,
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId
+                    childIndex: childIndex
                 });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Link-Block mit allen Optionen
-         * @param {object} block - Der Block-Objekt
-         * @returns {string} HTML-String für den Block
-         */
-        renderLinkBlock(block) {
-            const component = getBlockComponent('link');
-            if (component && component.renderHTML) {
-                return component.renderHTML(block, {
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId,
-                    childBlockTypes: this.childBlockTypes,
-                    index: this.blocks.findIndex(b => b.id === block.id)
+                
+                this.renderChildCache.set(child.id, {
+                    html: html,
+                    signature: signature
                 });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Child-Link-Block
-         * @param {object} child - Der Child-Block-Objekt
-         * @param {object} parentBlock - Der Parent-Block-Objekt
-         * @param {number} childIndex - Der Index des Child-Blocks
-         * @returns {string} HTML-String für den Child-Block
-         */
-        renderLinkChild(child, parentBlock, childIndex) {
-            const component = getBlockComponent('link');
-            if (component && component.renderChildHTML) {
-                return component.renderChildHTML(child, {
-                    block: parentBlock,
-                    childIndex: childIndex,
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Image-Block mit allen Optionen
-         * @param {object} block - Der Block-Objekt
-         * @returns {string} HTML-String für den Block
-         */
-        renderImageBlock(block) {
-            const component = getBlockComponent('image');
-            if (component && component.renderHTML) {
-                return component.renderHTML(block, {
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId,
-                    childBlockTypes: this.childBlockTypes,
-                    index: this.blocks.findIndex(b => b.id === block.id)
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Child-Image-Block
-         * @param {object} child - Der Child-Block-Objekt
-         * @param {object} parentBlock - Der Parent-Block-Objekt
-         * @param {number} childIndex - Der Index des Child-Blocks
-         * @returns {string} HTML-String für den Child-Block
-         */
-        renderImageChild(child, parentBlock, childIndex) {
-            const component = getBlockComponent('image');
-            if (component && component.renderChildHTML) {
-                return component.renderChildHTML(child, {
-                    block: parentBlock,
-                    childIndex: childIndex,
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Paragraph-Block mit allen Optionen
-         * @param {object} block - Der Block-Objekt
-         * @returns {string} HTML-String für den Block
-         */
-        renderParagraphBlock(block) {
-            const component = getBlockComponent('paragraph');
-            if (component && component.renderHTML) {
-                return component.renderHTML(block, {
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId,
-                    childBlockTypes: this.childBlockTypes,
-                    index: this.blocks.findIndex(b => b.id === block.id)
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Child-Paragraph-Block
-         * @param {object} child - Der Child-Block-Objekt
-         * @param {object} parentBlock - Der Parent-Block-Objekt
-         * @param {number} childIndex - Der Index des Child-Blocks
-         * @returns {string} HTML-String für den Child-Block
-         */
-        renderParagraphChild(child, parentBlock, childIndex) {
-            const component = getBlockComponent('paragraph');
-            if (component && component.renderChildHTML) {
-                return component.renderChildHTML(child, {
-                    block: parentBlock,
-                    childIndex: childIndex,
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Heading1-Block mit allen Optionen
-         * @param {object} block - Der Block-Objekt
-         * @returns {string} HTML-String für den Block
-         */
-        renderHeading1Block(block) {
-            const component = getBlockComponent('heading1');
-            if (component && component.renderHTML) {
-                return component.renderHTML(block, {
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId,
-                    childBlockTypes: this.childBlockTypes,
-                    index: this.blocks.findIndex(b => b.id === block.id)
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Heading2-Block mit allen Optionen
-         * @param {object} block - Der Block-Objekt
-         * @returns {string} HTML-String für den Block
-         */
-        renderHeading2Block(block) {
-            const component = getBlockComponent('heading2');
-            if (component && component.renderHTML) {
-                return component.renderHTML(block, {
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId,
-                    childBlockTypes: this.childBlockTypes,
-                    index: this.blocks.findIndex(b => b.id === block.id)
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Heading3-Block mit allen Optionen
-         * @param {object} block - Der Block-Objekt
-         * @returns {string} HTML-String für den Block
-         */
-        renderHeading3Block(block) {
-            const component = getBlockComponent('heading3');
-            if (component && component.renderHTML) {
-                return component.renderHTML(block, {
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId,
-                    childBlockTypes: this.childBlockTypes,
-                    index: this.blocks.findIndex(b => b.id === block.id)
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Child-Heading1-Block
-         * @param {object} child - Der Child-Block-Objekt
-         * @param {object} parentBlock - Der Parent-Block-Objekt
-         * @param {number} childIndex - Der Index des Child-Blocks
-         * @returns {string} HTML-String für den Child-Block
-         */
-        renderHeading1Child(child, parentBlock, childIndex) {
-            const component = getBlockComponent('heading1');
-            if (component && component.renderChildHTML) {
-                return component.renderChildHTML(child, {
-                    block: parentBlock,
-                    childIndex: childIndex,
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Child-Heading2-Block
-         * @param {object} child - Der Child-Block-Objekt
-         * @param {object} parentBlock - Der Parent-Block-Objekt
-         * @param {number} childIndex - Der Index des Child-Blocks
-         * @returns {string} HTML-String für den Child-Block
-         */
-        renderHeading2Child(child, parentBlock, childIndex) {
-            const component = getBlockComponent('heading2');
-            if (component && component.renderChildHTML) {
-                return component.renderChildHTML(child, {
-                    block: parentBlock,
-                    childIndex: childIndex,
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Child-Heading3-Block
-         * @param {object} child - Der Child-Block-Objekt
-         * @param {object} parentBlock - Der Parent-Block-Objekt
-         * @param {number} childIndex - Der Index des Child-Blocks
-         * @returns {string} HTML-String für den Child-Block
-         */
-        renderHeading3Child(child, parentBlock, childIndex) {
-            const component = getBlockComponent('heading3');
-            if (component && component.renderChildHTML) {
-                return component.renderChildHTML(child, {
-                    block: parentBlock,
-                    childIndex: childIndex,
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Code-Block mit allen Optionen
-         * @param {object} block - Der Block-Objekt
-         * @returns {string} HTML-String für den Block
-         */
-        renderCodeBlock(block) {
-            const component = getBlockComponent('code');
-            if (component && component.renderHTML) {
-                return component.renderHTML(block, {
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId,
-                    childBlockTypes: this.childBlockTypes,
-                    index: this.blocks.findIndex(b => b.id === block.id)
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Child-Code-Block
-         * @param {object} child - Der Child-Block-Objekt
-         * @param {object} parentBlock - Der Parent-Block-Objekt
-         * @param {number} childIndex - Der Index des Child-Blocks
-         * @returns {string} HTML-String für den Child-Block
-         */
-        renderCodeChild(child, parentBlock, childIndex) {
-            const component = getBlockComponent('code');
-            if (component && component.renderChildHTML) {
-                return component.renderChildHTML(child, {
-                    block: parentBlock,
-                    childIndex: childIndex,
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Quote-Block mit allen Optionen
-         * @param {object} block - Der Block-Objekt
-         * @returns {string} HTML-String für den Block
-         */
-        renderQuoteBlock(block) {
-            const component = getBlockComponent('quote');
-            if (component && component.renderHTML) {
-                return component.renderHTML(block, {
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId,
-                    childBlockTypes: this.childBlockTypes,
-                    index: this.blocks.findIndex(b => b.id === block.id)
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Child-Quote-Block
-         * @param {object} child - Der Child-Block-Objekt
-         * @param {object} parentBlock - Der Parent-Block-Objekt
-         * @param {number} childIndex - Der Index des Child-Blocks
-         * @returns {string} HTML-String für den Child-Block
-         */
-        renderQuoteChild(child, parentBlock, childIndex) {
-            const component = getBlockComponent('quote');
-            if (component && component.renderChildHTML) {
-                return component.renderChildHTML(child, {
-                    block: parentBlock,
-                    childIndex: childIndex,
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Divider-Block mit allen Optionen
-         * @param {object} block - Der Block-Objekt
-         * @returns {string} HTML-String für den Block
-         */
-        renderDividerBlock(block) {
-            const component = getBlockComponent('divider');
-            if (component && component.renderHTML) {
-                return component.renderHTML(block, {
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId,
-                    childBlockTypes: this.childBlockTypes,
-                    index: this.blocks.findIndex(b => b.id === block.id)
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Child-Divider-Block
-         * @param {object} child - Der Child-Block-Objekt
-         * @param {object} parentBlock - Der Parent-Block-Objekt
-         * @param {number} childIndex - Der Index des Child-Blocks
-         * @returns {string} HTML-String für den Child-Block
-         */
-        renderDividerChild(child, parentBlock, childIndex) {
-            const component = getBlockComponent('divider');
-            if (component && component.renderChildHTML) {
-                return component.renderChildHTML(child, {
-                    block: parentBlock,
-                    childIndex: childIndex,
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Table-Block mit allen Optionen
-         * @param {object} block - Der Block-Objekt
-         * @returns {string} HTML-String für den Block
-         */
-        renderTableBlock(block) {
-            const component = getBlockComponent('table');
-            if (component && component.renderHTML) {
-                return component.renderHTML(block, {
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId,
-                    childBlockTypes: this.childBlockTypes,
-                    index: this.blocks.findIndex(b => b.id === block.id)
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Child-Table-Block
-         * @param {object} child - Der Child-Block-Objekt
-         * @param {object} parentBlock - Der Parent-Block-Objekt
-         * @param {number} childIndex - Der Index des Child-Blocks
-         * @returns {string} HTML-String für den Child-Block
-         */
-        renderTableChild(child, parentBlock, childIndex) {
-            const component = getBlockComponent('table');
-            if (component && component.renderChildHTML) {
-                return component.renderChildHTML(child, {
-                    block: parentBlock,
-                    childIndex: childIndex,
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Checklist-Block mit allen Optionen
-         * @param {object} block - Der Block-Objekt
-         * @returns {string} HTML-String für den Block
-         */
-        renderChecklistBlock(block) {
-            const component = getBlockComponent('checklist');
-            if (component && component.renderHTML) {
-                return component.renderHTML(block, {
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId,
-                    childBlockTypes: this.childBlockTypes,
-                    index: this.blocks.findIndex(b => b.id === block.id)
-                });
-            }
-            return '';
-        },
-        
-        /**
-         * Rendert einen Child-Checklist-Block
-         * @param {object} child - Der Child-Block-Objekt
-         * @param {object} parentBlock - Der Parent-Block-Objekt
-         * @param {number} childIndex - Der Index des Child-Blocks
-         * @returns {string} HTML-String für den Child-Block
-         */
-        renderChecklistChild(child, parentBlock, childIndex) {
-            const component = getBlockComponent('checklist');
-            if (component && component.renderChildHTML) {
-                return component.renderChildHTML(child, {
-                    block: parentBlock,
-                    childIndex: childIndex,
-                    selectedBlockId: this.selectedBlockId,
-                    draggingBlockId: this.draggingBlockId,
-                    hoveredBlockId: this.hoveredBlockId
-                });
+                
+                return html;
             }
             return '';
         },

@@ -284,40 +284,12 @@ Füge in `BlockComponents` hinzu (nach Zeile 34):
 video: VideoBlock
 ```
 
-## Schritt 4: Rendering-Funktion hinzufügen
+## Schritt 4: Rendering über zentrale Funktionen
 
-**Datei:** `block-editor.js`
+**Hinweis:** Es sind keine extra Render-Helper nötig. Der Editor rendert alle Block-Typen über:
+`renderBlock(block)` und `renderChild(child, parentBlock, childIndex)`.
 
-Suche nach `renderImageBlock` (ca. Zeile 1738) und füge danach hinzu:
-
-```javascript
-renderVideoBlock(block) {
-    const component = getBlockComponent('video');
-    if (component && component.renderHTML) {
-        return component.renderHTML(block, {
-            selectedBlockId: this.selectedBlockId,
-            draggingBlockId: this.draggingBlockId,
-            hoveredBlockId: this.hoveredBlockId
-        });
-    }
-    return '';
-}
-```
-
-Und für Child-Rendering:
-
-```javascript
-renderVideoChild(child, parent, childIndex) {
-    const component = getBlockComponent('video');
-    if (component && component.renderChildHTML) {
-        return component.renderChildHTML(child, {
-            block: parent,
-            childIndex: childIndex
-        });
-    }
-    return '';
-}
-```
+Sobald der Video-Block in `components/blocks/index.js` registriert ist, wird er automatisch gerendert.
 
 ## Schritt 5: Video Settings Modal hinzufügen
 
@@ -399,23 +371,10 @@ closeVideoSettingsModal() {
 },
 ```
 
-## Schritt 6: HTML-Template hinzufügen
+## Schritt 6: HTML-Template
 
-**Datei:** `index.html`
-
-Füge nach dem Image Block hinzu (ca. Zeile 793):
-
-```html
-<!-- Video -->
-<div x-show="block.type === 'video'" x-html="renderVideoBlock(block)"></div>
-```
-
-Füge auch Child-Rendering hinzu (in den Spalten-Bereichen, ca. Zeile 844):
-
-```html
-<!-- Video in Spalte -->
-<div x-show="child.type === 'video'" x-html="renderVideoChild(child, column, childIndex)"></div>
-```
+**Hinweis:** Es sind keine zusätzlichen HTML-Templates nötig. Die zentrale Rendering-Logik nutzt
+bereits `x-html="renderBlock(block)"` und `x-html="renderChild(child, ...)"`.
 
 ## Schritt 7: Video Settings Modal HTML
 

@@ -122,8 +122,7 @@
                             'opacity-50': draggingBlockId === block.id,
                             'drag-over': dragOverIndex && dragOverIndex.type === 'main' && dragOverIndex.index === index && (!dragStartIndex || dragStartIndex.index !== index)
                         }" class="block-item group relative p-2 rounded-lg hover:bg-gray-50 transition-all cursor-move"
-                                @click.stop="selectBlock(block.id)" @mouseenter="hoveredBlockId = block.id"
-                                @mouseleave="hoveredBlockId = null" draggable="true"
+                                @click.stop="selectBlock(block.id)" draggable="true"
                                 @dragstart="handleDragStart($event, index)"
                                 @dragover.prevent="handleDragOver($event, index)" @drop="handleDrop($event, index)"
                                 @dragend="handleDragEnd()" @dragleave="dragOverIndex = null">
@@ -131,7 +130,7 @@
                                 <div x-show="selectedBlockId === block.id"
                                     class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l"></div>
                                 <!-- Block Controls -->
-                                <div x-show="hoveredBlockId === block.id || selectedBlockId === block.id"
+                                <div :class="selectedBlockId === block.id ? 'opacity-100' : ''"
                                     class="absolute -left-10 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                     <button @click.stop="openSidebar(block.id)"
                                         class="p-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 text-xs"
@@ -173,8 +172,7 @@
                                         'opacity-50': draggingBlockId === child.id,
                                         'drag-over': dragOverIndex && dragOverIndex.type === 'child' && dragOverIndex.parentIndex === index && dragOverIndex.childIndex === childIndex && (!dragStartIndex || dragStartIndex.childIndex !== childIndex)
                                     }" class="block-item group relative p-2 rounded-lg hover:bg-gray-50 transition-all cursor-move bg-gray-50"
-                                        @click.stop="selectBlock(child.id)" @mouseenter="hoveredBlockId = child.id"
-                                        @mouseleave="hoveredBlockId = null" draggable="true"
+                                        @click.stop="selectBlock(child.id)" draggable="true"
                                         @dragstart="handleDragStart($event, index, childIndex)"
                                         @dragover.prevent="handleDragOver($event, index, childIndex)"
                                         @drop="handleDrop($event, index, childIndex)" @dragend="handleDragEnd()">
@@ -183,7 +181,7 @@
                                             class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l"></div>
 
                                         <!-- Child Block Controls -->
-                                        <div x-show="hoveredBlockId === child.id || selectedBlockId === child.id"
+                                        <div :class="selectedBlockId === child.id ? 'opacity-100' : ''"
                                             class="absolute -left-10 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                             <button @click.stop="openSidebar(child.id)"
                                                 class="p-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 text-xs"

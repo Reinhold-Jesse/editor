@@ -25,7 +25,7 @@ export const ThreeColumnBlock = {
     // HTML-Template für Rendering
     renderHTML(block, context = {}) {
         const blockId = block.id || '';
-        const { selectedBlockId, draggingBlockId, hoveredBlockId, childBlockTypes, index } = context;
+        const { selectedBlockId, draggingBlockId, childBlockTypes, index } = context;
         
         return `
             <div x-show="block.type === 'threeColumn'" 
@@ -43,8 +43,6 @@ export const ThreeColumnBlock = {
                                 }"
                                 class="block-item group relative p-2 rounded-lg hover:bg-gray-50 transition-all cursor-move bg-gray-50"
                                 @click.stop="selectBlock(child.id)"
-                                @mouseenter="hoveredBlockId = child.id"
-                                @mouseleave="hoveredBlockId = null"
                                 draggable="true"
                                 @dragstart="handleDragStart($event, index, columnIndex, childIndex)"
                                 @dragover.prevent="handleDragOver($event, index, columnIndex, childIndex)"
@@ -52,7 +50,7 @@ export const ThreeColumnBlock = {
                                 @dragend="handleDragEnd()"
                             >
                                 <div x-show="selectedBlockId === child.id" class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l"></div>
-                                <div x-show="hoveredBlockId === child.id || selectedBlockId === child.id" class="absolute -left-10 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                <div :class="selectedBlockId === child.id ? 'opacity-100' : ''" class="absolute -left-10 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                     <button @click.stop="openSidebar(child.id)" class="p-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 text-xs" title="Einstellungen öffnen">⚙</button>
                                     <button @click.stop="removeChildFromColumn(block.id, columnIndex, childIndex)" class="p-1 bg-red-500 text-white rounded shadow hover:bg-red-600" title="Löschen">×</button>
                                 </div>
@@ -72,8 +70,6 @@ export const ThreeColumnBlock = {
                                                             }"
                                                             class="block-item group relative p-1 rounded hover:bg-gray-50 transition-all cursor-move bg-gray-50"
                                                             @click.stop="selectBlock(nestedChild.id)"
-                                                            @mouseenter="hoveredBlockId = nestedChild.id"
-                                                            @mouseleave="hoveredBlockId = null"
                                                             draggable="true"
                                                             @dragstart="handleDragStart($event, ${index}, columnIndex, childIndex)"
                                                             @dragover.prevent="handleDragOver($event, ${index}, columnIndex, childIndex)"
@@ -81,7 +77,7 @@ export const ThreeColumnBlock = {
                                                             @dragend="handleDragEnd()"
                                                         >
                                                             <div x-show="selectedBlockId === nestedChild.id" class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l"></div>
-                                                            <div x-show="hoveredBlockId === nestedChild.id || selectedBlockId === nestedChild.id" class="absolute -left-8 top-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                            <div :class="selectedBlockId === nestedChild.id ? 'opacity-100' : ''" class="absolute -left-8 top-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                                                 <button @click.stop="openSidebar(nestedChild.id)" class="p-0.5 bg-blue-500 text-white rounded shadow hover:bg-blue-600 text-xs" title="Einstellungen">⚙</button>
                                                                 <button @click.stop="removeChildFromColumn(child.id, nestedColumnIndex, nestedChildIndex)" class="p-0.5 bg-red-500 text-white rounded shadow hover:bg-red-600 text-xs" title="Löschen">×</button>
                                                             </div>
@@ -115,8 +111,6 @@ export const ThreeColumnBlock = {
                                                             }"
                                                             class="block-item group relative p-1 rounded hover:bg-gray-50 transition-all cursor-move bg-gray-50"
                                                             @click.stop="selectBlock(nestedChild.id)"
-                                                            @mouseenter="hoveredBlockId = nestedChild.id"
-                                                            @mouseleave="hoveredBlockId = null"
                                                             draggable="true"
                                                             @dragstart="handleDragStart($event, ${index}, columnIndex, childIndex)"
                                                             @dragover.prevent="handleDragOver($event, ${index}, columnIndex, childIndex)"
@@ -124,7 +118,7 @@ export const ThreeColumnBlock = {
                                                             @dragend="handleDragEnd()"
                                                         >
                                                             <div x-show="selectedBlockId === nestedChild.id" class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l"></div>
-                                                            <div x-show="hoveredBlockId === nestedChild.id || selectedBlockId === nestedChild.id" class="absolute -left-8 top-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                            <div :class="selectedBlockId === nestedChild.id ? 'opacity-100' : ''" class="absolute -left-8 top-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                                                 <button @click.stop="openSidebar(nestedChild.id)" class="p-0.5 bg-blue-500 text-white rounded shadow hover:bg-blue-600 text-xs" title="Einstellungen">⚙</button>
                                                                 <button @click.stop="removeChildFromColumn(child.id, nestedColumnIndex, nestedChildIndex)" class="p-0.5 bg-red-500 text-white rounded shadow hover:bg-red-600 text-xs" title="Löschen">×</button>
                                                             </div>

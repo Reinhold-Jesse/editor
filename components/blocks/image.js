@@ -29,10 +29,6 @@ export const ImageBlock = {
     // HTML-Template für Rendering
     // Diese Methode rendert den kompletten Image-Block-Container
     renderHTML(block, context = {}) {
-        const { selectedBlockId, draggingBlockId, hoveredBlockId } = context;
-        const isSelected = selectedBlockId === block.id;
-        const isDragging = draggingBlockId === block.id;
-        
         // Wenn kein Bild gesetzt ist, zeige Platzhalter
         if (!block.imageUrl || block.imageUrl.trim() === '') {
             return `

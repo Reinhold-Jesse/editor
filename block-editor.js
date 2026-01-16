@@ -1243,6 +1243,16 @@ function blockEditor() {
             TableManagement.updateTableCellContent(this.blocks, blockId, cellId, content);
         },
 
+        commitTableCellContent(blockId, cellId, content) {
+            TableManagement.updateTableCellContent(this.blocks, blockId, cellId, content);
+            const { block } = this.findBlockById(blockId);
+            if (block) {
+                block.updatedAt = new Date().toISOString();
+                this.invalidateRenderCache(blockId);
+                this.invalidateJSONDisplayCache();
+            }
+        },
+
         toggleTableHeader(blockId) {
             TableManagement.toggleTableHeader(this.blocks, blockId);
             this.invalidateBlockSettingsCache(blockId);
@@ -1271,6 +1281,16 @@ function blockEditor() {
 
         updateChecklistItemText(blockId, itemId, text) {
             ChecklistManagement.updateChecklistItemText(this.blocks, blockId, itemId, text);
+        },
+
+        commitChecklistItemText(blockId, itemId, text) {
+            ChecklistManagement.updateChecklistItemText(this.blocks, blockId, itemId, text);
+            const { block } = this.findBlockById(blockId);
+            if (block) {
+                block.updatedAt = new Date().toISOString();
+                this.invalidateRenderCache(blockId);
+                this.invalidateJSONDisplayCache();
+            }
         },
 
         moveChecklistItemUp(blockId, itemIndex) {

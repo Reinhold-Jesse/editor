@@ -93,7 +93,6 @@ export const ChecklistManagement = {
         
         if (item) {
             item.text = text;
-            block.updatedAt = new Date().toISOString();
         }
     },
 

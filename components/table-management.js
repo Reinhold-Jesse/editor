@@ -270,7 +270,6 @@ export const TableManagement = {
             for (let cell of row) {
                 if (cell.id === cellId) {
                     cell.content = content;
-                    block.updatedAt = new Date().toISOString();
                     return;
                 }
             }

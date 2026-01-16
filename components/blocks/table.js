@@ -53,7 +53,7 @@ export const TableBlock = {
                                         x-init="$nextTick(() => { if (cell.content !== undefined && cell.content !== null) $el.innerHTML = cell.content || ''; })"
                                         x-effect="if (cell.content !== undefined && cell.content !== null && document.activeElement !== $el && $el.innerHTML !== (cell.content || '')) { $el.innerHTML = cell.content || ''; }"
                                         @input="updateTableCellContent('${blockId}', cell.id, $event.target.innerHTML)"
-                                        @blur="updateTableCellContent('${blockId}', cell.id, $event.target.innerHTML)"
+                                        @blur="commitTableCellContent('${blockId}', cell.id, $event.target.innerHTML)"
                                         @focus="selectBlock('${blockId}'); initTableCellContent($event.target, cell)"
                                     ></th>
                                 </template>
@@ -79,7 +79,7 @@ export const TableBlock = {
                                         x-init="$nextTick(() => { if (cell.content !== undefined && cell.content !== null) $el.innerHTML = cell.content || ''; })"
                                         x-effect="if (cell.content !== undefined && cell.content !== null && document.activeElement !== $el && $el.innerHTML !== (cell.content || '')) { $el.innerHTML = cell.content || ''; }"
                                         @input="updateTableCellContent('${blockId}', cell.id, $event.target.innerHTML)"
-                                        @blur="updateTableCellContent('${blockId}', cell.id, $event.target.innerHTML)"
+                                        @blur="commitTableCellContent('${blockId}', cell.id, $event.target.innerHTML)"
                                         @focus="selectBlock('${blockId}'); initTableCellContent($event.target, cell)"
                                     ></td>
                                 </template>
@@ -105,7 +105,7 @@ export const TableBlock = {
                                         x-init="$nextTick(() => { if (cell.content !== undefined && cell.content !== null) $el.innerHTML = cell.content || ''; })"
                                         x-effect="if (cell.content !== undefined && cell.content !== null && document.activeElement !== $el && $el.innerHTML !== (cell.content || '')) { $el.innerHTML = cell.content || ''; }"
                                         @input="updateTableCellContent('${blockId}', cell.id, $event.target.innerHTML)"
-                                        @blur="updateTableCellContent('${blockId}', cell.id, $event.target.innerHTML)"
+                                        @blur="commitTableCellContent('${blockId}', cell.id, $event.target.innerHTML)"
                                         @focus="selectBlock('${blockId}'); initTableCellContent($event.target, cell)"
                                     ></td>
                                 </template>
@@ -147,7 +147,7 @@ export const TableBlock = {
                                         x-init="$nextTick(() => { if (cell.content !== undefined && cell.content !== null) $el.innerHTML = cell.content || ''; })"
                                         x-effect="if (cell.content !== undefined && cell.content !== null && document.activeElement !== $el && $el.innerHTML !== (cell.content || '')) { $el.innerHTML = cell.content || ''; }"
                                         @input="updateTableCellContent('${childId}', cell.id, $event.target.innerHTML)"
-                                        @blur="updateTableCellContent('${childId}', cell.id, $event.target.innerHTML)"
+                                        @blur="commitTableCellContent('${childId}', cell.id, $event.target.innerHTML)"
                                         @focus="selectBlock('${childId}'); initTableCellContent($event.target, cell)"
                                     ></th>
                                 </template>
@@ -173,7 +173,7 @@ export const TableBlock = {
                                         x-init="$nextTick(() => { if (cell.content !== undefined && cell.content !== null) $el.innerHTML = cell.content || ''; })"
                                         x-effect="if (cell.content !== undefined && cell.content !== null && document.activeElement !== $el && $el.innerHTML !== (cell.content || '')) { $el.innerHTML = cell.content || ''; }"
                                         @input="updateTableCellContent('${childId}', cell.id, $event.target.innerHTML)"
-                                        @blur="updateTableCellContent('${childId}', cell.id, $event.target.innerHTML)"
+                                        @blur="commitTableCellContent('${childId}', cell.id, $event.target.innerHTML)"
                                         @focus="selectBlock('${childId}'); initTableCellContent($event.target, cell)"
                                     ></td>
                                 </template>
@@ -199,7 +199,7 @@ export const TableBlock = {
                                         x-init="$nextTick(() => { if (cell.content !== undefined && cell.content !== null) $el.innerHTML = cell.content || ''; })"
                                         x-effect="if (cell.content !== undefined && cell.content !== null && document.activeElement !== $el && $el.innerHTML !== (cell.content || '')) { $el.innerHTML = cell.content || ''; }"
                                         @input="updateTableCellContent('${childId}', cell.id, $event.target.innerHTML)"
-                                        @blur="updateTableCellContent('${childId}', cell.id, $event.target.innerHTML)"
+                                        @blur="commitTableCellContent('${childId}', cell.id, $event.target.innerHTML)"
                                         @focus="selectBlock('${childId}'); initTableCellContent($event.target, cell)"
                                     ></td>
                                 </template>

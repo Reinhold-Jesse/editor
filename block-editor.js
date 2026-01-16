@@ -18,7 +18,7 @@ function blockEditor() {
         selectedBlockId: null,
         draggingBlockId: null,
         showToolbar: false,
-        showThemeDropdown: false,
+        showToolbarTab: 'blocks',
         blockIdCounter: 0,
         dragStartIndex: null,
         dragOverIndex: null,
@@ -441,6 +441,18 @@ function blockEditor() {
             this.showSidebar = false;
             // this.selectedBlockId = null; // Optional: Block-Auswahl beibehalten
         },
+
+        openBlockToolbar() {
+            this.showToolbar = true;
+            this.showToolbarTab = 'blocks';
+            if (window.modalHelpers) window.modalHelpers.openModal();
+        },
+
+        closeBlockToolbar() {
+            this.showToolbar = false;
+            this.showToolbarTab = 'blocks';
+            if (window.modalHelpers) window.modalHelpers.closeModal();
+        },
         
         /**
          * Rendert die Einstellungen für einen Block aus der Komponente
@@ -566,8 +578,7 @@ function blockEditor() {
             this.blockIdCounter++;
             const block = BlockManagement.addBlock(this.blocks, this.selectedBlockId, this.blockIdCounter, type, content);
             this.selectedBlockId = block.id;
-            this.showToolbar = false;
-            this.showThemeDropdown = false;
+            this.closeBlockToolbar();
             
             // Stelle sicher, dass Column-Blöcke die richtige Anzahl von Spalten haben
             BlockManagement.ensureColumnStructure(this.blocks);
@@ -685,7 +696,7 @@ function blockEditor() {
 
         deselectAll() {
             this.selectedBlockId = null;
-            this.showToolbar = false;
+            this.closeBlockToolbar();
         },
 
         moveBlock(index, direction) {
